@@ -1,3 +1,16 @@
+# build directory
+build
+
+# eclipse files
+.project
+.cproject
+.settings
+
+# other files
+server2.xml
+src/main/tinyxml2
+
+
 # Prerequisites
 *.d
 
