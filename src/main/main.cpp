@@ -90,9 +90,15 @@ int runServer(const std::string& configFile) {
 }
 
 int main(int argc, const char *argv[]) {
+	if(argc != 2) {
+		std::cout << "Wrong number of arguments.\n";
+		std::cout << "Usage: jerry <path to server.xml>\n";
+		return 0;
+	}
+
 	try {
 		try {
-			return runServer("/home/lukas/workspace_esl/jerry/server2.xml");
+			return runServer(argv[1]);
 		}
 		catch(const std::runtime_error& e) {
 			std::cerr << "Exception : std::runtime_error\n";
