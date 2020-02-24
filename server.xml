@@ -1,0 +1,64 @@
+<jerry>
+	<library file="libesl-mhd.so" module="esl"/>
+	<library file="liblogbook4esl.so" module="esl"/>
+	<library file="libzsystem4esl.so" module="esl"/>
+	<library file="libhttp-filebrowser.so"/>
+	
+	<certificate domain="*" key="server.key" cert="server.pem"/>
+	
+	<!-- include file="../secret/server-secret.xml"/ -->
+	
+	<logger layout="default">
+		<layout key="showTimestamp" value="true"/>
+		<layout key="showLevel" value="true"/>
+		<layout key="showTypeName" value="true"/>
+		<layout key="showAddress" value="false"/>
+		<layout key="showFile" value="false"/>
+		<layout key="showFunction" value="false"/>
+		<layout key="showLineNo" value="false"/>
+		<layout key="showThreadNo" value="false"/>
+		
+		<setting class="*" level="WARN"/>
+		<setting class="jerry::*" level="TRACE"/>
+	</logger>
+	
+	
+	<object id="fb-setting1" implementation="http/server/filebrowser">
+		<parameter key="workspaceDir" value="/var/"/>
+		<parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/>
+	</object>
+	
+	<object id="fb-setting2" implementation="http/server/filebrowser">
+		<parameter key="workspaceDir" value="/tmp/"/>
+		<parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/>
+	</object>
+	
+	<listener url="https://*:8080">
+	
+		<reference id="" ref-id="fb-setting1"/>
+		<endpoint path="test1">
+			<requesthandler implementation="http/server/filebrowser"/>
+		</endpoint>
+		
+		<endpoint path="test1/log">
+			<reference id="" ref-id="fb-setting2"/>
+			<requesthandler implementation="http/server/filebrowser"/>
+			
+			<endpoint path="mc-lukas">
+				<context>
+					<object id="" implementation="http/server/filebrowser">
+						<parameter key="workspaceDir" value="/usr/"/>
+						<parameter key="showException" value="false"/>
+						<parameter key="showStacktrace" value="false"/>
+					</object>
+					<requesthandler implementation="http/server/filebrowser"/>
+				</context>
+			</endpoint>
+			
+		</endpoint>
+		
+	</listener>
+	
+</jerry>
