@@ -9,6 +9,9 @@ build
 # other files
 server2.xml
 src/main/tinyxml2
+build.sh
+server.key
+server.pem
 
 
 # Prerequisites
