@@ -29,6 +29,7 @@
 #include <jerry/engine/Endpoint.h>
 #include <jerry/engine/Context.h>
 #include <esl/logging/Layout.h>
+#include <esl/module/Library.h>
 #include <vector>
 #include <set>
 #include <string>
@@ -49,8 +50,8 @@ public:
 
 	std::string fileName;
 
-	std::vector<std::string> eslLibraries;
-	std::vector<std::string> libraries;
+	std::vector<std::pair<std::string, esl::module::Library*>> eslLibraries;
+	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<std::string> includes;
 	std::vector<Certificate> certificates;
 	Logger loggerConfig;

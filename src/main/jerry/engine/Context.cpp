@@ -145,16 +145,20 @@ std::unique_ptr<esl::http::server::RequestHandler> Context::createRequestHandler
 	std::unique_ptr<esl::http::server::RequestHandler> requestHandler;
 
 	for(auto& requestHandlerFactory : requestHandlerFactories) {
+		logger.trace << "Own requestHandlerFactory found.\n";
 		requestHandler = requestHandlerFactory(*requestContext);
 		if(requestHandler) {
+			logger.trace << "Own requestHandlerFactory instantiated.\n";
 			requestHandler.reset(new http::RequestHandler(std::move(requestHandler), std::move(requestContext), endpoint));
 			return requestHandler;
 		}
 	}
 
+	logger.trace << "Own requestHandlerFactory NOT found. Interate sub context.\n";
 	for(const auto& context : contextList) {
 		requestHandler = context->createRequestHandler(baseRequestContext, path, endpoint);
 		if(requestHandler) {
+			logger.trace << "Sub-Context requestHandlerFactory instantiated.\n";
 			return requestHandler;
 		}
 	}

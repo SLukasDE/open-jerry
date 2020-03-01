@@ -17,12 +17,15 @@
  */
 
 #include <jerry/http/RequestHandler.h>
+#include <jerry/Logger.h>
 #include <esl/Stacktrace.h>
 
 namespace jerry {
 namespace http {
 
-Logger RequestHandler::logger("jerry::engine::RequestHandler");
+namespace {
+Logger logger("jerry::engine::RequestHandler");
+} /* anonymous namespace */
 
 RequestHandler::RequestHandler(std::unique_ptr<esl::http::server::RequestHandler> aRequestHandler, std::unique_ptr<esl::http::server::RequestContext> aRequestContext, const engine::Endpoint& aEngineEndpoint)
 : esl::http::server::RequestHandler(),
@@ -34,11 +37,14 @@ RequestHandler::RequestHandler(std::unique_ptr<esl::http::server::RequestHandler
 bool RequestHandler::process(const char* contentData, std::size_t contentDataSize) {
 	std::string exceptionMsg;
     std::unique_ptr<esl::Stacktrace> stacktrace = nullptr;
+    logger.trace << "process begin\n";
 
     try {
+        logger.trace << "process requestHandler->process\n";
     	return requestHandler->process(contentData, contentDataSize);
     }
     catch (std::exception& e) {
+        logger.trace << "process std::exception\n";
     	exceptionMsg = e.what();
 
     	const esl::Stacktrace* stacktracePtr = esl::getStacktrace(e);
@@ -47,6 +53,7 @@ bool RequestHandler::process(const char* contentData, std::size_t contentDataSiz
     	}
     }
     catch (...) {
+        logger.trace << "process unknown exception\n";
     	exceptionMsg = "unknown exception";
     }
 
@@ -64,6 +71,7 @@ bool RequestHandler::process(const char* contentData, std::size_t contentDataSiz
 */
     }
 
+    logger.trace << "process end\n";
 	return false;
 }
 

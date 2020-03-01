@@ -21,7 +21,6 @@
 #include <jerry/Logger.h>
 #include <jerry/URL.h>
 #include <esl/Module.h>
-#include <esl/module/Library.h>
 #include <esl/Stacktrace.h>
 #include <tinyxml2/tinyxml2.h>
 #include <stdexcept>
@@ -82,7 +81,7 @@ void throwXmlError(tinyxml2::XMLError xmlError) {
 
 void loadFile(Jerry& jerry, const std::string& fileName);
 
-void parseLibrary(std::vector<std::string>& jerryLibraries, std::vector<std::string>& eslLibraries, const tinyxml2::XMLElement& element) {
+void parseLibrary(std::vector<std::pair<std::string, esl::module::Library*>>& jerryLibraries, std::vector<std::pair<std::string, esl::module::Library*>>& eslLibraries, const tinyxml2::XMLElement& element) {
 	bool hasFile = false;
 	std::string file;
 	std::string module;
@@ -109,10 +108,10 @@ void parseLibrary(std::vector<std::string>& jerryLibraries, std::vector<std::str
 	}
 
 	if(module.empty() || module == "jerry") {
-		jerryLibraries.push_back(file);
+		jerryLibraries.push_back(std::make_pair(file, nullptr));
 	}
 	else if(module == "esl") {
-		eslLibraries.push_back(file);
+		eslLibraries.push_back(std::make_pair(file, nullptr));
 	}
 	else {
 		throw esl::addStacktrace(std::runtime_error(std::string("Unknown module \"") + module + "\" at line " + std::to_string(element.GetLineNum())));
@@ -601,14 +600,46 @@ Jerry::Jerry(const std::string& aFileName)
 }
 
 void Jerry::loadLibraries() {
-	/* load libraries and show registered modules */
-	for(const auto& eslLibrary : eslLibraries) {
-		esl::module::Library* lib(new esl::module::Library(eslLibrary));
-		esl::getModule().addModule(lib->getModule());
+	esl::module::Module& aEslModule = esl::getModule();
+
+	/* load and add libraries */
+	for(auto& eslLibrary : eslLibraries) {
+		if(eslLibrary.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" loaded already."));
+		}
+		eslLibrary.second = new esl::module::Library(eslLibrary.first);
+		esl::module::Module& aLibModule = eslLibrary.second->getModule();
+		aEslModule.addModule(aLibModule);
 	}
-	for(const auto& jerryLibrary : libraries) {
-		esl::module::Library* lib(new esl::module::Library(jerryLibrary));
-		jerry::getModule().addModule(lib->getModule());
+	for(auto& jerryLibrary : libraries) {
+		if(jerryLibrary.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + jerryLibrary.first + "\" loaded already."));
+		}
+		jerryLibrary.second = new esl::module::Library(jerryLibrary.first);
+		esl::module::Module& aLibModule = jerryLibrary.second->getModule();
+		jerry::getModule().addModule(aLibModule);
+	}
+
+
+	/* add and replace esl interfaces to loaded libraries by own esl libraries */
+	for(auto& eslLibrary : eslLibraries) {
+		if(!eslLibrary.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" not loaded."));
+		}
+		esl::module::Module* aLibEslModule = eslLibrary.second->getModule().getModule("esl");
+		if(aLibEslModule) {
+			aLibEslModule->replaceModule(aEslModule);
+		}
+	}
+
+	for(auto& jerryLibrary : libraries) {
+		if(!jerryLibrary.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + jerryLibrary.first + "\" not loaded."));
+		}
+		esl::module::Module* aLibEslModule = jerryLibrary.second->getModule().getModule("esl");
+		if(aLibEslModule) {
+			aLibEslModule->replaceModule(aEslModule);
+		}
 	}
 }
 
@@ -665,8 +696,11 @@ void Jerry::setEngine(engine::Engine& engine) const {
 
 void Jerry::print() {
 	std::cout << "\n<jerry>\n";
+	for(const auto& entry : eslLibraries) {
+		std::cout << "  <library module=\"esl\" file=\"" << entry.first << "\"/>\n";
+	}
 	for(const auto& entry : libraries) {
-		std::cout << "  <library file=\"" << entry << "\"/>\n";
+		std::cout << "  <library file=\"" << entry.first << "\"/>\n";
 	}
 	for(const auto& entry : includes) {
 		std::cout << "  <include file=\"" << entry << "\"/>\n";

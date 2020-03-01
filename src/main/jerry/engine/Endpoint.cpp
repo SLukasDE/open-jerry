@@ -40,7 +40,12 @@ Endpoint::Endpoint(Listener& listener, Context* parent, std::string aPath)
 }
 
 std::unique_ptr<esl::http::server::RequestHandler> Endpoint::createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path) const {
-	logger.trace << "path=\"" + path + "\"\n";
+	logger.trace << "path=\"" << path << "\"\n";
+	logger.trace << "within pathList=\"";
+	for(const auto& pathEntry : pathList) {
+		logger.trace << pathEntry << "/";
+	}
+	logger.trace << "\"\n";
 
 	std::unique_ptr<esl::http::server::RequestHandler> requestHandler = Context::createRequestHandler(requestContext, path, *this);
 

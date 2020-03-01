@@ -24,7 +24,6 @@
 #include <esl/object/parameter/Interface.h>
 #include <jerry/engine/Endpoint.h>
 #include <jerry/http/RequestContext.h>
-#include <jerry/Logger.h>
 #include <string>
 #include <map>
 #include <memory>
@@ -33,7 +32,6 @@ namespace jerry {
 namespace http {
 
 class RequestHandler : public esl::http::server::RequestHandler {
-	static Logger logger;
 public:
 	RequestHandler(std::unique_ptr<esl::http::server::RequestHandler> requestHandler, std::unique_ptr<esl::http::server::RequestContext> requestContext, const engine::Endpoint& engineEndpoint);
 
