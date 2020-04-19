@@ -16,20 +16,20 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_PARAMETER_H_
-#define JERRY_CONFIG_PARAMETER_H_
+#ifndef JERRY_CONFIG_SETTING_H_
+#define JERRY_CONFIG_SETTING_H_
 
 #include <string>
 
 namespace jerry {
 namespace config {
 
-struct Parameter {
+struct Setting {
 	std::string key;
 	std::string value;
 };
 
-} /* namespace config */
+} /* namespace confing */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_PARAMETER_H_ */
+#endif /* JERRY_CONFIG_SETTING_H_ */

@@ -19,7 +19,7 @@
 #ifndef JERRY_CONFIG_OBJECT_H_
 #define JERRY_CONFIG_OBJECT_H_
 
-#include <jerry/config/Parameter.h>
+#include <jerry/config/Setting.h>
 #include <string>
 #include <vector>
 
@@ -29,7 +29,7 @@ namespace config {
 struct Object {
 	std::string id;
 	std::string implementation;
-	std::vector<Parameter> parameters;
+	std::vector<Setting> settings;
 };
 
 } /* namespace config */

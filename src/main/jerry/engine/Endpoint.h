@@ -31,18 +31,29 @@ namespace engine {
 class Listener;
 
 class Endpoint : public Context {
+friend class Context;
 public:
-	Endpoint(Listener& listener, Context* parent, std::string path);
+	const std::vector<std::string>& getPathList() const;
+	std::vector<std::string> getFullPathList() const;
+	std::size_t getDepth() const;
 
-	std::unique_ptr<esl::http::server::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path) const;
+	const Endpoint* getParentEndpoint() const;
+
+	void setShowException(bool showException);
+	bool getShowException() const;
 
 protected:
-	std::vector<std::string> getEndpointPathList() const override;
-	std::unique_ptr<esl::http::server::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path, const Endpoint& endpoint) const override;
+	Endpoint(Listener& listener, const Endpoint& parentEndpoint, const Context& parentContext, std::vector<std::string> pathList);
+
+	// only used by Listener
+	Endpoint(Listener& listener/*, std::string path*/);
 
 private:
+	const Endpoint* parentEndpoint = nullptr;
 	std::vector<std::string> pathList;
-	std::vector<std::unique_ptr<Endpoint>> endpoints;
+	std::size_t depth = 0;
+
+	bool showException = false;
 };
 
 } /* namespace engine */

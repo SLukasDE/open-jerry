@@ -20,47 +20,54 @@
 #define JERRY_ENGINE_CONTEXT_H_
 
 #include <jerry/engine/BaseContext.h>
-#include <esl/object/parameter/Interface.h>
-#include <esl/http/server/RequestHandler.h>
+#include <esl/object/Interface.h>
+#include <esl/http/server/requesthandler/Interface.h>
 #include <string>
 #include <map>
 #include <memory>
 #include <vector>
+#include <tuple>
 
 namespace jerry {
 namespace engine {
 
 class Listener;
 class Endpoint;
+class RequestHandler;
 
 class Context : public BaseContext {
 public:
+	void addReference(const std::string& id, const std::string& refId);
+	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation) override;
+	esl::object::Interface::Object* getObject(const std::string& id) const override;
+	virtual esl::object::Interface::Object* getHiddenObject(const std::string& id) const;
+
 	Context& addContext();
 	Endpoint& addEndpoint(std::string path);
 	void addRequestHandler(const std::string& implementation);
-	void addReference(const std::string& id, const std::string& refId);
 
-	esl::object::parameter::Interface::Object& addObject(const std::string& id, const std::string& implementation) override;
-	esl::object::parameter::Interface::Object* getObject(const std::string& id) const override;
+	const Endpoint& getEndpoint() const;
 
-	virtual esl::object::parameter::Interface::Object* getObjectWithEngine(const std::string& id) const;
+	void initializeContext() override;
 
 protected:
-	Context(Listener& listener, Context* parent);
+	Context(Listener& listener, const Endpoint& endpoint, const Context& parentContext);
 
-	virtual std::vector<std::string> getEndpointPathList() const;
+	// only used by Listener
+	Context(Listener& listener);
 
-	void registerContext(std::unique_ptr<Context>);
-
-	virtual std::unique_ptr<esl::http::server::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path, const Endpoint& endpoint) const;
+	bool createRequestHandler(RequestHandler& requestHandler) const;
 
 private:
 	Listener& listener;
-	const Context* parent = nullptr;
+	const Endpoint& endpoint;
+	const Context* parentContext = nullptr;
 
-	std::vector<std::unique_ptr<Context>> contextList;
-	std::map<std::string, esl::object::parameter::Interface::Object*> allObjectsById;
-	std::vector<esl::http::server::RequestHandler::Factory> requestHandlerFactories;
+	std::map<std::string, esl::object::Interface::Object*> allObjectsById;
+
+	std::vector<std::tuple<std::unique_ptr<Context>, std::unique_ptr<Endpoint>, esl::http::server::requesthandler::Interface::CreateRequestHandler>> contextCreateRequestHandlerList;
+
+	esl::object::Interface::Object* getLocalObject(const std::string& id) const;
 };
 
 } /* namespace engine */

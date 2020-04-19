@@ -17,7 +17,16 @@
  */
 
 #include <jerry/Module.h>
+#include <jerry/buildin/filebrowser/RequestHandler.h>
+#include <jerry/buildin/filebrowser/Settings.h>
+#include <jerry/buildin/basicauth/RequestHandler.h>
+#include <jerry/buildin/basicauth/Settings.h>
+
+#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/object/Interface.h>
 #include <esl/module/Interface.h>
+
+#include <memory>
 #include <new>         // placement new
 #include <type_traits> // aligned_storage
 
@@ -33,10 +42,21 @@ typename std::aligned_storage<sizeof(Module), alignof(Module)>::type moduleBuffe
 Module& myModule = reinterpret_cast<Module&> (moduleBuffer);
 bool isInitialized = false;
 
+
 Module::Module()
 : esl::module::Module()
 {
 	esl::module::Module::initialize(*this);
+
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::http::server::requesthandler::Interface(
+			getId(), "jerry/buildin/filebrowser", &jerry::buildin::filebrowser::RequestHandler::create)));
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
+			getId(), "jerry/buildin/filebrowser", &jerry::buildin::filebrowser::Settings::create)));
+
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::http::server::requesthandler::Interface(
+			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::RequestHandler::create)));
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
+			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::Settings::create)));
 }
 
 } /* anonymous namespace */

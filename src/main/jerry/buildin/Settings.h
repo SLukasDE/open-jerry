@@ -16,20 +16,27 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_LISTENERTYPE_H_
-#define JERRY_CONFIG_LISTENERTYPE_H_
+#ifndef JERRY_BUILDIN_SETTINGS_H_
+#define JERRY_BUILDIN_SETTINGS_H_
+
+#include <esl/object/Settings.h>
+#include <string>
 
 namespace jerry {
-namespace config {
+namespace buildin {
 
-enum class ListenerType {
-	listener,
-	endpoint,
-	context,
-	requestHandler
+class Settings : public esl::object::Settings {
+protected:
+	using SetBoolMember = void (Settings::*)(bool);
+	void setParameterBool(const std::string& key, const std::string& value, SetBoolMember setBoolMember);
+	static bool toBoolean(const std::string& value);
+
+	using SetIntegerMember = void (Settings::*)(int);
+	void setParameterInteger(const std::string& key, const std::string& value, SetIntegerMember setIntegerMember);
+	static int toInteger(const std::string& value);
 };
 
-} /* namespace config */
+} /* namespace buildin */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_LISTENERTYPE_H_ */
+#endif /* JERRY_BUILDIN_SETTINGS_H_ */

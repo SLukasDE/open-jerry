@@ -18,11 +18,15 @@
 
 #include <jerry/engine/Context.h>
 #include <jerry/engine/Endpoint.h>
-#include <jerry/http/RequestHandler.h>
-#include <jerry/http/RequestContext.h>
+#include <jerry/engine/Listener.h>
+#include <jerry/engine/RequestHandler.h>
+#include <jerry/engine/RequestContext.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
-#include <esl/http/server/handler/Interface.h>
+
+#include <esl/http/server/InitializeContext.h>
+#include <esl/utility/String.h>
+
 #include <stdexcept>
 
 namespace jerry {
@@ -30,46 +34,43 @@ namespace engine {
 
 namespace {
 Logger logger("jerry::engine::Context");
+
+bool isPathMatching(const std::vector<std::string>& requestPathList, const std::vector<std::string>& endpointPathList, std::size_t startIndex) {
+	if(endpointPathList.size() > requestPathList.size() - startIndex) {
+		return false;
+	}
+
+	for(std::size_t index = 0; index < endpointPathList.size(); ++index) {
+		if(requestPathList[startIndex + index] != endpointPathList[index]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 } /* anonymous namespace */
 
-Context::Context(Listener& aListener, Context* aParent)
+Context::Context(Listener& aListener, const Endpoint& aEndpoint, const Context& aParentContext)
 : listener(aListener),
-  parent(aParent)
+  endpoint(aEndpoint),
+  parentContext(&aParentContext)
 { }
 
-Context& Context::addContext() {
-	Context* newContext = new Context(listener, this);
-
-	registerContext(std::unique_ptr<Context>(newContext));
-
-	return *newContext;
-}
-
-Endpoint& Context::addEndpoint(std::string path) {
-	logger.trace << "Adding endpoint for path=\"" + path + "\"\n";
-
-	Endpoint* newEndpoint = new Endpoint(listener, this, std::move(path));
-
-	registerContext(std::unique_ptr<Context>(newEndpoint));
-
-	return *newEndpoint;
-}
-
-void Context::addRequestHandler(const std::string& implementation) {
-	logger.trace << "Adding requesthandler for implementation=\"" + implementation + "\"\n";
-
-	requestHandlerFactories.push_back(jerry::getModule().getInterface<esl::http::server::handler::Interface>(implementation).createRequestHandler);
-}
+// only used by Listener
+Context::Context(Listener& aListener)
+: listener(aListener),
+  endpoint(aListener),
+  parentContext(nullptr)
+{ }
 
 void Context::addReference(const std::string& id, const std::string& refId) {
-	logger.trace << "Adding reference with id=\"" + id + "\" and reference-id=\"" + refId + "\"\n";
-
 	auto allObjectsByIdIter = allObjectsById.find(id);
 	if(allObjectsByIdIter != std::end(allObjectsById)) {
         throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same name.");
 	}
 
-	esl::object::parameter::Interface::Object* object = getObjectWithEngine(refId);
+	esl::object::Interface::Object* object = getHiddenObject(refId);
 
 	if(object == nullptr) {
         throw std::runtime_error("Cannot add object with id '" + id + "', because it's reference '" + refId + "' does not exists.");
@@ -78,89 +79,153 @@ void Context::addReference(const std::string& id, const std::string& refId) {
 	allObjectsById[id] = object;
 }
 
-esl::object::parameter::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation) {
-	logger.trace << "Adding object with id=\"" + id + "\" and implementation=\"" + implementation + "\"\n";
-
+esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation) {
 	auto allObjectsByIdIter = allObjectsById.find(id);
 	if(allObjectsByIdIter != std::end(allObjectsById)) {
         throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same name.");
 	}
 
-	esl::object::parameter::Interface::Object& object = BaseContext::addObject(id, implementation);
+	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation);
 
 	allObjectsById[id] = &object;
 
 	return object;
 }
 
-esl::object::parameter::Interface::Object* Context::getObject(const std::string& id) const {
-	logger.trace << "Lookup object with id=\"" + id + "\"\n";
-
-	auto allObjectsByIdIter = allObjectsById.find(id);
-	if(allObjectsByIdIter != std::end(allObjectsById)) {
-		logger.trace << "Object found in Context\n";
-        return allObjectsByIdIter->second;
+esl::object::Interface::Object* Context::getObject(const std::string& id) const {
+	esl::object::Interface::Object* object = getLocalObject(id);
+	if(object) {
+		return object;
 	}
 
-	if(parent) {
-		logger.trace << "Object not found in Context, lookup in parent context.\n";
-		return parent->getObject(id);
-	}
-
-	logger.trace << "Object not found in Context\n";
+	logger.warn << "Lookup for undefined object \"" << id << "\" in context.\n";
 	return nullptr;
 }
 
-esl::object::parameter::Interface::Object* Context::getObjectWithEngine(const std::string& id) const {
-	logger.trace << "Lookup object with id=\"" + id + "\"\n";
-
-	auto allObjectsByIdIter = allObjectsById.find(id);
-	if(allObjectsByIdIter != std::end(allObjectsById)) {
-		logger.trace << "Object found in Context\n";
-        return allObjectsByIdIter->second;
+esl::object::Interface::Object* Context::getHiddenObject(const std::string& id) const {
+	esl::object::Interface::Object* object = getLocalObject(id);
+	if(object) {
+		return object;
 	}
 
-	if(parent) {
-		logger.trace << "Object not found in Context, lookup in parent context.\n";
-		return parent->getObjectWithEngine(id);
+	/* check if this is NOT an instance of Listener
+	 * check could also be "if(&listener != this) { ... }" */
+	if(parentContext) {
+		return parentContext->getHiddenObject(id);
 	}
 
-	logger.trace << "Object not found in Context\n";
 	return nullptr;
 }
 
-std::vector<std::string> Context::getEndpointPathList() const {
-	if(!parent) {
-		return std::vector<std::string>();
-	}
-	return parent->getEndpointPathList();
+Context& Context::addContext() {
+	Context* newContext = new Context(listener, endpoint, *this);
+
+	contextCreateRequestHandlerList.push_back(std::make_tuple(std::unique_ptr<Context>(newContext), nullptr, nullptr));
+
+	return *newContext;
 }
 
-void Context::registerContext(std::unique_ptr<Context> context) {
-	contextList.push_back(std::move(context));
+Endpoint& Context::addEndpoint(std::string path) {
+	std::vector<std::string> pathList(esl::utility::String::split(esl::utility::String::trim(std::move(path), '/'), '/'));
+
+	Endpoint* newEndpoint = new Endpoint(listener, endpoint, *this, std::move(pathList));
+	contextCreateRequestHandlerList.push_back(std::make_tuple(nullptr, std::unique_ptr<Endpoint>(newEndpoint), nullptr));
+
+	return *newEndpoint;
 }
 
-std::unique_ptr<esl::http::server::RequestHandler> Context::createRequestHandler(esl::http::server::RequestContext& baseRequestContext, const std::string& path, const Endpoint& endpoint) const {
-	std::unique_ptr<esl::http::server::RequestContext> requestContext(new http::RequestContext(baseRequestContext, path, *this));
-	std::unique_ptr<esl::http::server::RequestHandler> requestHandler;
+void Context::addRequestHandler(const std::string& implementation) {
+	contextCreateRequestHandlerList.push_back(std::make_tuple(nullptr, nullptr, jerry::getModule().getInterface<esl::http::server::requesthandler::Interface>(implementation).createRequestHandler));
+}
 
-	for(auto& requestHandlerFactory : requestHandlerFactories) {
-		logger.trace << "Own requestHandlerFactory found.\n";
-		requestHandler = requestHandlerFactory(*requestContext);
-		if(requestHandler) {
-			logger.trace << "Own requestHandlerFactory instantiated.\n";
-			requestHandler.reset(new http::RequestHandler(std::move(requestHandler), std::move(requestContext), endpoint));
-			return requestHandler;
+const Endpoint& Context::getEndpoint() const {
+	return endpoint;
+}
+
+void Context::initializeContext() {
+	// initialize objects of this context
+	for(auto& object : allObjectsById) {
+		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(object.second);
+		if(initializeContext) {
+			initializeContext->initializeContext(*this);
 		}
 	}
 
-	logger.trace << "Own requestHandlerFactory NOT found. Interate sub context.\n";
-	for(const auto& context : contextList) {
-		requestHandler = context->createRequestHandler(baseRequestContext, path, endpoint);
-		if(requestHandler) {
-			logger.trace << "Sub-Context requestHandlerFactory instantiated.\n";
-			return requestHandler;
+	// call initializeContext() of sub-context's
+	for(auto& createRequestHandler : contextCreateRequestHandlerList) {
+		if(std::get<0>(createRequestHandler)) {
+			/* ************** *
+			 * handle Context *
+			 * ************** */
+			Context* subContext = std::get<0>(createRequestHandler).get();
+			subContext->initializeContext();
 		}
+
+		if(std::get<1>(createRequestHandler)) {
+			/* *************** *
+			 * handle Endpoint *
+			 * *************** */
+			Endpoint* subEndpoint = std::get<1>(createRequestHandler).get();
+			subEndpoint->initializeContext();
+		}
+	}
+}
+
+bool Context::createRequestHandler(RequestHandler& requestHandler) const {
+	for(auto& createRequestHandler : contextCreateRequestHandlerList) {
+		if(std::get<0>(createRequestHandler)) {
+			/* ************** *
+			 * handle Context *
+			 * ************** */
+			Context* subContext = std::get<0>(createRequestHandler).get();
+
+			requestHandler.setContext(*subContext);
+			requestHandler.setEndpoint(getEndpoint());
+
+			if(std::get<0>(createRequestHandler)->createRequestHandler(requestHandler)) {
+				return true;
+			}
+		}
+
+		if(std::get<1>(createRequestHandler)) {
+			/* *************** *
+			 * handle Endpoint *
+			 * *************** */
+			Endpoint* subEndpoint = std::get<1>(createRequestHandler).get();
+
+			if(isPathMatching(requestHandler.getPathList(), subEndpoint->getPathList(), subEndpoint->getDepth())) {
+				Context* context = subEndpoint;
+
+				requestHandler.setContext(*subEndpoint);
+				requestHandler.setEndpoint(*subEndpoint);
+
+				if(context->createRequestHandler(requestHandler)) {
+					return true;
+				}
+			}
+		}
+
+		if(std::get<2>(createRequestHandler)) {
+			/* **************************** *
+			 * handle RequestHandlerFactory *
+			 * **************************** */
+			requestHandler.setContext(*this);
+			requestHandler.setEndpoint(getEndpoint());
+			requestHandler.setRequestHandler(std::get<2>(createRequestHandler));
+
+			if(requestHandler.hasRequestHandler()) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+esl::object::Interface::Object* Context::getLocalObject(const std::string& id) const {
+	auto allObjectsByIdIter = allObjectsById.find(id);
+	if(allObjectsByIdIter != std::end(allObjectsById)) {
+        return allObjectsByIdIter->second;
 	}
 
 	return nullptr;

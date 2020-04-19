@@ -22,7 +22,7 @@
 #include <jerry/config/Certificate.h>
 #include <jerry/config/Logger.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/Parameter.h>
+//#include <jerry/config/Parameter.h>
 #include <jerry/config/Listener.h>
 #include <jerry/engine/Engine.h>
 #include <jerry/engine/Listener.h>
@@ -62,7 +62,7 @@ public:
 
 private:
 	void setEngineContext(engine::Context& engineContext, const Listener& configContext) const;
-	void setEngineEndpoint(engine::Endpoint& engineEndpoint, const Listener& configEndpoint) const;
+//	void setEngineEndpoint(engine::Endpoint& engineEndpoint, const Listener& configEndpoint) const;
 	void setEngineListener(engine::Listener& engineListener, const Listener& configListener) const;
 };
 

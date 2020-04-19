@@ -30,44 +30,50 @@ namespace {
 Logger logger("jerry::engine::Endpoint");
 } /* anonymous namespace */
 
-Endpoint::Endpoint(Listener& listener, Context* parent, std::string aPath)
-: Context(listener, parent),
-  pathList(esl::utility::String::split(esl::utility::String::trim(std::move(aPath), '/'), '/'))
+Endpoint::Endpoint(Listener& listener, const Endpoint& aParentEndpoint, const Context& parentContext, std::vector<std::string> aPathList)
+: Context(listener, *this, parentContext),
+  parentEndpoint(&aParentEndpoint),
+  pathList(std::move(aPathList)),
+  depth(parentEndpoint->getDepth() + parentEndpoint->getPathList().size())
 {
-	if(parent) {
-		listener.registerEndpoint(*this, getEndpointPathList());
-	}
+	listener.registerEndpoint(*this);
 }
 
-std::unique_ptr<esl::http::server::RequestHandler> Endpoint::createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path) const {
-	logger.trace << "path=\"" << path << "\"\n";
-	logger.trace << "within pathList=\"";
-	for(const auto& pathEntry : pathList) {
-		logger.trace << pathEntry << "/";
-	}
-	logger.trace << "\"\n";
+// only used by Listener
+Endpoint::Endpoint(Listener& listener/*, std::string path*/)
+: Context(listener),
+  depth(0)
+{ }
 
-	std::unique_ptr<esl::http::server::RequestHandler> requestHandler = Context::createRequestHandler(requestContext, path, *this);
-
-	// TODO: special endpoint stuff, like catching exceptions, returning a default error page, show stacktrace, ...
-
-	if(!requestHandler) {
-		logger.trace << "requestHandler == nullptr\n";
-		// ...
-	}
-
-	return requestHandler;
+const std::vector<std::string>& Endpoint::getPathList() const {
+	return pathList;
 }
 
-std::vector<std::string> Endpoint::getEndpointPathList() const {
-	std::vector<std::string> result = Context::getEndpointPathList();
+std::vector<std::string> Endpoint::getFullPathList() const {
+	std::vector<std::string> result;
+
+	if(getParentEndpoint()) {
+		result = getParentEndpoint()->getFullPathList();
+	}
 	result.insert(std::end(result), std::begin(pathList), std::end(pathList));
 
 	return result;
 }
 
-std::unique_ptr<esl::http::server::RequestHandler> Endpoint::createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path, const Endpoint& endpoint) const {
-	return nullptr;
+std::size_t Endpoint::getDepth() const {
+	return depth;
+}
+
+const Endpoint* Endpoint::getParentEndpoint() const {
+	return parentEndpoint;
+}
+
+void Endpoint::setShowException(bool aShowException) {
+	showException = aShowException;
+}
+
+bool Endpoint::getShowException() const {
+	return showException;
 }
 
 } /* namespace engine */

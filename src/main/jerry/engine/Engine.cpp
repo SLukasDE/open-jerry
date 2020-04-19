@@ -17,11 +17,10 @@
  */
 
 #include <jerry/engine/Engine.h>
-#include <jerry/http/RequestHandler.h>
+#include <jerry/engine/RequestHandler.h>
 #include <jerry/engine/Endpoint.h>
 #include <jerry/Logger.h>
 #include <jerry/Module.h>
-#include <jerry/URL.h>
 
 #include <esl/Module.h>
 #include <esl/Stacktrace.h>
@@ -29,8 +28,6 @@
 #include <esl/http/server/Request.h>
 #include <esl/http/server/RequestContext.h>
 #include <esl/utility/String.h>
-
-#include <esl/http/server/handler/Interface.h>
 
 #include <set>
 #include <fstream>
@@ -53,45 +50,59 @@ Engine::Engine()
 { }
 
 bool Engine::run() {
-    runThreadId = std::this_thread::get_id();
-    if(listenerByPort.empty()) {
-    	logger.warn << "no listener defined.\n";
-    	return false;
-    }
+	runThreadId = std::this_thread::get_id();
+	if(listenerByPort.empty()) {
+		logger.warn << "no listener defined.\n";
+		return false;
+	}
 
-    std::vector<std::unique_ptr<esl::http::server::Socket>> sockets;
-    for(const auto& portListener : listenerByPort) {
-		std::unique_ptr<esl::http::server::Socket> socket(new esl::http::server::Socket(portListener.first, 4, requestHandlerFactory));
+	/* ********************************** *
+	 * initialize objects for all context *
+	 * ********************************** */
+	initializeContext();
+	for(auto& portListener : listenerByPort) {
+		for(auto& listener : portListener.second.listenerByDomain) {
+			listener.second->initializeContext();
+		}
+	}
+
+	/* **************************************************** *
+	 * create sockets for all ports and                     *
+	 * add certificates to socket if port is used for https *
+	 * **************************************************** */
+	std::vector<std::unique_ptr<esl::http::server::Socket>> sockets;
+	for(const auto& portListener : listenerByPort) {
+		std::unique_ptr<esl::http::server::Socket> socket(new esl::http::server::Socket(portListener.first, 4, createRequestHandler));
 		socket->setObject("", [this](const esl::http::server::RequestContext&){ return &this->engineObject; });
 
 		bool isHttps = (portListener.second.protocol == "https");
 
-	    if(isHttps) {
-		    for(const auto& aListener : portListener.second.listenerByDomain) {
-	    		auto certIter = certsByHostname.find(aListener.first);
-	    		if(certIter == std::end(certsByHostname)) {
-	    	        throw std::runtime_error("No certificate available for hostname '" + aListener.first + "'.");
-	    		}
-	    		socket->addTLSHost(aListener.first, certIter->second.first, certIter->second.second);
-		    }
-	    }
+		if(isHttps) {
+			for(const auto& aListener : portListener.second.listenerByDomain) {
+				auto certIter = certsByHostname.find(aListener.first);
+				if(certIter == std::end(certsByHostname)) {
+					throw std::runtime_error("No certificate available for hostname '" + aListener.first + "'.");
+				}
+				socket->addTLSHost(aListener.first, certIter->second.first, certIter->second.second);
+			}
+		}
 
-    	sockets.push_back(std::move(socket));
-    }
+		sockets.push_back(std::move(socket));
+	}
 
 	auto stopFunction = [this]() { stop(); };
-    esl::system::signalHandlerInstall(esl::system::SignalType::interrupt, stopFunction);
-    esl::system::signalHandlerInstall(esl::system::SignalType::terminate, stopFunction);
-    esl::system::signalHandlerInstall(esl::system::SignalType::pipe, stopFunction);
+	esl::system::signalHandlerInstall(esl::system::SignalType::interrupt, stopFunction);
+	esl::system::signalHandlerInstall(esl::system::SignalType::terminate, stopFunction);
+	esl::system::signalHandlerInstall(esl::system::SignalType::pipe, stopFunction);
 
 	for(auto& socket : sockets) {
 		socket->listen();
 	}
-    bool rc = messageTimer.run();
+	bool rc = messageTimer.run();
 
-    esl::system::signalHandlerRemove(esl::system::SignalType::pipe, stopFunction);
-    esl::system::signalHandlerRemove(esl::system::SignalType::terminate, stopFunction);
-    esl::system::signalHandlerRemove(esl::system::SignalType::interrupt, stopFunction);
+	esl::system::signalHandlerRemove(esl::system::SignalType::pipe, stopFunction);
+	esl::system::signalHandlerRemove(esl::system::SignalType::terminate, stopFunction);
+	esl::system::signalHandlerRemove(esl::system::SignalType::interrupt, stopFunction);
 
 	for(auto& socket : sockets) {
 		socket->release();
@@ -125,7 +136,7 @@ void Engine::addCertificate(const std::string& domain, const std::string& keyFil
     addTLSHost(domain, std::move(certificate), std::move(key));
 }
 
-Listener& Engine::addListener(URL url) {
+Listener& Engine::addListener(utility::URL url) {
 
 	uint16_t port = 80;
 	std::string scheme;
@@ -181,7 +192,17 @@ Listener& Engine::addListener(URL url) {
 	return *newListener;
 }
 
-std::unique_ptr<esl::http::server::RequestHandler> Engine::requestHandlerFactory(esl::http::server::RequestContext& requestContext) {
+esl::object::Interface::Object* Engine::getObject(const std::string& id) const {
+	esl::object::Interface::Object* object = BaseContext::getObject(id);
+
+	if(object == nullptr) {
+		logger.warn << "Lookup for object \"" << id << "\" in engine failed.\n";
+	}
+
+	return object;
+}
+
+std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Engine::createRequestHandler(esl::http::server::RequestContext& requestContext) {
 	EngineObject* engineObject = dynamic_cast<EngineObject*>(requestContext.getObject(""));
 	if(!engineObject) {
 		return nullptr;

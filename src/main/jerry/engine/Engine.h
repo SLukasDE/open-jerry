@@ -21,15 +21,14 @@
 
 #include <jerry/engine/BaseContext.h>
 #include <jerry/engine/Listener.h>
-#include <jerry/URL.h>
+#include <jerry/utility/URL.h>
 
 #include <esl/utility/MessageTimer.h>
 #include <esl/http/server/Socket.h>
-#include <esl/http/server/RequestHandler.h>
+#include <esl/http/server/requesthandler/Interface.h>
 #include <esl/http/server/RequestContext.h>
-#include <esl/http/server/RequestHandler.h>
-#include <esl/Object.h>
-#include <esl/object/parameter/Interface.h>
+//#include <esl/Object.h>
+#include <esl/object/Interface.h>
 
 #include <string>
 #include <vector>
@@ -59,16 +58,17 @@ public:
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key);
 	void addCertificate(const std::string& domain, const std::string& keyFile, const std::string& certificateFile);
 
-	Listener& addListener(URL url);
+	Listener& addListener(utility::URL url);
 
+	esl::object::Interface::Object* getObject(const std::string& id) const override;
 
 private:
-	class EngineObject : public esl::object::parameter::Interface::Object {
+	class EngineObject : public esl::object::Interface::Object {
 	public:
 		EngineObject(Engine& aEngine)
 		: engine(aEngine) { }
 
-		void setParameter(const std::string& key, const std::string& value) override { }
+		//void addSetting(const std::string& key, const std::string& value) override { }
 		Engine& getEngine() const { return engine; }
 
 	private:
@@ -92,7 +92,7 @@ private:
 
 	std::map<uint16_t, PortListener> listenerByPort;
 
-	static std::unique_ptr<esl::http::server::RequestHandler> requestHandlerFactory(esl::http::server::RequestContext& requestContext);
+	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext);
 	Listener* getListener(esl::http::server::RequestContext& requestContext) const;
 };
 

@@ -16,12 +16,13 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_URL_H_
-#define JERRY_URL_H_
+#ifndef JERRY_UTILITY_URL_H_
+#define JERRY_UTILITY_URL_H_
 
-#include <iostream>
+#include <string>
 
 namespace jerry {
+namespace utility {
 
 class URL {
 public:
@@ -59,6 +60,7 @@ private:
 	std::string tag;
 };
 
+} /* namespace utility */
 } /* namespace jerry */
 
-#endif /* JERRY_URL_H_ */
+#endif /* JERRY_UTILITY_URL_H_ */

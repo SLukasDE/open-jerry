@@ -16,24 +16,39 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_LOGGER_H_
-#define JERRY_CONFIG_LOGGER_H_
+#ifndef JERRY_BUILDIN_BASICAUTH_SETTINGS_H_
+#define JERRY_BUILDIN_BASICAUTH_SETTINGS_H_
 
-#include <jerry/config/LevelSetting.h>
-#include <jerry/config/Setting.h>
+#include <jerry/buildin/Settings.h>
 #include <string>
-#include <vector>
 
 namespace jerry {
-namespace config {
+namespace buildin {
+namespace basicauth {
 
-struct Logger {
-	std::string layout;
-	std::vector<LevelSetting> levelSettings;
-	std::vector<Setting> layoutSettings;
+class Settings : public buildin::Settings {
+public:
+	static std::unique_ptr<esl::object::Interface::Object> create();
+
+	void addSetting(const std::string& key, const std::string& value) override;
+
+	void setUsername(std::string username);
+	const std::string& getUsername() const;
+
+	void setPassword(std::string password);
+	const std::string& getPassword() const;
+
+	void setRealmId(std::string realmId);
+	const std::string& getRealmId() const;
+
+private:
+	std::string username;
+	std::string password;
+	std::string realmId;
 };
 
-} /* namespace config */
+} /* namespace basicauth */
+} /* namespace buildin */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_LOGGER_H_ */
+#endif /* JERRY_BUILDIN_BASICAUTH_SETTINGS_H_ */

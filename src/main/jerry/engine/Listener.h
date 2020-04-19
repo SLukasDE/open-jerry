@@ -21,7 +21,7 @@
 
 #include <jerry/engine/Endpoint.h>
 #include <esl/http/server/RequestContext.h>
-#include <esl/http/server/RequestHandler.h>
+#include <esl/http/server/requesthandler/Interface.h>
 #include <cstdint>
 #include <string>
 #include <map>
@@ -38,17 +38,16 @@ friend class Endpoint;
 public:
 	Listener(Engine& engine);
 
-	esl::object::parameter::Interface::Object* getObjectWithEngine(const std::string& id) const override;
+	esl::object::Interface::Object* getHiddenObject(const std::string& id) const override;
 
-	std::unique_ptr<esl::http::server::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext);
-
-protected:
-	std::vector<std::string> getEndpointPathList() const override;
-	std::unique_ptr<esl::http::server::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext, const std::string& path, const Endpoint& endpoint) const override;
+	std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext);
 
 private:
 	struct EndpointEntry {
-		std::size_t depth = 0;
+		EndpointEntry() = default;
+		EndpointEntry(const Endpoint* endpoint);
+
+		//std::size_t depth = 0;
 		const Endpoint* endpoint = nullptr;
 		std::map<std::string, std::unique_ptr<EndpointEntry>> entries;
 	};
@@ -57,8 +56,7 @@ private:
 
 	EndpointEntry rootEndpointEntry;
 
-	const EndpointEntry& getEndpointEntry(const std::vector<std::string>& pathList) const;
-	void registerEndpoint(const Endpoint& endpoint, const std::vector<std::string>& fullPathList);
+	void registerEndpoint(const Endpoint& endpoint);
 };
 
 } /* namespace engine */

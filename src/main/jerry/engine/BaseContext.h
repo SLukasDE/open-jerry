@@ -19,7 +19,8 @@
 #ifndef JERRY_ENGINE_BASECONTEXT_H_
 #define JERRY_ENGINE_BASECONTEXT_H_
 
-#include <esl/object/parameter/Interface.h>
+#include <esl/http/server/ObjectContext.h>
+#include <esl/object/Interface.h>
 #include <string>
 #include <map>
 #include <vector>
@@ -28,17 +29,19 @@
 namespace jerry {
 namespace engine {
 
-class BaseContext {
+class BaseContext : public esl::http::server::ObjectContext {
 public:
 	virtual ~BaseContext() = default;
 
-	virtual esl::object::parameter::Interface::Object& addObject(const std::string& id, const std::string& implementation);
-	virtual esl::object::parameter::Interface::Object* getObject(const std::string& id) const;
+	virtual esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation);
+	esl::object::Interface::Object* getObject(const std::string& id) const override;
+
+	virtual void initializeContext();
 
 protected:
 
 private:
-	std::map<std::string, std::unique_ptr<esl::object::parameter::Interface::Object>> localObjectsById;
+	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> localObjectsById;
 };
 
 } /* namespace engine */

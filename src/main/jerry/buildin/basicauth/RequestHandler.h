@@ -16,38 +16,30 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_HTTP_REQUESTCONTEXT_H_
-#define JERRY_HTTP_REQUESTCONTEXT_H_
+#ifndef JERRY_BUILDIN_BASICAUTH_REQUESTHANDLER_H_
+#define JERRY_BUILDIN_BASICAUTH_REQUESTHANDLER_H_
 
-#include <jerry/engine/Context.h>
+#include <esl/http/server/requesthandler/Interface.h>
 #include <esl/http/server/RequestContext.h>
-#include <esl/http/server/Connection.h>
 #include <esl/http/server/Request.h>
-#include <esl/object/parameter/Interface.h>
-#include <esl/Object.h>
-#include <map>
 #include <string>
 
 namespace jerry {
-namespace http {
+namespace buildin {
+namespace basicauth {
 
-class RequestContext : public esl::http::server::RequestContext {
+class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
 public:
-	RequestContext(esl::http::server::RequestContext& baseRequestContext, std::string path, const engine::Context& engineContext);
+	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
 
-	esl::http::server::Connection& getConnection() const override;
-	const esl::http::server::Request& getRequest() const override;
-	const std::string& getPath() const override;
+	RequestHandler(esl::http::server::RequestContext& requestContext, const std::string& realmId);
+	//~RequestHandler() = default;
 
-	esl::Object* getObject(const std::string& id) const override;
-
-private:
-	esl::http::server::RequestContext& baseRequestContext;
-	std::string path;
-	const engine::Context& engineContext;
+	//bool process(const char* contentData, std::size_t contentDataSize) override;
 };
 
-} /* namespace http */
+} /* namespace basicauth */
+} /* namespace buildin */
 } /* namespace jerry */
 
-#endif /* JERRY_HTTP_REQUESTCONTEXT_H_ */
+#endif /* JERRY_BUILDIN_BASICAUTH_REQUESTHANDLER_H_ */

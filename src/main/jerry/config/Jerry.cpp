@@ -19,7 +19,8 @@
 #include <jerry/config/Jerry.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
-#include <jerry/URL.h>
+#include <jerry/utility/URL.h>
+#include <esl/object/Settings.h>
 #include <esl/Module.h>
 #include <esl/Stacktrace.h>
 #include <tinyxml2/tinyxml2.h>
@@ -180,8 +181,8 @@ std::string parseInclude(Jerry& jerry, const tinyxml2::XMLElement& element) {
 	return fileName;
 }
 
-Parameter parseParameter(const tinyxml2::XMLElement& element) {
-	Parameter parameter;
+Setting parseParameter(const tinyxml2::XMLElement& element) {
+	Setting setting;
 	bool hasKey = false;
 	bool hasValue = false;
 
@@ -192,11 +193,11 @@ Parameter parseParameter(const tinyxml2::XMLElement& element) {
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "key") {
 			hasKey = true;
-			parameter.key = attribute->Value();
+			setting.key = attribute->Value();
 		}
 		else if(std::string(attribute->Name()) == "value") {
 			hasValue = true;
-			parameter.value = attribute->Value();
+			setting.value = attribute->Value();
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
@@ -209,7 +210,7 @@ Parameter parseParameter(const tinyxml2::XMLElement& element) {
 	if(hasValue == false) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"value\" at line ") + std::to_string(element.GetLineNum())));
 	}
-	return parameter;
+	return setting;
 }
 
 LevelSetting parseLoggerSetting(const tinyxml2::XMLElement& element) {
@@ -336,7 +337,7 @@ Object parseObject(const tinyxml2::XMLElement& element) {
 		std::string innerElementName(innerElement->Name());
 
 		if(innerElementName == "parameter") {
-			object.parameters.push_back(parseParameter(*innerElement));
+			object.settings.push_back(parseParameter(*innerElement));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
@@ -377,9 +378,12 @@ Reference parseReference(const tinyxml2::XMLElement& element) {
 	return reference;
 }
 
-std::string parseRequesthandler(const tinyxml2::XMLElement& element) {
-	std::string implementation;
+RequestHandler parseRequesthandler(const tinyxml2::XMLElement& element) {
+	RequestHandler requestHandler;
 	bool hasImplementation = false;
+
+	bool hasObjectImplementation = false;
+	bool hasRefId = false;
 
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
@@ -388,17 +392,51 @@ std::string parseRequesthandler(const tinyxml2::XMLElement& element) {
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "implementation") {
 			hasImplementation = true;
-			implementation = attribute->Value();
+			requestHandler.implementation = attribute->Value();
+		}
+		else if(std::string(attribute->Name()) == "object-implementation") {
+			hasObjectImplementation = true;
+			requestHandler.objectImplementation = attribute->Value();
+		}
+		else if(std::string(attribute->Name()) == "ref-id") {
+			hasRefId = true;
+			requestHandler.refId = attribute->Value();
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
 		}
 	}
 
+	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
+		const tinyxml2::XMLElement* innerElement = node->ToElement();
+
+		if(innerElement == nullptr) {
+			continue;
+		}
+
+		if(innerElement->Name() == nullptr) {
+			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
+		}
+
+		std::string innerElementName(innerElement->Name());
+
+		if(innerElementName == "parameter") {
+			requestHandler.settings.push_back(parseParameter(*innerElement));
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
+		}
+	}
+
 	if(hasImplementation == false) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"implementation\" at line ") + std::to_string(element.GetLineNum())));
 	}
-	return implementation;
+	if(hasRefId == true && (hasObjectImplementation == true || requestHandler.settings.size() > 0)) {
+		throw esl::addStacktrace(std::runtime_error(std::string("Invalid definition of request handler at line ") + std::to_string(element.GetLineNum())));
+	}
+
+
+	return requestHandler;
 }
 
 Listener parseListener(const tinyxml2::XMLElement& element, ListenerType listenerType) {
@@ -453,13 +491,16 @@ Listener parseListener(const tinyxml2::XMLElement& element, ListenerType listene
 			listener.references.push_back(parseReference(*innerElement));
 		}
 		else if(innerElementName == "endpoint") {
-			listener.contextEndpoints.push_back(parseListener(*innerElement, ListenerType::endpoint));
+			std::unique_ptr<Listener> endpoint(new Listener(parseListener(*innerElement, ListenerType::endpoint)));
+			listener.entries.push_back(std::make_tuple(nullptr, std::move(endpoint)));
 		}
 		else if(innerElementName == "context") {
-			listener.contextEndpoints.push_back(parseListener(*innerElement, ListenerType::context));
+			std::unique_ptr<Listener> context(new Listener(parseListener(*innerElement, ListenerType::context)));
+			listener.entries.push_back(std::make_tuple(nullptr, std::move(context)));
 		}
 		else if(innerElementName == "requesthandler") {
-			listener.requesthandlers.push_back(parseRequesthandler(*innerElement));
+			std::unique_ptr<RequestHandler> requestHandler(new RequestHandler(parseRequesthandler(*innerElement)));
+			listener.entries.push_back(std::make_tuple(std::move(requestHandler), nullptr));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
@@ -548,46 +589,76 @@ std::string space(unsigned int i) {
 void printObjects(unsigned int spaces, const std::vector<Object>& objects) {
 	for(const auto& entry : objects) {
 		std::cout << space(spaces) << "<object id=\"" << entry.id << "\" implementation=\"" << entry.implementation << "\">\n";
-		for(const auto& entry2 : entry.parameters) {
+		for(const auto& entry2 : entry.settings) {
 			std::cout << space(spaces+2) << "<parameter key=\"" << entry2.key << "\" value=\"" << entry2.value << "\"/>\n";
 		}
 		std::cout << space(spaces) << "<object/>\n";
 	}
 }
 
-void printListeners(unsigned int spaces, const std::vector<Listener>& listeners) {
-	for(const auto& entry : listeners) {
-		switch(entry.listenerType) {
-		case ListenerType::listener:
-			std::cout << space(spaces) << "<listener url=\"" << entry.url << "\">\n";
-			break;
-		case ListenerType::endpoint:
-			std::cout << space(spaces) << "<endpoint path=\"" << entry.path << "\">\n";
-			break;
-		case ListenerType::context:
-			std::cout << space(spaces) << "<context>\n";
-			break;
+void printEntries(unsigned int spaces, const std::vector<std::tuple<std::unique_ptr<RequestHandler>, std::unique_ptr<Listener>>>& entries);
+
+void printListener(unsigned int spaces, const Listener& listener) {
+	switch(listener.listenerType) {
+	case ListenerType::listener:
+		std::cout << space(spaces) << "<listener url=\"" << listener.url << "\">\n";
+		break;
+	case ListenerType::endpoint:
+		std::cout << space(spaces) << "<endpoint path=\"" << listener.path << "\">\n";
+		break;
+	case ListenerType::context:
+		std::cout << space(spaces) << "<context>\n";
+		break;
+	default:
+		break;
+	}
+
+	printObjects(spaces+2, listener.objects);
+
+	for(const auto& entry2 : listener.references) {
+		std::cout << space(spaces+2) << "<reference id=\"" << entry2.id << "\" ref-id=\"" << entry2.refId << "\"/>\n";
+	}
+
+	printEntries(spaces+2, listener.entries);
+
+	switch(listener.listenerType) {
+	case ListenerType::listener:
+		std::cout << space(spaces) << "<listener/>\n";
+		break;
+	case ListenerType::endpoint:
+		std::cout << space(spaces) << "<endpoint/>\n";
+		break;
+	case ListenerType::context:
+		std::cout << space(spaces) << "<context/>\n";
+		break;
+	default:
+		break;
+	}
+}
+
+void printEntries(unsigned int spaces, const std::vector<std::tuple<std::unique_ptr<RequestHandler>, std::unique_ptr<Listener>>>& entries) {
+	for(const auto& entry : entries) {
+		if(std::get<0>(entry)) {
+
 		}
 
-		printObjects(spaces+2, entry.objects);
-
-		for(const auto& entry2 : entry.references) {
-			std::cout << space(spaces+2) << "<reference id=\"" << entry2.id << "\" ref-id=\"" << entry2.refId << "\"/>\n";
+		if(std::get<1>(entry)) {
+			printListener(spaces, *std::get<1>(entry));
 		}
+	}
+}
 
-		printListeners(spaces+2, entry.contextEndpoints);
+void addSettings(esl::object::Interface::Object& object, const std::string& implementation, const std::vector<Setting>& settings) {
+	if(settings.empty()) {
+		return;
+	}
 
-		switch(entry.listenerType) {
-		case ListenerType::listener:
-			std::cout << space(spaces) << "<listener/>\n";
-			break;
-		case ListenerType::endpoint:
-			std::cout << space(spaces) << "<endpoint/>\n";
-			break;
-		case ListenerType::context:
-			std::cout << space(spaces) << "<context/>\n";
-			break;
-		}
+	esl::object::Settings* settingsObject = dynamic_cast<esl::object::Settings*>(&object);
+	if(settingsObject == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Cannot add settings to simple object implementation \"" + implementation + "\""));
+	}
+	for(const auto& setting : settings) {
+		settingsObject->addSetting(setting.key, setting.value);
 	}
 }
 
@@ -608,7 +679,7 @@ void Jerry::loadLibraries() {
 			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" loaded already."));
 		}
 		eslLibrary.second = new esl::module::Library(eslLibrary.first);
-		esl::module::Module& aLibModule = eslLibrary.second->getModule();
+		esl::module::Module& aLibModule = eslLibrary.second->getModule("");
 		aEslModule.addModule(aLibModule);
 	}
 	for(auto& jerryLibrary : libraries) {
@@ -616,7 +687,7 @@ void Jerry::loadLibraries() {
 			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + jerryLibrary.first + "\" loaded already."));
 		}
 		jerryLibrary.second = new esl::module::Library(jerryLibrary.first);
-		esl::module::Module& aLibModule = jerryLibrary.second->getModule();
+		esl::module::Module& aLibModule = jerryLibrary.second->getModule("");
 		jerry::getModule().addModule(aLibModule);
 	}
 
@@ -626,7 +697,7 @@ void Jerry::loadLibraries() {
 		if(!eslLibrary.second) {
 			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" not loaded."));
 		}
-		esl::module::Module* aLibEslModule = eslLibrary.second->getModule().getModule("esl");
+		esl::module::Module* aLibEslModule = eslLibrary.second->getModulePointer("esl");
 		if(aLibEslModule) {
 			aLibEslModule->replaceModule(aEslModule);
 		}
@@ -636,7 +707,7 @@ void Jerry::loadLibraries() {
 		if(!jerryLibrary.second) {
 			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + jerryLibrary.first + "\" not loaded."));
 		}
-		esl::module::Module* aLibEslModule = jerryLibrary.second->getModule().getModule("esl");
+		esl::module::Module* aLibEslModule = jerryLibrary.second->getModulePointer("esl");
 		if(aLibEslModule) {
 			aLibEslModule->replaceModule(aEslModule);
 		}
@@ -647,7 +718,7 @@ std::unique_ptr<esl::logging::Layout> Jerry::getLayout() const {
 	std::unique_ptr<esl::logging::Layout> layout(new esl::logging::Layout(loggerConfig.layout));
 
 	for(auto const setting : loggerConfig.layoutSettings) {
-		layout->setParameter(setting.key, setting.value);
+		layout->addSetting(setting.key, setting.value);
 	}
 	for(auto const setting : loggerConfig.levelSettings) {
 		if(setting.level == "SILENT") {
@@ -682,14 +753,12 @@ void Jerry::setEngine(engine::Engine& engine) const {
 	}
 
 	for(const auto& configObject : objects) {
-		esl::object::parameter::Interface::Object& parameterObject = engine.addObject(configObject.id, configObject.implementation);
-		for(const auto& parameterConfig : configObject.parameters) {
-			parameterObject.setParameter(parameterConfig.key, parameterConfig.value);
-		}
+		esl::object::Interface::Object& object = engine.addObject(configObject.id, configObject.implementation);
+		addSettings(object, configObject.implementation, configObject.settings);
 	}
 
 	for(const auto& configListener : listeners) {
-		engine::Listener& engineListener = engine.addListener(URL(configListener.url));
+		engine::Listener& engineListener = engine.addListener(utility::URL(configListener.url));
 		setEngineListener(engineListener, configListener);
 	}
 }
@@ -719,53 +788,68 @@ void Jerry::print() {
 	std::cout << "  </logger/>\n";
 
 	printObjects(2, objects);
-	printListeners(2, listeners);
+	for(const Listener& listener : listeners) {
+		printListener(2, listener);
+	}
 
 	std::cout << "</jerry>\n";
 }
 
 void Jerry::setEngineContext(engine::Context& engineContext, const Listener& configListener) const {
 	for(const auto& object : configListener.objects) {
-		esl::object::parameter::Interface::Object& engineObject = engineContext.addObject(object.id, object.implementation);
-		for(const auto& parameter : object.parameters) {
-			engineObject.setParameter(parameter.key, parameter.value);
-		}
+		esl::object::Interface::Object& engineObject = engineContext.addObject(object.id, object.implementation);
+		addSettings(engineObject, object.implementation, object.settings);
 	}
 
 	for(const auto& reference : configListener.references) {
 		engineContext.addReference(reference.id, reference.refId);
 	}
 
-	for(const auto& configRequesthandler : configListener.requesthandlers) {
-		engineContext.addRequestHandler(configRequesthandler);
-	}
+	for(const auto& entry : configListener.entries) {
+		if(std::get<0>(entry)) {
+			if(std::get<0>(entry)->refId.size() > 0 || std::get<0>(entry)->objectImplementation.size() > 0 || std::get<0>(entry)->settings.size() > 0) {
+				engine::Context& newEngineContext = engineContext.addContext();
 
-	for(const auto& configContext : configListener.contextEndpoints) {
-		if(configContext.listenerType != ListenerType::context) {
-			continue;
+				if(std::get<0>(entry)->refId.size()) {
+					if(std::get<0>(entry)->objectImplementation.size() > 0 || std::get<0>(entry)->settings.size() > 0) {
+						throw esl::addStacktrace(std::runtime_error("definition of refId in requestHandler does not allow simultaneously definition of object-implementation or adding parameters"));
+					}
+					newEngineContext.addReference("", std::get<0>(entry)->refId);
+				}
+				else {
+					std::string objectImplementation;
+					if(std::get<0>(entry)->objectImplementation.size() > 0) {
+						objectImplementation = std::get<0>(entry)->objectImplementation;
+					}
+					else {
+						objectImplementation = std::get<0>(entry)->implementation;
+					}
+					esl::object::Interface::Object& engineObject = newEngineContext.addObject("", objectImplementation);
+					addSettings(engineObject, objectImplementation, std::get<0>(entry)->settings);
+				}
+
+				newEngineContext.addRequestHandler(std::get<0>(entry)->implementation);
+			}
+			else {
+				engineContext.addRequestHandler(std::get<0>(entry)->implementation);
+			}
 		}
 
-		engine::Context& newEngineContext = engineContext.addContext();
-		setEngineContext(newEngineContext, configContext);
-	}
-
-}
-
-void Jerry::setEngineEndpoint(engine::Endpoint& engineEndpoint, const Listener& configListener) const {
-	setEngineContext(engineEndpoint, configListener);
-
-	for(const auto& configEndpoint : configListener.contextEndpoints) {
-		if(configEndpoint.listenerType != ListenerType::endpoint) {
-			continue;
+		if(std::get<1>(entry)) {
+			if(std::get<1>(entry)->listenerType == ListenerType::context) {
+				engine::Context& newEngineContext = engineContext.addContext();
+				setEngineContext(newEngineContext, *std::get<1>(entry));
+			}
+			if(std::get<1>(entry)->listenerType == ListenerType::endpoint) {
+				engine::Endpoint& newEngineEndpoint = engineContext.addEndpoint(std::get<1>(entry)->path);
+				setEngineContext(newEngineEndpoint, *std::get<1>(entry));
+			}
 		}
-
-		engine::Endpoint& newEngineEndpoint = engineEndpoint.addEndpoint(configEndpoint.path);
-		setEngineEndpoint(newEngineEndpoint, configEndpoint);
 	}
 }
 
 void Jerry::setEngineListener(engine::Listener& engineListener, const Listener& configListener) const {
-	setEngineEndpoint(engineListener, configListener);
+	setEngineContext(engineListener, configListener);
 }
 
 

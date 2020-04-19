@@ -20,6 +20,8 @@
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 
+#include <esl/http/server/InitializeContext.h>
+
 namespace jerry {
 namespace engine {
 
@@ -27,22 +29,26 @@ namespace {
 Logger logger("jerry::engine::BaseContext");
 } /* anonymous namespace */
 
-esl::object::parameter::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation) {
-	logger.trace << "Adding object with id=\"" + id + "\" and implementation=\"" + implementation + "\"\n";
+esl::object::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation) {
+	logger.trace << "Adding object with id=\"" << id << "\" and implementation=\"" << implementation << "\"\n";
 
-	std::unique_ptr<esl::object::parameter::Interface::Object> object = jerry::getModule().getInterface<esl::object::parameter::Interface>(implementation).createObject();
-	if(!object) {
-        throw std::runtime_error("Cannot create an object with id '" + id + "' for unknown implementation '" + implementation + "'.");
+	if(localObjectsById.find(id) != std::end(localObjectsById)) {
+        throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because there exists already a local object with same id.");
 	}
 
-	esl::object::parameter::Interface::Object* objectPtr = object.get();
+	std::unique_ptr<esl::object::Interface::Object> object = jerry::getModule().getInterface<esl::object::Interface>(implementation).createObject();
+	if(!object) {
+		throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because interface method createObject() returns nullptr.");
+	}
+
+	esl::object::Interface::Object* objectPtr = object.get();
 	localObjectsById[id] = std::move(object);
 
 	return *objectPtr;
 }
 
-esl::object::parameter::Interface::Object* BaseContext::getObject(const std::string& id) const {
-	logger.trace << "Lookup object with id=\"" + id + "\"\n";
+esl::object::Interface::Object* BaseContext::getObject(const std::string& id) const {
+	logger.trace << "Lookup object with id=\"" << id << "\"\n";
 
 	auto localObjectsByIdIter = localObjectsById.find(id);
 	if(localObjectsByIdIter == std::end(localObjectsById)) {
@@ -52,6 +58,15 @@ esl::object::parameter::Interface::Object* BaseContext::getObject(const std::str
 
 	logger.trace << "Object found in BaseContext\n";
     return localObjectsByIdIter->second.get();
+}
+
+void BaseContext::initializeContext() {
+	for(auto& localObject : localObjectsById) {
+		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(localObject.second.get());
+		if(initializeContext) {
+			initializeContext->initializeContext(*this);
+		}
+	}
 }
 
 } /* namespace engine */

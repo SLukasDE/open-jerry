@@ -21,9 +21,12 @@
 
 #include <jerry/config/ListenerType.h>
 #include <jerry/config/Reference.h>
+#include <jerry/config/RequestHandler.h>
 #include <jerry/config/Object.h>
 #include <string>
 #include <vector>
+#include <tuple>
+#include <memory>
 
 namespace jerry {
 namespace config {
@@ -35,8 +38,10 @@ struct Listener {
 
 	std::vector<Object> objects;
 	std::vector<Reference> references; // only if it is an Endpoint or a Context
-	std::vector<std::string> requesthandlers;
-	std::vector<Listener> contextEndpoints;
+	//std::vector<std::string> requesthandlers;
+	//std::vector<RequestHandler> requestHandlers;
+	//std::vector<Listener> contextEndpoints;
+	std::vector<std::tuple<std::unique_ptr<RequestHandler>, std::unique_ptr<Listener>>> entries;
 };
 
 } /* namespace config */

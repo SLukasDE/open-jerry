@@ -16,17 +16,25 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/http/RequestContext.h>
+#include <jerry/engine/RequestContext.h>
+#include <jerry/engine/Context.h>
 
 namespace jerry {
-namespace http {
+namespace engine {
 
-RequestContext::RequestContext(esl::http::server::RequestContext& aBaseRequestContext, std::string aPath, const engine::Context& aEngineContext)
+RequestContext::RequestContext(esl::http::server::RequestContext& aBaseRequestContext, const Context& aEngineContext)
 : esl::http::server::RequestContext(),
   baseRequestContext(aBaseRequestContext),
-  path(std::move(aPath)),
-  engineContext(aEngineContext)
+  engineContext(std::cref(aEngineContext))
 {
+}
+
+void RequestContext::setPath(std::string aPath) {
+	path = std::move(aPath);
+}
+
+void RequestContext::setEngineContext(const Context& aEngineContext) {
+	  engineContext = std::ref(aEngineContext);
 }
 
 esl::http::server::Connection& RequestContext::getConnection() const {
@@ -41,13 +49,13 @@ const std::string& RequestContext::getPath() const {
 	return path;
 }
 
-esl::Object* RequestContext::getObject(const std::string& id) const {
-	esl::Object* object = engineContext.getObject(id);
+esl::object::Interface::Object* RequestContext::getObject(const std::string& id) const {
+	esl::object::Interface::Object* object = engineContext.get().getObject(id);
 	if(object == nullptr) {
 		object = baseRequestContext.getObject(id);
 	}
 	return object;
 }
 
-} /* namespace http */
+} /* namespace engine */
 } /* namespace jerry */

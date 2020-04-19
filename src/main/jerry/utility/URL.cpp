@@ -16,10 +16,11 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/URL.h>
+#include <jerry/utility/URL.h>
 #include <memory>
 
 namespace jerry {
+namespace utility {
 
 URL::URL(const std::string& aURL)  {
 	const char *str = aURL.c_str();
@@ -212,4 +213,5 @@ URL::NextFragment URL::parseTag(size_t& pos, const char* str, const size_t len) 
 	return NextFragment::EMPTY;
 }
 
+} /* namespace utility */
 } /* namespace jerry */
