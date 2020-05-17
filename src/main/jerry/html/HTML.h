@@ -16,28 +16,23 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
-
-#include <tinyxml2/tinyxml2.h>
+#ifndef JERRY_HTML_HTML_H_
+#define JERRY_HTML_HTML_H_
 
 #include <string>
-#include <ostream>
 
 namespace jerry {
-namespace config {
+namespace html {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+std::string toHTML(const std::string& str);
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+class HTML {
+public:
+	HTML();
+	virtual ~HTML();
 };
 
-} /* namespace config */
+} /* namespace html */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_HTML_HTML_H_ */

@@ -17,12 +17,16 @@
  */
 
 #include <jerry/buildin/filebrowser/RequestHandler.h>
+#include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
+
+#include <eslx/utility/Directory.h>
+
 #include <esl/http/server/Connection.h>
 #include <esl/http/server/ResponseDynamic.h>
+#include <esl/http/server/ResponseFile.h>
 #include <esl/http/server/ResponseStatic.h>
-#include <esl/utility/Directory.h>
-#include <esl/utility/MIME.h>
+#include <esl/http/server/exception/StatusCode.h>
 #include <esl/logging/Logger.h>
 #include <esl/Stacktrace.h>
 #include <esl/logging/Level.h>
@@ -31,7 +35,8 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <iostream>
+#include <set>
+//#include <iostream>
 
 namespace jerry {
 namespace buildin {
@@ -51,26 +56,6 @@ const std::string PAGE_301(
 		"<h1>301</h1>\n"
 		"</body>\n"
 		"</html>\n");
-const std::string PAGE_404(
-		"<!DOCTYPE html>\n"
-		"<html>\n"
-		"<head>\n"
-		"<title>404</title>\n"
-		"</head>\n"
-		"<body>\n"
-		"<h1>404</h1>\n"
-		"</body>\n"
-		"</html>\n");
-const std::string PAGE_500(
-		"<!DOCTYPE html>\n"
-		"<html>\n"
-		"<head>\n"
-		"<title>500</title>\n"
-		"</head>\n"
-		"<body>\n"
-		"<h1>500</h1>\n"
-		"</body>\n"
-		"</html>\n");
 }
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create(esl::http::server::RequestContext& requestContext) {
@@ -83,29 +68,29 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Re
 	}
 
 	std::string path = settings->getPath() + requestContext.getPath();
-	esl::utility::Directory directory(path);
+	eslx::utility::Directory directory(path);
 	bool isDirectory;
 
 	try {
 		isDirectory = directory.getEntry().isDirectory;
 	}
 	catch(...) {
-		return nullptr;
+		throw esl::http::server::exception::StatusCode(404);
 	}
 
 	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(requestContext, *settings, isDirectory));
 }
 
-RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool aIsDirectory)
+RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool isDirectory)
 : esl::http::server::requesthandler::Interface::RequestHandler(),
   requestContext(aRequestContext),
-  settings(aSettings),
-  isDirectory(aIsDirectory)
+  settings(aSettings)
 {
 	std::string path = settings.getPath() + requestContext.getPath();
+	std::vector<eslx::utility::Directory::Entry> entries;
 
     if(isDirectory) {
-    	esl::utility::Directory directory(path);
+    	eslx::utility::Directory directory(path);
 
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
@@ -117,27 +102,50 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
     		//return false;
     		return;
     	}
-		std::vector<esl::utility::Directory::Entry> entries = directory.scan(false);
 
-		outputContent.clear();
-		outputContent += "<html><head><title>Directory of " + requestContext.getPath() + "</title></head><body><h2>Directory of " + requestContext.getPath() + "</h2><br/>";
-		outputContent += "<a href=\"..\">..</a><br/>\n";
+		entries = directory.scan(false);
+
+		const std::set<std::string>& defaults = settings.getDefaults();
 		for(const auto& entry : entries) {
-			if(entry.isDirectory) {
-				outputContent += "<a href=\"" + entry.name + "/\">" + entry.name + "/</a><br/>\n";
-			}
-			else {
-				outputContent += "<a href=\"" + entry.name + "\">" + entry.name + "</a><br/>\n";
+			if(defaults.find(entry.name) != defaults.end()) {
+				path += "/" + entry.name;
+				isDirectory = false;
+				break;
 			}
 		}
-		outputContent += "</body></html>";
+    }
 
-		std::unique_ptr<esl::http::server::ResponseDynamic> response;
-		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
-		response.reset(new esl::http::server::ResponseDynamic(200, "text/html", lambda ));
-		requestContext.getConnection().sendResponse(std::move(response));
+    if(isDirectory) {
+    	if(settings.isBrowsable()) {
+    		outputContent.clear();
+    		outputContent += "<html><head><title>Directory of " + requestContext.getPath() + "</title></head><body><h2>Directory of " + requestContext.getPath() + "</h2><br/>";
+    		outputContent += "<a href=\"..\">..</a><br/>\n";
+
+    		for(const auto& entry : entries) {
+    			if(entry.isDirectory) {
+    				outputContent += "<a href=\"" + entry.name + "/\">" + entry.name + "/</a><br/>\n";
+    			}
+    			else {
+    				outputContent += "<a href=\"" + entry.name + "\">" + entry.name + "</a><br/>\n";
+    			}
+    		}
+    		outputContent += "</body></html>";
+
+    		std::unique_ptr<esl::http::server::ResponseDynamic> response;
+    		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
+    		response.reset(new esl::http::server::ResponseDynamic(200, "text/html", lambda ));
+    		requestContext.getConnection().sendResponse(std::move(response));
+    	}
+    	else {
+    		throw esl::http::server::exception::StatusCode(403);
+    	}
 	}
     else {
+    	utility::MIME mime = utility::MIME::byFilename(path);
+		std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime.getContentType(), std::move(path)));
+		requestContext.getConnection().sendResponse(std::move(response));
+
+#if 0
         std::ifstream fileStream(path, std::ios::binary);
         if(! fileStream.good()) {
         	throw esl::addStacktrace(std::runtime_error("cannot open file"));
@@ -150,8 +158,9 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
 
 		std::unique_ptr<esl::http::server::ResponseDynamic> response;
 		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
-		response.reset(new esl::http::server::ResponseDynamic(settings.getHttpStatus(), esl::utility::MIME::byFilename(requestContext.getPath()).getContentType(), lambda ));
+		response.reset(new esl::http::server::ResponseDynamic(settings.getHttpStatus(), utility::MIME::byFilename(path).getContentType(), lambda ));
 		requestContext.getConnection().sendResponse(std::move(response));
+#endif
     }
 }
 

@@ -39,7 +39,6 @@ private:
 	esl::http::server::RequestContext& requestContext;
 	const Settings& settings;
 
-	bool isDirectory;
 	std::string outputContent;
 	std::size_t outputPos = 0;
 

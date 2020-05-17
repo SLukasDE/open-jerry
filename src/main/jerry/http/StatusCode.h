@@ -16,28 +16,23 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
-
-#include <tinyxml2/tinyxml2.h>
+#ifndef JERRY_HTTP_STATUSCODE_H_
+#define JERRY_HTTP_STATUSCODE_H_
 
 #include <string>
-#include <ostream>
 
 namespace jerry {
-namespace config {
+namespace http {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+class StatusCode {
+public:
+	static std::string getMessage(short int statusCode);
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	StatusCode();
+	virtual ~StatusCode();
 };
 
-} /* namespace config */
+} /* namespace http */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_HTTP_STATUSCODE_H_ */

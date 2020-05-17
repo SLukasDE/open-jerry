@@ -23,7 +23,9 @@
 #include <esl/http/server/RequestContext.h>
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
+#include <functional>
 
 namespace jerry {
 namespace engine {
@@ -33,6 +35,12 @@ class Listener;
 class Endpoint : public Context {
 friend class Context;
 public:
+	enum OptionalBool {
+		obEmpty,
+		obTrue,
+		obFalse
+	};
+
 	const std::vector<std::string>& getPathList() const;
 	std::vector<std::string> getFullPathList() const;
 	std::size_t getDepth() const;
@@ -41,6 +49,18 @@ public:
 
 	void setShowException(bool showException);
 	bool getShowException() const;
+
+	void setShowStacktrace(bool showStacktrace);
+	bool getShowStacktrace() const;
+
+	void setInheritErrorDocuments(bool inheritErrorDocuments);
+	bool getInheritErrorDocuments() const;
+
+	void addErrorDocument(unsigned short statusCode, const std::string& path, bool parse);
+	const std::pair<std::string, bool>* findErrorDocument(unsigned short statusCode) const;
+
+	void addHeader(std::string key, std::string value);
+	const std::map<std::string, std::string>& getHeaders() const;
 
 protected:
 	Endpoint(Listener& listener, const Endpoint& parentEndpoint, const Context& parentContext, std::vector<std::string> pathList);
@@ -53,7 +73,14 @@ private:
 	std::vector<std::string> pathList;
 	std::size_t depth = 0;
 
-	bool showException = false;
+	OptionalBool showException = obEmpty;
+	OptionalBool showStacktrace = obEmpty;
+	bool inheritErrorDocuments = true;
+
+	/* maps Status Code to Error-Doc-Path and Flag, if content has to be parsed */
+	std::map<unsigned short, std::pair<std::string, bool>> errorDocuments;
+
+	std::map<std::string, std::string> headers;
 };
 
 } /* namespace engine */

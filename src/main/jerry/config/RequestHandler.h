@@ -20,16 +20,25 @@
 #define JERRY_CONFIG_REQUESTHANDLER_H_
 
 #include <jerry/config/Setting.h>
+
+#include <tinyxml2/tinyxml2.h>
+
 #include <string>
 #include <vector>
+#include <memory>
+#include <ostream>
 
 namespace jerry {
 namespace config {
 
 struct RequestHandler {
+	RequestHandler(const tinyxml2::XMLElement& element);
+
+	void save(std::ostream& oStream, std::size_t spaces) const;
+
 	std::string implementation;
-	std::string refId;
-	std::string objectImplementation;
+	std::unique_ptr<std::string> refId;
+	std::unique_ptr<std::string> objectImplementation;
 	std::vector<Setting> settings;
 };
 

@@ -20,10 +20,12 @@
 #define JERRY_ENGINE_REQUESTHANDLER_H_
 
 #include <jerry/engine/RequestContext.h>
+
 #include <esl/http/server/requesthandler/Interface.h>
 #include <esl/http/server/RequestContext.h>
 //#include <esl/object/parameter/Interface.h>
 #include <esl/Stacktrace.h>
+
 #include <string>
 #include <map>
 #include <memory>
@@ -66,8 +68,7 @@ private:
 
 	int getData(char* buffer, std::size_t count);
 
-	void sendExceptionPage(std::string exceptionMsg, std::unique_ptr<esl::Stacktrace> stacktrace);
-
+	bool callWithExceptionHandler(std::function<bool()> callFunction);
 };
 
 } /* namespace engine */

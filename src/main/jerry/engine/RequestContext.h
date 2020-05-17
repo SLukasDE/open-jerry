@@ -19,10 +19,13 @@
 #ifndef JERRY_ENGINE_REQUESTCONTEXT_H_
 #define JERRY_ENGINE_REQUESTCONTEXT_H_
 
+#include <jerry/engine/Connection.h>
+
 #include <esl/http/server/RequestContext.h>
 #include <esl/http/server/Connection.h>
 #include <esl/http/server/Request.h>
 #include <esl/object/Interface.h>
+
 #include <map>
 #include <string>
 #include <functional>
@@ -37,7 +40,9 @@ public:
 	RequestContext(esl::http::server::RequestContext& baseRequestContext, const Context& engineContext);
 
 	void setPath(std::string path);
+
 	void setEngineContext(const Context& engineContext);
+	const Context& getEngineContext() const;
 
 	esl::http::server::Connection& getConnection() const override;
 	const esl::http::server::Request& getRequest() const override;
@@ -47,8 +52,9 @@ public:
 
 private:
 	esl::http::server::RequestContext& baseRequestContext;
-	std::string path;
+	mutable Connection connection;
 	std::reference_wrapper<const Context> engineContext;
+	std::string path;
 };
 
 } /* namespace engine */

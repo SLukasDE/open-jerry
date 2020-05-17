@@ -16,28 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
+#ifndef JERRY_CONFIG_LOGGERCONFIG_H_
+#define JERRY_CONFIG_LOGGERCONFIG_H_
+
+#include <jerry/config/LevelSetting.h>
+#include <jerry/config/Setting.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
+#include <vector>
 #include <ostream>
 
 namespace jerry {
 namespace config {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+struct LoggerConfig {
+	LoggerConfig() = default;
+	LoggerConfig(const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	std::string layout;
+
+	std::vector<LevelSetting> levelSettings;
+	std::vector<Setting> layoutSettings;
 };
 
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_CONFIG_LOGGERCONFIG_H_ */

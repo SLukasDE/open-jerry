@@ -20,13 +20,21 @@
 #define JERRY_CONFIG_OBJECT_H_
 
 #include <jerry/config/Setting.h>
+
+#include <tinyxml2/tinyxml2.h>
+
 #include <string>
 #include <vector>
+#include <ostream>
 
 namespace jerry {
 namespace config {
 
 struct Object {
+	Object(const tinyxml2::XMLElement& element);
+
+	void save(std::ostream& oStream, std::size_t spaces) const;
+
 	std::string id;
 	std::string implementation;
 	std::vector<Setting> settings;

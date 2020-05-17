@@ -16,20 +16,28 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_LISTENERTYPE_H_
-#define JERRY_CONFIG_LISTENERTYPE_H_
+#ifndef JERRY_BUILDIN_PAGE_REQUESTHANDLER_H_
+#define JERRY_BUILDIN_PAGE_REQUESTHANDLER_H_
+
+#include <jerry/buildin/page/Settings.h>
+#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/http/server/RequestContext.h>
+#include <esl/http/server/Request.h>
+#include <string>
 
 namespace jerry {
-namespace config {
+namespace buildin {
+namespace page {
 
-enum class ListenerType {
-	listener,
-	endpoint,
-	context,
-	requestHandler
+class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
+public:
+	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
+
+	RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings);
 };
 
-} /* namespace config */
+} /* namespace page */
+} /* namespace buildin */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_LISTENERTYPE_H_ */
+#endif /* JERRY_BUILDIN_PAGE_REQUESTHANDLER_H_ */

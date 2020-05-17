@@ -35,8 +35,6 @@
 #include <stdexcept>
 #include <algorithm>
 
-#include <iostream>
-
 namespace jerry {
 namespace engine {
 
@@ -59,10 +57,14 @@ bool Engine::run() {
 	/* ********************************** *
 	 * initialize objects for all context *
 	 * ********************************** */
+	logger.info << "Initialize context of global objects...\n";
 	initializeContext();
+	logger.info << "Initialization of global objects done.\n";
 	for(auto& portListener : listenerByPort) {
 		for(auto& listener : portListener.second.listenerByDomain) {
+			logger.info << "Initialize context of objects for listener \"" << portListener.second.protocol << "://" << listener.first << ":" << portListener.first << "\" ...\n";
 			listener.second->initializeContext();
+			logger.info << "Initialization of objects for listener \"" << portListener.second.protocol << "://" << listener.first << ":" << portListener.first << "\" done.\n";
 		}
 	}
 
@@ -109,6 +111,10 @@ bool Engine::run() {
 	}
 
 	return rc;
+}
+
+bool Engine::runCGI() {
+	return true;
 }
 
 void Engine::stop() {
@@ -203,8 +209,12 @@ esl::object::Interface::Object* Engine::getObject(const std::string& id) const {
 }
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Engine::createRequestHandler(esl::http::server::RequestContext& requestContext) {
+	/* Access log */
+	logger.info << "Request " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getClientAddress() << "\n";
+
 	EngineObject* engineObject = dynamic_cast<EngineObject*>(requestContext.getObject(""));
 	if(!engineObject) {
+		logger.error << "Engine object not found\n";
 		return nullptr;
 	}
 
@@ -213,6 +223,8 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> En
 	Listener* listener = engine.getListener(requestContext);
 
 	if(listener == nullptr) {
+		/* Error log */
+		logger.info << "ERROR: No listener available for invalid request \"" << requestContext.getRequest().getPath() << "\"\n";
 		return nullptr;
 	}
 	return listener->createRequestHandler(requestContext);

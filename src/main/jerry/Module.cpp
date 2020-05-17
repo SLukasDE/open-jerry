@@ -17,10 +17,12 @@
  */
 
 #include <jerry/Module.h>
-#include <jerry/buildin/filebrowser/RequestHandler.h>
-#include <jerry/buildin/filebrowser/Settings.h>
 #include <jerry/buildin/basicauth/RequestHandler.h>
 #include <jerry/buildin/basicauth/Settings.h>
+#include <jerry/buildin/filebrowser/RequestHandler.h>
+#include <jerry/buildin/filebrowser/Settings.h>
+#include <jerry/buildin/page/RequestHandler.h>
+#include <jerry/buildin/page/Settings.h>
 
 #include <esl/http/server/requesthandler/Interface.h>
 #include <esl/object/Interface.h>
@@ -39,8 +41,7 @@ public:
 };
 
 typename std::aligned_storage<sizeof(Module), alignof(Module)>::type moduleBuffer; // memory for the object;
-Module& myModule = reinterpret_cast<Module&> (moduleBuffer);
-bool isInitialized = false;
+Module* modulePtr = nullptr;
 
 
 Module::Module()
@@ -49,28 +50,34 @@ Module::Module()
 	esl::module::Module::initialize(*this);
 
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::http::server::requesthandler::Interface(
+			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::RequestHandler::create)));
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
+			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::Settings::create)));
+
+	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::http::server::requesthandler::Interface(
 			getId(), "jerry/buildin/filebrowser", &jerry::buildin::filebrowser::RequestHandler::create)));
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
 			getId(), "jerry/buildin/filebrowser", &jerry::buildin::filebrowser::Settings::create)));
 
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::http::server::requesthandler::Interface(
-			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::RequestHandler::create)));
+			getId(), "jerry/buildin/page", &jerry::buildin::page::RequestHandler::create)));
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/buildin/basicauth", &jerry::buildin::basicauth::Settings::create)));
+			getId(), "jerry/buildin/page", &jerry::buildin::page::Settings::create)));
 }
 
 } /* anonymous namespace */
 
 esl::module::Module& getModule() {
-	if(isInitialized == false) {
+	if(modulePtr == nullptr) {
 		/* ***************** *
 		 * initialize module *
 		 * ***************** */
 
-		isInitialized = true;
-		new (&myModule) Module; // placement new
+		modulePtr = reinterpret_cast<Module*> (&moduleBuffer);
+		new (modulePtr) Module; // placement new
 	}
-	return myModule;
+
+	return *modulePtr;
 }
 
 } /* namespace jerry */

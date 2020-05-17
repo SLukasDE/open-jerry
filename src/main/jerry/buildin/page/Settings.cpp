@@ -16,55 +16,28 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/buildin/filebrowser/Settings.h>
+#include <jerry/buildin/page/Settings.h>
 #include <esl/Stacktrace.h>
 #include <stdexcept>
 
 namespace jerry {
 namespace buildin {
-namespace filebrowser {
+namespace page {
 
 std::unique_ptr<esl::object::Interface::Object> Settings::create() {
 	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
 }
 
 void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "browsable") {
-		if(value == "true") {
-			setBrowsable(true);
-		}
-		else if(value == "false") {
-			setBrowsable(false);
-		}
-		else {
-			throw std::runtime_error("Unknown value \"" + value + "\" for parameter key=\"" + key + "\". Possible values are \"true\" or \"false\".");
-		}
-	}
-	else if(key == "path") {
+	if(key == "path") {
 		setPath(value);
 	}
 	else if(key == "http-status") {
 		setHttpStatus(toInteger(value));
 	}
-	else if(key == "default") {
-		addDefault(value);
-	}
-	/*
-	else if(key == "accept-all") {
-		setAcceptAll(key, value, &Settings::setShowException);
-	}
-	*/
 	else {
 		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
 	}
-}
-
-void Settings::setBrowsable(bool aBrowsable) {
-	browsable = aBrowsable;
-}
-
-bool Settings::isBrowsable() const {
-	return browsable;
 }
 
 void Settings::setPath(const std::string& aPath) {
@@ -75,14 +48,6 @@ const std::string& Settings::getPath() const {
 	return path;
 }
 
-void Settings::addDefault(const std::string& file) {
-	defaults.insert(file);
-}
-
-const std::set<std::string>& Settings::getDefaults() const {
-	return defaults;
-}
-
 void Settings::setHttpStatus(int aHttpStatus) {
 	httpStatus = aHttpStatus;
 }
@@ -91,6 +56,6 @@ const int Settings::getHttpStatus() const {
 	return httpStatus;
 }
 
-} /* namespace filebrowser */
+} /* namespace page */
 } /* namespace buildin */
 } /* namespace jerry */

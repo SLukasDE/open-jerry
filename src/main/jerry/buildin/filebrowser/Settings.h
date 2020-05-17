@@ -21,6 +21,7 @@
 
 #include <jerry/buildin/Settings.h>
 #include <string>
+#include <set>
 
 namespace jerry {
 namespace buildin {
@@ -32,14 +33,22 @@ public:
 
 	void addSetting(const std::string& key, const std::string& value) override;
 
+	void setBrowsable(bool browsable);
+	bool isBrowsable() const;
+
 	void setPath(const std::string& path);
 	const std::string& getPath() const;
+
+	void addDefault(const std::string& file);
+	const std::set<std::string>& getDefaults() const;
 
 	void setHttpStatus(int httpStatus);
 	const int getHttpStatus() const;
 
 private:
+	bool browsable = false;
 	std::string path = "/";
+	std::set<std::string> defaults;
 	int httpStatus = 200;
 };
 

@@ -80,23 +80,31 @@ const std::string& URL::getTag() const {
 }
 
 URL::NextFragment URL::parseScheme(size_t& pos, const char* str, const size_t len) {
+	/* remove preceding spaces. */
+	for(;pos<len && str[pos]==' '; ++pos) {
+	}
+
 	size_t scheme_pos = pos;
 
-	// remove preceding spaces.
-	for(;pos<len && str[pos]==' '; pos++) {
-	}
+	/* string starts with '/', so there is no scheme, might be a path */
 	if (str[pos] == '/') {
 		scheme.clear();
-		++pos;
+		//++pos;
 		return NextFragment::PATH;
 	}
 
-	for(;pos<len && str[pos] != ':'; pos++) {
-	}
-	if(pos > len) {
-		return NextFragment::EMPTY;
+	/* go to ':' character */
+	for(;pos<len && str[pos] != ':'; ++pos) {
 	}
 
+	/* no ':' character found, interpret full string as path */
+	if(pos >= len) {
+		// return NextFragment::EMPTY;
+		pos = scheme_pos;
+		return NextFragment::PATH;
+	}
+
+	/* characters before ':' are the scheme */
 	std::string tmpScheme = std::string(&str[scheme_pos], pos - scheme_pos);
 
 	if(len-pos < 3) {
@@ -113,6 +121,9 @@ URL::NextFragment URL::parseScheme(size_t& pos, const char* str, const size_t le
 	}
 
 	scheme = std::move(tmpScheme);
+	if(scheme == "file") {
+		return NextFragment::PATH;
+	}
 	return NextFragment::HOSTNAME;
 }
 

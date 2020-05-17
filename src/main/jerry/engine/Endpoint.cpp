@@ -69,11 +69,78 @@ const Endpoint* Endpoint::getParentEndpoint() const {
 }
 
 void Endpoint::setShowException(bool aShowException) {
-	showException = aShowException;
+	showException = aShowException ? obTrue : obFalse;
 }
 
 bool Endpoint::getShowException() const {
-	return showException;
+	switch(showException) {
+	case obTrue:
+		return true;
+	case obFalse:
+		return false;
+	default:
+		break;
+	}
+
+	if(getParentEndpoint()) {
+		return getParentEndpoint()->getShowException();
+	}
+
+	return true;
+}
+
+void Endpoint::setShowStacktrace(bool aShowStacktrace) {
+	showStacktrace = aShowStacktrace ? obTrue : obFalse;
+}
+
+bool Endpoint::getShowStacktrace() const {
+	switch(showStacktrace) {
+	case obTrue:
+		return true;
+	case obFalse:
+		return false;
+	default:
+		break;
+	}
+
+	if(getParentEndpoint()) {
+		return getParentEndpoint()->getShowStacktrace();
+	}
+
+	return false;
+}
+
+void Endpoint::setInheritErrorDocuments(bool aInheritErrorDocuments) {
+	inheritErrorDocuments = aInheritErrorDocuments;
+}
+
+bool Endpoint::getInheritErrorDocuments() const {
+	return inheritErrorDocuments;
+}
+
+void Endpoint::addErrorDocument(unsigned short statusCode, const std::string& path, bool parse) {
+	errorDocuments.insert(std::make_pair(statusCode, std::make_pair(path, parse)));
+}
+
+const std::pair<std::string, bool>* Endpoint::findErrorDocument(unsigned short statusCode) const {
+	const auto iter = errorDocuments.find(statusCode);
+
+	if(iter == std::end(errorDocuments)) {
+		if(getInheritErrorDocuments() && getParentEndpoint()) {
+			return getParentEndpoint()->findErrorDocument(statusCode);
+		}
+		return nullptr;
+	}
+
+	return &iter->second;
+}
+
+void Endpoint::addHeader(std::string key, std::string value) {
+	headers.insert(std::make_pair(key, value));
+}
+
+const std::map<std::string, std::string>& Endpoint::getHeaders() const {
+	return headers;
 }
 
 } /* namespace engine */

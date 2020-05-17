@@ -19,29 +19,37 @@
 #ifndef JERRY_CONFIG_LISTENER_H_
 #define JERRY_CONFIG_LISTENER_H_
 
-#include <jerry/config/ListenerType.h>
-#include <jerry/config/Reference.h>
-#include <jerry/config/RequestHandler.h>
 #include <jerry/config/Object.h>
+#include <jerry/config/Reference.h>
+#include <jerry/config/Entry.h>
+#include <jerry/config/Exceptions.h>
+
+#include <tinyxml2/tinyxml2.h>
+
 #include <string>
 #include <vector>
-#include <tuple>
+#include <utility>
 #include <memory>
+#include <ostream>
 
 namespace jerry {
 namespace config {
 
 struct Listener {
-	ListenerType listenerType = ListenerType::listener;
-	std::string url; // only if it is a Listener
-	std::string path; // only if it is an Endpoint
+	Listener(const tinyxml2::XMLElement& element);
+
+	void save(std::ostream& oStream, std::size_t spaces) const;
+
+	std::string url;
 
 	std::vector<Object> objects;
-	std::vector<Reference> references; // only if it is an Endpoint or a Context
-	//std::vector<std::string> requesthandlers;
-	//std::vector<RequestHandler> requestHandlers;
-	//std::vector<Listener> contextEndpoints;
-	std::vector<std::tuple<std::unique_ptr<RequestHandler>, std::unique_ptr<Listener>>> entries;
+	std::vector<Reference> references;
+
+	std::vector<Entry> entries;
+
+	std::vector<Setting> responseHeaders;
+
+	Exceptions exceptions;
 };
 
 } /* namespace config */

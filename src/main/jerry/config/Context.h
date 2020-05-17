@@ -16,28 +16,33 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
+#ifndef JERRY_CONFIG_CONTEXT_H_
+#define JERRY_CONFIG_CONTEXT_H_
+
+#include <jerry/config/Object.h>
+#include <jerry/config/Reference.h>
+#include <jerry/config/Entry.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <string>
+#include <vector>
 #include <ostream>
 
 namespace jerry {
 namespace config {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+struct Context {
+	Context(const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	std::vector<Object> objects;
+	std::vector<Reference> references;
+
+	std::vector<Entry> entries;
 };
 
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_CONFIG_CONTEXT_H_ */

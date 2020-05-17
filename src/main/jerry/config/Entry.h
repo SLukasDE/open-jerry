@@ -16,28 +16,49 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
+#ifndef JERRY_CONFIG_ENTRY_H_
+#define JERRY_CONFIG_ENTRY_H_
 
-#include <tinyxml2/tinyxml2.h>
-
-#include <string>
+#include <memory>
 #include <ostream>
 
 namespace jerry {
 namespace config {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+class RequestHandler;
+class Context;
+class Endpoint;
+
+class Entry {
+public:
+	Entry() = default;
+	Entry(const Entry&) = delete;
+	Entry(Entry&& other);
+	~Entry();
+
+	Entry& operator=(const Entry&) = delete;
+	Entry& operator=(Entry&& other);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	void setRequestHandler(std::unique_ptr<RequestHandler> requestHandler);
+	RequestHandler* getRequestHandler() const;
+
+	void setContext(std::unique_ptr<Context> context);
+	Context* getContext() const;
+
+	void setEndpoint(std::unique_ptr<Endpoint> endpoint);
+	Endpoint* getEndpoint() const;
+
+private:
+	void doDelete();
+
+	RequestHandler* requestHandler = nullptr;
+	Context* context = nullptr;
+	Endpoint* endpoint = nullptr;
 };
 
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_CONFIG_ENTRY_H_ */

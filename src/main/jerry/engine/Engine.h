@@ -53,6 +53,7 @@ public:
 	Engine();
 
 	bool run();
+	bool runCGI();
 	void stop();
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key);

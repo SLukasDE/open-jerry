@@ -16,28 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
+#ifndef JERRY_CONFIG_EXCEPTIONS_H_
+#define JERRY_CONFIG_EXCEPTIONS_H_
+
+#include <jerry/config/ExceptionDocument.h>
+#include <jerry/config/OptionalBool.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
+#include <vector>
 #include <ostream>
 
 namespace jerry {
 namespace config {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+struct Exceptions {
+	Exceptions() = default;
+	Exceptions(const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	bool inheritDocuments = true;
+	OptionalBool showExceptions = OptionalBool::obEmpty;
+	OptionalBool showStacktrace = OptionalBool::obEmpty;
+	std::vector<ExceptionDocument> documents;
 };
 
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_CONFIG_EXCEPTIONS_H_ */

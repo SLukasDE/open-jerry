@@ -25,6 +25,7 @@ namespace engine {
 RequestContext::RequestContext(esl::http::server::RequestContext& aBaseRequestContext, const Context& aEngineContext)
 : esl::http::server::RequestContext(),
   baseRequestContext(aBaseRequestContext),
+  connection(*this, baseRequestContext.getConnection()),
   engineContext(std::cref(aEngineContext))
 {
 }
@@ -37,8 +38,12 @@ void RequestContext::setEngineContext(const Context& aEngineContext) {
 	  engineContext = std::ref(aEngineContext);
 }
 
+const Context& RequestContext::getEngineContext() const {
+	return engineContext.get();
+}
+
 esl::http::server::Connection& RequestContext::getConnection() const {
-	return baseRequestContext.getConnection();
+	return connection;
 }
 
 const esl::http::server::Request& RequestContext::getRequest() const {

@@ -16,28 +16,38 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_CERTIFICATE_H_
-#define JERRY_CONFIG_CERTIFICATE_H_
-
-#include <tinyxml2/tinyxml2.h>
+#ifndef JERRY_UTILITY_MIME_H_
+#define JERRY_UTILITY_MIME_H_
 
 #include <string>
-#include <ostream>
 
 namespace jerry {
-namespace config {
+namespace utility {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+struct MIME {
+	MIME() = default;
+	MIME(std::string mediaType, std::string subType) noexcept;
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
+	std::string getContentType() noexcept;
 
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
+	static MIME byFilename(const std::string& filename);
+
+	// e.g. - application
+	//      - audio
+	//      - example
+	//      - image
+	//      - message
+	//      - model
+	//      - multipart
+	//      - text
+	//      - video
+	std::string mediaType;
+
+	// e.g. - jpeg
+	std::string subType;
 };
 
-} /* namespace config */
+} /* namespace utility */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_CERTIFICATE_H_ */
+#endif /* JERRY_UTILITY_MIME_H_ */

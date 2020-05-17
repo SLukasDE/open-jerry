@@ -19,12 +19,19 @@
 #ifndef JERRY_CONFIG_LEVELSETTING_H_
 #define JERRY_CONFIG_LEVELSETTING_H_
 
+#include <tinyxml2/tinyxml2.h>
+
 #include <string>
+#include <ostream>
 
 namespace jerry {
 namespace config {
 
 struct LevelSetting {
+	LevelSetting(const tinyxml2::XMLElement& element);
+
+	void save(std::ostream& oStream, std::size_t spaces) const;
+
 	std::string className;
 	std::string level;
 };
