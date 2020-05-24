@@ -1,0 +1,79 @@
+<jerry>
+	<library module="esl" file="/home/lukas/workspace_esl/mhd4esl/build/mhd4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libesl-mhd.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/logbook4esl/build/logbook4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/liblogbook4esl.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/zsystem4esl/build/zsystem4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libzsystem4esl.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/odbc4esl/build/odbc4esl/0.3.0/variants/debug/architecture/linux-gcc/link-dynamic/libodbc4esl.so"/>
+	<!-- library file="/home/lukas/workspace_esl/http-filebrowser/build/http-filebrowser/0.1.0/variants/release/architecture/linux-gcc/link-dynamic/libhttp-filebrowser.so"/-->
+	<!-- library file="libhttp-filebrowser.so"/>
+	<library file="librsm-cpp.so"/>
+	<library file="librsm-cpp-db2.so"/>
+	<library file="libprisma-interfaces-lueckenliste.so"/>
+	<library file="libprisma-interfaces-prognosesteuerung.so"/ -->
+	
+	<certificate domain="*" key="server.key" cert="server.pem"/>
+	
+	<!-- include file="../secret/jerry-db2luw.xml"/ -->
+	
+	<logger layout="default">
+		<layout key="showTimestamp" value="true"/>
+		<layout key="showLevel" value="true"/>
+		<layout key="showTypeName" value="true"/>
+		<layout key="showAddress" value="false"/>
+		<layout key="showFile" value="false"/>
+		<layout key="showFunction" value="false"/>
+		<layout key="showLineNo" value="false"/>
+		<layout key="showThreadNo" value="false"/>
+		
+		<setting class="*" level="WARN"/>
+		<setting class="jerry::*" level="TRACE"/>
+		<setting class="jerrA::*" level="WURST"/>
+	</logger>
+	
+	
+	<!-- listener port="8080" protocol="https" domain="" ipv4="" ipv6="" -->
+	<listener url="https://*:8080">
+		<requesthandler implementation="jerry/buildin/filebrowser">
+			<parameter key="path" value="404.html"/>
+			<parameter key="http-status" value="404"/>
+		</requesthandler>
+		
+		<context>
+			<object id="" implementation="jerry/buildin/basicauth">
+				<parameter key="username" value="Hans"/>
+				<parameter key="password" value="Wurst2"/>
+				<parameter key="realmId" value="AuthArea"/>
+			</object>
+			<requesthandler implementation="jerry/buildin/basicauth"/>
+		</context>
+	
+		<!-- endpoint path="test1/log">
+			<object id="" implementation="jerry/buildin/filebrowser">
+				<parameter key="path" value="/tmp/"/>
+			</object>
+			<requesthandler implementation="jerry/buildin/filebrowser"/>
+		</endpoint-->
+	
+		<endpoint path="test1/log2">
+			<object id="" implementation="jerry/buildin/filebrowser">
+				<parameter key="path" value="/tmp/"/>
+			</object>
+			<requesthandler implementation="jerry/buildin/filebrowser"/>
+		</endpoint>
+		
+		<endpoint path="test3">
+			<requesthandler implementation="jerry/buildin/filebrowser">
+				<parameter key="path" value="/tmp/"/>
+			</requesthandler>
+		</endpoint>
+		
+		<endpoint path="test1">
+			<context>
+				<object id="" implementation="jerry/buildin/filebrowser">
+					<parameter key="path" value="/var/"/>
+				</object>
+				<requesthandler implementation="jerry/buildin/filebrowser"/>
+			</context>
+		</endpoint>
+	</listener>
+	
+</jerry>

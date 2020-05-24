@@ -211,8 +211,11 @@ bool Context::createRequestHandler(RequestHandler& requestHandler) const {
 			 * **************************** */
 			requestHandler.setContext(*this);
 			requestHandler.setEndpoint(getEndpoint());
+
+			/* set requestHandlerFactory and call it */
 			requestHandler.setRequestHandler(std::get<2>(createRequestHandler));
 
+			/* check if calling requestHandlerFactory got a valid requestHandler */
 			if(requestHandler.hasRequestHandler()) {
 				return true;
 			}

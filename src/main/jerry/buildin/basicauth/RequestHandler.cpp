@@ -19,7 +19,9 @@
 #include <jerry/buildin/basicauth/RequestHandler.h>
 #include <jerry/buildin/basicauth/Settings.h>
 #include <jerry/Logger.h>
+
 #include <esl/http/server/ResponseBasicAuth.h>
+#include <esl/utility/MIME.h>
 
 namespace jerry {
 namespace buildin {
@@ -58,7 +60,7 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext
 : esl::http::server::requesthandler::Interface::RequestHandler()
 {
 	std::unique_ptr<esl::http::server::ResponseBasicAuth> response;
-	response.reset(new esl::http::server::ResponseBasicAuth(realmId, "text/html", PAGE_401.data(), PAGE_401.size()));
+	response.reset(new esl::http::server::ResponseBasicAuth(realmId, esl::utility::MIME::textHtml, PAGE_401.data(), PAGE_401.size()));
 	requestContext.getConnection().sendResponse(std::move(response));
 }
 /*

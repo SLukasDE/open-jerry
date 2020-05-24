@@ -1,0 +1,91 @@
+esl::Module::Module: this = 0x78af00
+Search... "esl-logging"
+Search:
+  module:         ""
+  type:           "esl-logging"
+  implementation: ""
+  apiVersion:     "0.3.0"
+
+Check:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+no. interface->type = "esl-logging-layout"
+not found
+
+Interfaces (ESL 1): ("esl-logging":"")
+--------------------
+this:               0x78af00
+esl::getModule:     0x78af00
+esl::getInterfaces: 0x78af08
+
+esl 1:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+
+
+Not found... "esl-logging"
+Interfaces (ESL 1): ("esl-logging":"")
+--------------------
+this:               0x78af00
+esl::getModule:     0x78af00
+esl::getInterfaces: 0x78af08
+
+esl 1:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+
+
+Search... "esl-logging"
+Search:
+  module:         ""
+  type:           "esl-logging"
+  implementation: ""
+  apiVersion:     "0.3.0"
+
+Check:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+no. interface->type = "esl-logging-layout"
+not found
+
+Interfaces (ESL 1): ("esl-logging":"")
+--------------------
+this:               0x78af00
+esl::getModule:     0x78af00
+esl::getInterfaces: 0x78af08
+
+esl 1:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+
+
+Not found... "esl-logging"
+Interfaces (ESL 1): ("esl-logging":"")
+--------------------
+this:               0x78af00
+esl::getModule:     0x78af00
+esl::getInterfaces: 0x78af08
+
+esl 1:
+  module:         "esl-logging-layout"
+  type:           "esl-logging-layout"
+  implementation: "default"
+  apiVersion:     "0.3.0"
+
+
+

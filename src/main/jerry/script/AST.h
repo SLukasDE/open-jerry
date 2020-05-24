@@ -16,26 +16,48 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#ifndef JERRY_SCRIPT_AST_H_
+#define JERRY_SCRIPT_AST_H_
 
-#include <esl/utility/MIME.h>
 #include <string>
+#include <vector>
+#include <functional>
+#include <memory>
 
 namespace jerry {
-namespace utility {
+namespace script {
 
-class MIME {
+class AST {
 public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+	enum Type {
+		text,
+		list,
+		function
+	};
+
+	AST(std::string script);
+	AST() = default;
+	~AST() = default;
+
+	Type getType() const noexcept;
+	const std::string& getValue() const noexcept;
+	std::vector<std::reference_wrapper<AST>> getChildren() const;
+
+	AST& addList();
+	AST& addText(std::string text);
+	AST& addFunction();
 
 private:
-	MIME() = default;
-	~MIME() = default;
+	AST(Type type, std::string text);
+	void parse(std::string::const_iterator& iterator, const std::string::const_iterator& end);
+
+
+	Type type = Type::list;
+	std::string value;
+	std::vector<std::unique_ptr<AST>> children;
 };
 
-} /* namespace utility */
+} /* namespace script */
 } /* namespace jerry */
 
-#endif /* JERRY_UTILITY_MIME_H_ */
+#endif /* JERRY_SCRIPT_AST_H_ */

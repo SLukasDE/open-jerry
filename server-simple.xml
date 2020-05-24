@@ -1,0 +1,56 @@
+<jerry>
+	<!--library module="esl" file="/home/lukas/workspace_esl/mhd4esl/build/mhd4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libesl-mhd.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/logbook4esl/build/logbook4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/liblogbook4esl.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/zsystem4esl/build/zsystem4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libzsystem4esl.so"/>
+	<library file="/home/lukas/workspace_esl/odbc4esl/build/odbc4esl/0.3.0/variants/debug/architecture/linux-gcc/link-dynamic/libodbc4esl.so"/>
+	<library file="/home/lukas/workspace_esl/datarunner/build/datarunner/0.1.0/variants/debug/architecture/linux-gcc/link-dynamic/libdatarunner.so"/-->
+	
+	<certificate domain="*" key="server.key" cert="server.pem"/>
+	
+	<!-- include file="../secret/jerry-db2luw.xml"/ -->
+	
+	<logger layout="default">
+		<layout key="showTimestamp" value="true"/>
+		<layout key="showLevel" value="true"/>
+		<layout key="showTypeName" value="true"/>
+		<layout key="showAddress" value="false"/>
+		<layout key="showFile" value="false"/>
+		<layout key="showFunction" value="false"/>
+		<layout key="showLineNo" value="false"/>
+		<layout key="showThreadNo" value="false"/>
+		
+		<setting class="*" level="WARN"/>
+		<setting class="jerry::*" level="INFO"/>
+		<setting class="datarunner::*" level="TRACE"/>
+		<!--setting class="odbc4esl::*" level="TRACE"/-->
+	</logger>
+	
+	<!-- listener port="8080" protocol="https" domain="" ipv4="" ipv6="" -->
+	<listener url="https://*:8080">
+		<endpoint path="datarunner">
+			<requesthandler implementation="jerry/buildin/filebrowser">
+				<parameter key="browsable" value="false"/>
+				<parameter key="path" value="/home/lukas/workspace_esl/datarunner/angular/"/>
+				<parameter key="default" value="index.html"/>
+			</requesthandler>
+		</endpoint>
+		
+		<context>
+			<object id="" implementation="jerry/buildin/page">
+				<parameter key="path" value="/tmp/test.txt"/>
+				<parameter key="http-status" value="200"/>
+			</object>
+			<requesthandler implementation="jerry/buildin/page"/>
+		</context>
+		
+		<response-header key="Access-Control-Allow-Origin" value="*"/>
+		
+		<exceptions inheritDocuments="false" showExceptions="false" showStacktrace="true">
+			<document statusCode="401" path="http://www.heise.de"/>
+			<document statusCode="402" path="/tmp/test.txt"/>
+			<document statusCode="400" path="/tmp/test.html" parser="true"/>
+		</exceptions>
+		
+	</listener>
+	
+</jerry>

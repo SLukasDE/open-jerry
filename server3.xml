@@ -1,0 +1,128 @@
+<jerry>
+	<library module="esl" file="/home/lukas/workspace_esl/mhd4esl/build/mhd4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libesl-mhd.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/logbook4esl/build/logbook4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/liblogbook4esl.so"/>
+	<library module="esl" file="/home/lukas/workspace_esl/zsystem4esl/build/zsystem4esl/0.3.0/variants/release/architecture/linux-gcc/link-dynamic/libzsystem4esl.so"/>
+	<!-- library file="/home/lukas/workspace_esl/http-filebrowser/build/http-filebrowser/0.1.0/variants/release/architecture/linux-gcc/link-dynamic/libhttp-filebrowser.so"/-->
+	<!-- library file="libhttp-filebrowser.so"/>
+	<library file="librsm-cpp.so"/>
+	<library file="librsm-cpp-db2.so"/>
+	<library file="libprisma-interfaces-lueckenliste.so"/>
+	<library file="libprisma-interfaces-prognosesteuerung.so"/ -->
+	
+	<certificate domain="*" key="server.key" cert="server.pem"/>
+	
+	<!-- include file="../secret/jerry-db2luw.xml"/ -->
+	
+	<logger layout="default">
+		<layout key="showTimestamp" value="true"/>
+		<layout key="showLevel" value="true"/>
+		<layout key="showTypeName" value="true"/>
+		<layout key="showAddress" value="false"/>
+		<layout key="showFile" value="false"/>
+		<layout key="showFunction" value="false"/>
+		<layout key="showLineNo" value="false"/>
+		<layout key="showThreadNo" value="false"/>
+		
+		<setting class="*" level="WARN"/>
+		<setting class="jerry::*" level="TRACE"/>
+		<setting class="jerrA::*" level="WURST"/>
+	</logger>
+	
+	
+	<object id="fb-setting1" implementation="jerry/tools/filebrowser">
+		<parameter key="workspaceDir" value="/var/"/>
+		<parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/>
+	</object>
+	
+	<object id="fb-setting2" implementation="jerry/tools/filebrowser">
+		<parameter key="workspaceDir" value="/tmp/"/>
+		<parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/>
+	</object>
+	
+	<object id="datarunner-db" implementation="odbc4esl">
+		<parameter key="driver" value="/user/oracle/orasql.so.19"/>
+		<parameter key="connection" value="DSN=sdfdsf"/>
+	</object>
+	
+	<object id="datarunner-db-connecitonpool" implementation="esl-database/connectionpool">
+		<parameter key="maxConnections" value="20"/>
+		<parameter key="maxIdleTime" value="1000"/>
+		<parameter key="connections" value="20"/>
+		<parameter key="timeout" value="1000ms"/>
+		<parameter key="connection" value="datarunner-db"/>
+	</object>
+	
+	<object id="dataruuner-users" implementation="jerry/tools/db-authentication">
+		<parameter key="db" value="datarunner-db"/>
+		<parameter key="query" value="SELECT count(*) FROM DATARUNNER.DATARUNNER_USERS WHERE USERNAME=${username} AND PASSWORD=${password}"/>
+	</object>
+	
+	<object id="authArea" implementation="jerry/tools/basicauth">
+		<parameter key="authenticator" value="datarunner-users"/>
+		<parameter key="realmId" value="AuthArea"/>
+	</object>
+	
+	<!-- listener port="8080" protocol="https" domain="" ipv4="" ipv6="" -->
+	<listener url="https://*:8080">
+	
+		<reference id="" ref-id="fb-setting1"/>
+		
+		<endpoint path="test2">
+			<requesthandler implementation="jerry/tools/basicauth" ref-id="authArea"/>
+			<!-- Equal to:
+			<context>
+				<reference id="" ref-id="authArea"/>
+				<requesthandler implementation="jerry/tools/basicauth"/>
+			</context>
+			-->
+		</endpoint>
+		
+		<endpoint path="test1">
+			<requesthandler implementation="jerry/tools/basicauth">
+				<parameter key="authenticator" value="datarunner-users"/>
+				<parameter key="realmId" value="AuthArea"/>
+			</requesthandler>
+			<!-- Equal to:
+			<context>
+				<object id="" implementation="jerry/tools/basicauth">
+					<parameter key="authenticator" value="datarunner-users"/>
+					<parameter key="realmId" value="AuthArea"/>
+				</object>
+				<requesthandler implementation="jerry/tools/basicauth"/>
+			</context>
+			-->
+			
+			
+			
+			<requesthandler implementation="jerry/tools/filebrowser"/>
+		</endpoint>
+		
+		<!--  endpoint path="test1/log" auth="ldap-auth" -->
+		<endpoint path="test1/log">
+			<reference id="" ref-id="fb-setting2"/>
+			<requesthandler implementation="jerry/tools/filebrowser"/>
+			
+			<endpoint path="mc-lukas">
+				<requesthandler implementation="jerry/tools/filebrowser">
+					<parameter key="workspaceDir" value="/usr/"/>
+				</requesthandler>
+			</endpoint>
+			
+		</endpoint>
+		
+		<!--
+		<context>
+			<reference id="db" ref-id="zos-db2"/>
+			<endpoint path="lueckenliste">
+				<requesthandler implementation="lueckenliste"/>
+			</endpoint>
+			<endpoint path="lueckenzusatz">
+				<requesthandler implementation="lueckenzusatz"/>
+			</endpoint>
+		</context>
+		-->
+	</listener>
+	
+</jerry>

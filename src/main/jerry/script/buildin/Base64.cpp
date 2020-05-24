@@ -16,26 +16,29 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#include <jerry/script/buildin/Base64.h>
+#include <jerry/utility/Base64.h>
 
-#include <esl/utility/MIME.h>
-#include <string>
+#include <stdexcept>
 
 namespace jerry {
-namespace utility {
+namespace script {
+namespace buildin {
 
-class MIME {
-public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+std::size_t Base64::setArgument(std::size_t index, const std::string& value) {
+	if(index == 0) {
+		argument = value;
+	}
+	else {
+		throw std::runtime_error("calling Base64::setArgument with invalid index=" + std::to_string(index));
+	}
+	return 0;
+}
 
-private:
-	MIME() = default;
-	~MIME() = default;
-};
+std::string Base64::call() {
+	return utility::Base64::toBase64(argument);
+}
 
-} /* namespace utility */
+} /* namespace buildin */
+} /* namespace script */
 } /* namespace jerry */
-
-#endif /* JERRY_UTILITY_MIME_H_ */

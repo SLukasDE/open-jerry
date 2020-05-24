@@ -16,26 +16,40 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
-
-#include <esl/utility/MIME.h>
-#include <string>
+#include <jerry/utility/Base64.h>
 
 namespace jerry {
 namespace utility {
 
-class MIME {
-public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+std::string Base64::toBase64(const std::string& str) {
+	std::string base64Chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+	std::string result;
 
-private:
-	MIME() = default;
-	~MIME() = default;
-};
+	for(std::size_t i = 0; i < str.size(); i += 3) {
+		int packed64 = (str[i] & 0xff) << 16;
+		std::size_t num64Chars = 2;
+
+		if(i + 1 < str.size()) {
+			packed64 = packed64 + ((str[i+1] & 0xff) << 8);
+			num64Chars = 3;
+		}
+
+		if(i + 2 < str.size()) {
+			packed64 = packed64 + (str[i+2] & 0xff);
+			num64Chars = 4;
+		}
+
+		for(std::size_t j = 0; j < 4; ++j) {
+			if(j < num64Chars) {
+				result += base64Chars[(packed64 >> (6 * (3 - j))) & 0x3f];
+			}
+			else {
+				result += "=";
+			}
+		}
+	}
+	return result;
+}
 
 } /* namespace utility */
 } /* namespace jerry */
-
-#endif /* JERRY_UTILITY_MIME_H_ */

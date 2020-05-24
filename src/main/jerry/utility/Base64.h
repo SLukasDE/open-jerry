@@ -16,26 +16,24 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#ifndef JERRY_UTILITY_BASE64_H_
+#define JERRY_UTILITY_BASE64_H_
 
-#include <esl/utility/MIME.h>
 #include <string>
 
 namespace jerry {
 namespace utility {
 
-class MIME {
+class Base64 {
 public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+	static std::string toBase64(const std::string& str);
 
 private:
-	MIME() = default;
-	~MIME() = default;
+	Base64() = default;
+	~Base64() = default;
 };
 
 } /* namespace utility */
 } /* namespace jerry */
 
-#endif /* JERRY_UTILITY_MIME_H_ */
+#endif /* JERRY_UTILITY_BASE64_H_ */

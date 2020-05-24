@@ -96,7 +96,7 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
     		outputContent.clear();
     		std::unique_ptr<esl::http::server::ResponseStatic> response;
-    		response.reset(new esl::http::server::ResponseStatic(301, "text/html", PAGE_301.data(), PAGE_301.size()));
+    		response.reset(new esl::http::server::ResponseStatic(301, esl::utility::MIME::textHtml, PAGE_301.data(), PAGE_301.size()));
     		response->addHeader("Location", requestContext.getRequest().getPath() + "/");
     		requestContext.getConnection().sendResponse(std::move(response));
     		//return false;
@@ -133,7 +133,7 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
 
     		std::unique_ptr<esl::http::server::ResponseDynamic> response;
     		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
-    		response.reset(new esl::http::server::ResponseDynamic(200, "text/html", lambda ));
+    		response.reset(new esl::http::server::ResponseDynamic(200, esl::utility::MIME::textHtml, lambda ));
     		requestContext.getConnection().sendResponse(std::move(response));
     	}
     	else {
@@ -141,8 +141,8 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
     	}
 	}
     else {
-    	utility::MIME mime = utility::MIME::byFilename(path);
-		std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime.getContentType(), std::move(path)));
+    	esl::utility::MIME mime = utility::MIME::byFilename(path);
+		std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime.toString(), std::move(path)));
 		requestContext.getConnection().sendResponse(std::move(response));
 
 #if 0

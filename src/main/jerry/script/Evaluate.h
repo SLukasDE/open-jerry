@@ -16,26 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#ifndef JERRY_SCRIPT_EVALUATE_H_
+#define JERRY_SCRIPT_EVALUATE_H_
 
-#include <esl/utility/MIME.h>
+#include <jerry/script/AST.h>
+#include <jerry/script/FunctionFactory.h>
+
+#include <ostream>
 #include <string>
+#include <vector>
+#include <functional>
 
 namespace jerry {
-namespace utility {
+namespace script {
 
-class MIME {
+class Evaluate {
 public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+
+	std::string evaluate(std::string script);
+	void addFunctionFactory(const FunctionFactory& functionFactory);
 
 private:
-	MIME() = default;
-	~MIME() = default;
+	void evaluate(std::ostream& outputStream, const AST& ast);
+	std::string evaluateFunction(const std::string& functionName, std::vector<std::reference_wrapper<AST>> arguments);
+
+	std::vector<std::reference_wrapper<const FunctionFactory>> functionFactories;
 };
 
-} /* namespace utility */
+} /* namespace script */
 } /* namespace jerry */
 
-#endif /* JERRY_UTILITY_MIME_H_ */
+#endif /* JERRY_SCRIPT_EVALUATE_H_ */

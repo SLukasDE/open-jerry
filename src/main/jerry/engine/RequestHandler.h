@@ -42,7 +42,6 @@ class Listener;
 class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
 public:
 	RequestHandler(const Listener& listener, esl::http::server::RequestContext& baseRequestContext);
-	RequestHandler(std::unique_ptr<esl::http::server::RequestContext> requestContext, const Endpoint& engineEndpoint);
 
 	void setContext(const Context& context);
 
@@ -57,16 +56,17 @@ public:
 
 private:
 	std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> requestHandler;
+	bool exceptionOccured = false;
 	RequestContext requestContext;
 
 	std::reference_wrapper<const Endpoint> engineEndpoint;
 	std::vector<std::string> pathList;
 	bool isEndingWithSlash = false;
 
-	std::string outputContent;
-	std::size_t outputPos = 0;
+	//std::string outputContent;
+	//std::size_t outputPos = 0;
 
-	int getData(char* buffer, std::size_t count);
+	//int getData(char* buffer, std::size_t count);
 
 	bool callWithExceptionHandler(std::function<bool()> callFunction);
 };

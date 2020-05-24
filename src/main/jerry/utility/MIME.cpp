@@ -22,98 +22,92 @@
 namespace jerry {
 namespace utility {
 
-MIME::MIME(std::string aMediaType, std::string aSubType) noexcept
-: mediaType(aMediaType),
-  subType(aSubType)
-{ }
-
-std::string MIME::getContentType() noexcept {
-	return mediaType + "/" + subType;
-}
-
-MIME MIME::byFilename(const std::string& filename) {
+esl::utility::MIME MIME::byFilename(const std::string& filename) {
     std::size_t pos = filename.find_last_of(".");
-    std::string fileType;
+    std::string fileExtension;
 
     /* Dateiendung gefunden */
     if(pos != std::string::npos) {
-        fileType = filename.substr(pos+1);
-
-        std::transform(fileType.begin(), fileType.end(), fileType.begin(), tolower);
+    	fileExtension = filename.substr(pos+1);
     }
 
+    return byFileExtension(std::move(fileExtension));
+}
 
-    if(fileType == "bmp") {
-        return MIME("image", "bmp");
+esl::utility::MIME MIME::byFileExtension(std::string fileExtension) {
+    std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), tolower);
+
+    if(fileExtension == "bmp") {
+        return esl::utility::MIME("image/bmp");
     }
-    else if(fileType == "bz") {
-        return MIME("application", "x-bzip");
+    else if(fileExtension == "bz") {
+        return esl::utility::MIME("application/x-bzip");
     }
-    else if(fileType == "bz2") {
-        return MIME("application", "x-bzip2");
+    else if(fileExtension == "bz2") {
+        return esl::utility::MIME("application/x-bzip2");
     }
-    else if(fileType == "css") {
-        return MIME("text", "css");
+    else if(fileExtension == "css") {
+        return esl::utility::MIME("text/css");
     }
-    else if(fileType == "gif") {
-        return MIME("image", "gif");
+    else if(fileExtension == "gif") {
+        return esl::utility::MIME("image/gif");
     }
-    else if(fileType == "gz") {
-        return MIME("application", "x-compressed");
+    else if(fileExtension == "gz") {
+        return esl::utility::MIME("application/x-compressed");
     }
-    else if(fileType == "gzip") {
-        return MIME("application", "x-gzip");
+    else if(fileExtension == "gzip") {
+        return esl::utility::MIME("application/x-gzip");
     }
-    else if(fileType == "htm" || fileType == "html") {
-        return MIME("text", "html");
+    else if(fileExtension == "htm" || fileExtension == "html") {
+        return esl::utility::MIME("text/html");
     }
-    else if(fileType == "jpg" || fileType == "jpeg") {
-        return MIME("image", "jpeg");
+    else if(fileExtension == "jpg" || fileExtension == "jpeg") {
+        return esl::utility::MIME("image/jpeg");
     }
-    else if(fileType == "js") {
-        return MIME("text", "javascript");
+    else if(fileExtension == "js") {
+        return esl::utility::MIME("text/javascript");
     }
-    else if(fileType == "log") {
-        return MIME("text", "plain");
+    else if(fileExtension == "log") {
+        return esl::utility::MIME(esl::utility::MIME::textPlain);
     }
-    else if(fileType == "mp3") {
-        return MIME("audio", "mpeg3");
+    else if(fileExtension == "mp3") {
+        return esl::utility::MIME("audio/mpeg3");
     }
-    else if(fileType == "png") {
-        return MIME("image", "png");
+    else if(fileExtension == "png") {
+        return esl::utility::MIME("image/png");
     }
-    else if(fileType == "text") {
-        return MIME("text", "plain");
+    else if(fileExtension == "text") {
+        return esl::utility::MIME(esl::utility::MIME::textPlain);
     }
-    else if(fileType == "txt") {
-        return MIME("text", "plain");
+    else if(fileExtension == "txt") {
+        return esl::utility::MIME(esl::utility::MIME::textPlain);
     }
-    else if(fileType == "tgz") {
-        return MIME("application", "x-compressed");
+    else if(fileExtension == "tgz") {
+        return esl::utility::MIME("application/x-compressed");
     }
-    else if(fileType == "tif") {
-        return MIME("image", "tiff");
+    else if(fileExtension == "tif") {
+        return esl::utility::MIME("image/tiff");
     }
-    else if(fileType == "wav") {
-        return MIME("audio", "wav");
+    else if(fileExtension == "wav") {
+        return esl::utility::MIME("audio/wav");
     }
-    else if(fileType == "woff") {
-        return MIME("font", "woff");
+    else if(fileExtension == "woff") {
+        return esl::utility::MIME("font/woff");
     }
-    else if(fileType == "woff2") {
-        return MIME("font", "woff2");
+    else if(fileExtension == "woff2") {
+        return esl::utility::MIME("font/woff2");
     }
-    else if(fileType == "xls") {
-        return MIME("application", "excel");
+    else if(fileExtension == "xls") {
+        return esl::utility::MIME("application/excel");
     }
-    else if(fileType == "xml") {
-        return MIME("text", "xml");
+    else if(fileExtension == "xml") {
+        return esl::utility::MIME(esl::utility::MIME::textXml);
     }
-    else if(fileType == "zip") {
-        return MIME("application", "zip");
+    else if(fileExtension == "zip") {
+        return esl::utility::MIME("application/zip");
     }
 
-    return MIME("text", "plain");
+    return esl::utility::MIME(esl::utility::MIME::textPlain);
 }
 
 } /* namespace utility */

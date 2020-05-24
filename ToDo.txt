@@ -1,0 +1,66 @@
+Exception http::server::StatusCode behandeln.
+- pro StatusCode eine Seite definieren können oder Code
+- aus MAZ den Formel-Parser einbauen
+- esl-utility-Diretory hier nach eslx::
+
+Config-Parser
+- Headers in Endpoint
+- Error-Log- und Access-Log-Files in jedem Endpoint angeben können
+- generell aufräumen
+
+	XML:
+	- <requesthandler ...> mit Attribut "ref-id" ausstatten
+	- <requesthandler ...> mit Attribut "object-implementation" ausstatten
+	- <requesthandler ...> als Block mit settings ermöglichen -> nur gültig, wenn keine "ref-id" angegeben ist
+	- <endpoint ...> mit Tags zum steuern von Exceptions ausstatten
+	
+	Wenn Object-Implementation vom Typ esl::object::Parameter nicht gefunden wird und keine Parameter angegeben wurden,
+	dann nochmal nach dem Interface vom typ esl::object::Object suchen
+
+	Exception-Handling
+	- Endpoint zum Steuern von Exceptions verwenden
+	- Einstellungen eines Endpoints zum Exception-Handling erben von oberem Endpoint, wenn nicht überschrieben wird.
+	
+	Prüfen, ob innerhalb eines Contextes NUR die referenzierten bzw. eingetragen Objekte zugänglich sind und nicht mehr die geerbten.
+
+
+CGI-Socket
+- "jerry --cgi" aufrufbar machen
+
+RequestHandler:
+- Test-Request-Handler
+- page
+  Single-File (ignoriert weiteren Path im Gegensatz zu filebrowser)
+	- Plugin für einzelne HTTP-Seite
+	  - setting optional File
+	  - setting Status-Code
+- filebrowser:
+  sollte wieder 404 schicken, wenn Datei nicht gefunden.
+  Begründung: Wird für einen bestimmten Unter-URL ein andere filebrowser angegeben, so wird er eh vor dem allgemeineren Filebrowser definiert.
+- redirect
+  z.B. für HTTP auf Port 80 ein Redirect auf HTTPS port 443
+- CGI-Request-Handler
+- FastCGI
+- Proxy-Request-Handler
+
+ESL:
+Properties (Settings mit gettern)
+
+Objects:
+- Setting für einfache Werte (z.B. für RKWWC0)
+- Connection
+
+Doku
+
+Endpoint:
+- config für automatische Response-Headers (CORS)
+
+Access und Error-Log pro Endpoint und global
+
+
+
+HTTP-Exceptions:
+- Status-Seiten in JERRY definieren können
+
+
+

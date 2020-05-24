@@ -46,8 +46,8 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Re
 RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings)
 : esl::http::server::requesthandler::Interface::RequestHandler()
 {
-	utility::MIME mime = utility::MIME::byFilename(settings.getPath());
-	std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime.getContentType(), settings.getPath()));
+	esl::utility::MIME mime = utility::MIME::byFilename(settings.getPath());
+	std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime.toString(), settings.getPath()));
 	requestContext.getConnection().sendResponse(std::move(response));
 }
 

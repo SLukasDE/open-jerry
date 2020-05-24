@@ -21,7 +21,9 @@
 #include <jerry/engine/RequestHandler.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
+
 #include <esl/utility/String.h>
+
 #include <stdexcept>
 
 namespace jerry {
@@ -55,8 +57,8 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Li
 	std::unique_ptr<RequestHandler> engineRequestHandler(new RequestHandler(*this, baseRequestContext));
 
 	if(Context::createRequestHandler(*engineRequestHandler)) {
-		std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> rv(engineRequestHandler.get());
-		engineRequestHandler.release();
+		/* convert unique_ptr<jerry::engine::RequestHandler> to unique_ptr<esl::...::RequestHandler> */
+		std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> rv(engineRequestHandler.release());
 		return rv;
 	}
 

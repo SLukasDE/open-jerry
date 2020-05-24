@@ -16,26 +16,28 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#ifndef JERRY_SCRIPT_BUILDIN_OR_H_
+#define JERRY_SCRIPT_BUILDIN_OR_H_
 
-#include <esl/utility/MIME.h>
-#include <string>
+#include <jerry/script/Function.h>
 
 namespace jerry {
-namespace utility {
+namespace script {
+namespace buildin {
 
-class MIME {
+class Or : public script::Function {
 public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+	Or(std::size_t numArguments);
+
+	std::size_t setArgument(std::size_t index, const std::string& value) override;
+	std::string call() override;
 
 private:
-	MIME() = default;
-	~MIME() = default;
+	std::size_t numArguments;
 };
 
-} /* namespace utility */
+} /* namespace buildin */
+} /* namespace script */
 } /* namespace jerry */
 
-#endif /* JERRY_UTILITY_MIME_H_ */
+#endif /* JERRY_SCRIPT_BUILDIN_OR_H_ */

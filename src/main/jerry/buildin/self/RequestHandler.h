@@ -16,26 +16,27 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_UTILITY_MIME_H_
-#define JERRY_UTILITY_MIME_H_
+#ifndef JERRY_BUILDIN_SELF_REQUESTHANDLER_H_
+#define JERRY_BUILDIN_SELF_REQUESTHANDLER_H_
 
-#include <esl/utility/MIME.h>
+#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/http/server/RequestContext.h>
+
 #include <string>
 
 namespace jerry {
-namespace utility {
+namespace buildin {
+namespace self {
 
-class MIME {
+class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
 public:
-	static esl::utility::MIME byFilename(const std::string& filename);
-	static esl::utility::MIME byFileExtension(std::string fileExtension);
+	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
 
-private:
-	MIME() = default;
-	~MIME() = default;
+	RequestHandler(esl::http::server::RequestContext& requestContext);
 };
 
-} /* namespace utility */
+} /* namespace self */
+} /* namespace buildin */
 } /* namespace jerry */
 
-#endif /* JERRY_UTILITY_MIME_H_ */
+#endif /* JERRY_BUILDIN_SELF_REQUESTHANDLER_H_ */
