@@ -62,13 +62,6 @@ private:
 	std::reference_wrapper<const Endpoint> engineEndpoint;
 	std::vector<std::string> pathList;
 	bool isEndingWithSlash = false;
-
-	//std::string outputContent;
-	//std::size_t outputPos = 0;
-
-	//int getData(char* buffer, std::size_t count);
-
-	bool callWithExceptionHandler(std::function<bool()> callFunction);
 };
 
 } /* namespace engine */

@@ -19,6 +19,7 @@
 #include <jerry/engine/Engine.h>
 #include <jerry/engine/RequestHandler.h>
 #include <jerry/engine/Endpoint.h>
+#include <jerry/engine/ExceptionHandler.h>
 #include <jerry/Logger.h>
 #include <jerry/Module.h>
 
@@ -27,6 +28,8 @@
 #include <esl/system/SignalHandler.h>
 #include <esl/http/server/Request.h>
 #include <esl/http/server/RequestContext.h>
+#include <esl/http/server/exception/StatusCode.h>
+#include <esl/http/server/requesthandler/Interface.h>
 #include <esl/utility/String.h>
 
 #include <set>
@@ -53,6 +56,13 @@ bool Engine::run() {
 		logger.warn << "no listener defined.\n";
 		return false;
 	}
+
+	/* *********************************************************** *
+	 * initialize ExceptionHandler:                                *
+	 * Load all implementations to convert 'const std::exception&' *
+	 * to esl::http::server::exception::Interface::Message         *
+	 * *********************************************************** */
+	ExceptionHandler::initialize();
 
 	/* ********************************** *
 	 * initialize objects for all context *
@@ -210,12 +220,24 @@ esl::object::Interface::Object* Engine::getObject(const std::string& id) const {
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Engine::createRequestHandler(esl::http::server::RequestContext& requestContext) {
 	/* Access log */
-	logger.info << "Request " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getClientAddress() << "\n";
+	logger.info << "Request " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getRemoteAddress() << "\n";
 
 	EngineObject* engineObject = dynamic_cast<EngineObject*>(requestContext.getObject(""));
 	if(!engineObject) {
+    	esl::http::server::exception::StatusCode e(500, "Engine object not found");
+		ExceptionHandler exceptionHandler;
+
+    	exceptionHandler.setShowException(false);
+    	exceptionHandler.setShowStacktrace(false);
+    	exceptionHandler.setMessage(e);
+    	exceptionHandler.dump(logger.error);
+    	exceptionHandler.dump(requestContext.getConnection());
+    	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new esl::http::server::requesthandler::Interface::RequestHandler);
+    	/*
 		logger.error << "Engine object not found\n";
+
 		return nullptr;
+		*/
 	}
 
 	Engine& engine = engineObject->getEngine();
@@ -225,18 +247,27 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> En
 	if(listener == nullptr) {
 		/* Error log */
 		logger.info << "ERROR: No listener available for invalid request \"" << requestContext.getRequest().getPath() << "\"\n";
-		return nullptr;
+
+    	esl::http::server::exception::StatusCode e(404);
+		ExceptionHandler exceptionHandler;
+
+    	exceptionHandler.setShowException(false);
+    	exceptionHandler.setShowStacktrace(false);
+    	exceptionHandler.setMessage(esl::http::server::exception::StatusCode(500));
+    	exceptionHandler.dump(requestContext.getConnection());
+    	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new esl::http::server::requesthandler::Interface::RequestHandler);
+//		return nullptr;
 	}
 	return listener->createRequestHandler(requestContext);
 }
 
 Listener* Engine::getListener(esl::http::server::RequestContext& requestContext) const {
-	auto iterListenerByPort = listenerByPort.find(requestContext.getRequest().getPort());
+	auto iterListenerByPort = listenerByPort.find(requestContext.getRequest().getHostPort());
 	if(iterListenerByPort == std::end(listenerByPort)) {
 		return nullptr;
 	}
 
-	std::string domain = requestContext.getRequest().getDomain();
+	std::string domain = requestContext.getRequest().getHost();
 	auto iterListenerByDomain = iterListenerByPort->second.listenerByDomain.find(domain);
 	while(iterListenerByDomain == std::end(iterListenerByPort->second.listenerByDomain)) {
 		std::string::size_type pos = domain.find_first_of('.');

@@ -18,20 +18,41 @@
 
 #include <jerry/html/HTML.h>
 
+#include <sstream>
+
 namespace jerry {
 namespace html {
 
 std::string toHTML(const std::string& str) {
-	return str;
-}
+	std::stringstream result;
 
-HTML::HTML() {
-	// TODO Auto-generated constructor stub
+	for(const auto c :str) {
+		switch(c) {
+		case '\n':
+			result << "<br>\n";
+			break;
+		case '"':
+			result << "&quot;";
+			break;
+		case '&':
+			result << "&amp;";
+			break;
+		case '<':
+			result << "&lt;";
+			break;
+		case '>':
+			result << "&gt;";
+			break;
+		case ' ':
+			result << "&nbsp;";
+			break;
+		default:
+			result << c;
+			break;
+		}
+	}
 
-}
-
-HTML::~HTML() {
-	// TODO Auto-generated destructor stub
+	return result.str();
 }
 
 } /* namespace html */

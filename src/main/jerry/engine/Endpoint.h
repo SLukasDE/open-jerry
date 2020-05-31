@@ -20,7 +20,10 @@
 #define JERRY_ENGINE_ENDPOINT_H_
 
 #include <jerry/engine/Context.h>
+#include <jerry/engine/Document.h>
+
 #include <esl/http/server/RequestContext.h>
+
 #include <string>
 #include <vector>
 #include <map>
@@ -57,7 +60,7 @@ public:
 	bool getInheritErrorDocuments() const;
 
 	void addErrorDocument(unsigned short statusCode, const std::string& path, bool parse);
-	const std::pair<std::string, bool>* findErrorDocument(unsigned short statusCode) const;
+	const Document* findErrorDocument(unsigned short statusCode) const;
 
 	void addHeader(std::string key, std::string value);
 	const std::map<std::string, std::string>& getHeaders() const;
@@ -78,7 +81,7 @@ private:
 	bool inheritErrorDocuments = true;
 
 	/* maps Status Code to Error-Doc-Path and Flag, if content has to be parsed */
-	std::map<unsigned short, std::pair<std::string, bool>> errorDocuments;
+	std::map<unsigned short, Document> errorDocuments;
 
 	std::map<std::string, std::string> headers;
 };

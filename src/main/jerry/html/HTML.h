@@ -26,12 +26,6 @@ namespace html {
 
 std::string toHTML(const std::string& str);
 
-class HTML {
-public:
-	HTML();
-	virtual ~HTML();
-};
-
 } /* namespace html */
 } /* namespace jerry */
 

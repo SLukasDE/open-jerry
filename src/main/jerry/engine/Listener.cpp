@@ -19,6 +19,7 @@
 #include <jerry/engine/Listener.h>
 #include <jerry/engine/Engine.h>
 #include <jerry/engine/RequestHandler.h>
+#include <jerry/engine/ExceptionHandler.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 
@@ -54,15 +55,22 @@ esl::object::Interface::Object* Listener::getHiddenObject(const std::string& id)
 }
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Listener::createRequestHandler(esl::http::server::RequestContext& baseRequestContext) {
-	std::unique_ptr<RequestHandler> engineRequestHandler(new RequestHandler(*this, baseRequestContext));
+	std::unique_ptr<RequestHandler> listenerRequestHandler(new RequestHandler(*this, baseRequestContext));
 
-	if(Context::createRequestHandler(*engineRequestHandler)) {
+	if(Context::createRequestHandler(*listenerRequestHandler)) {
 		/* convert unique_ptr<jerry::engine::RequestHandler> to unique_ptr<esl::...::RequestHandler> */
-		std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> rv(engineRequestHandler.release());
+		std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> rv(listenerRequestHandler.release());
 		return rv;
 	}
 
-	return nullptr;
+	ExceptionHandler exceptionHandler;
+
+	exceptionHandler.setShowException(true);
+	exceptionHandler.setShowStacktrace(false);
+	exceptionHandler.setMessage(esl::http::server::exception::StatusCode(404));
+	exceptionHandler.dump(baseRequestContext.getConnection());
+
+	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new esl::http::server::requesthandler::Interface::RequestHandler);
 }
 
 void Listener::registerEndpoint(const Endpoint& endpoint) {

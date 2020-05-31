@@ -119,10 +119,12 @@ bool Endpoint::getInheritErrorDocuments() const {
 }
 
 void Endpoint::addErrorDocument(unsigned short statusCode, const std::string& path, bool parse) {
-	errorDocuments.insert(std::make_pair(statusCode, std::make_pair(path, parse)));
+	Document document(path);
+	document.setLanguage(parse ? Document::builtinScript : Document::none);
+	errorDocuments.insert(std::make_pair(statusCode, document));
 }
 
-const std::pair<std::string, bool>* Endpoint::findErrorDocument(unsigned short statusCode) const {
+const Document* Endpoint::findErrorDocument(unsigned short statusCode) const {
 	const auto iter = errorDocuments.find(statusCode);
 
 	if(iter == std::end(errorDocuments)) {
