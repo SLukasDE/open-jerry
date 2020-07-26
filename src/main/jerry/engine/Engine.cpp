@@ -84,7 +84,7 @@ bool Engine::run() {
 	 * **************************************************** */
 	std::vector<std::unique_ptr<esl::http::server::Socket>> sockets;
 	for(const auto& portListener : listenerByPort) {
-		std::unique_ptr<esl::http::server::Socket> socket(new esl::http::server::Socket(portListener.first, 4, createRequestHandler));
+		std::unique_ptr<esl::http::server::Socket> socket(new esl::http::server::Socket(portListener.first, createRequestHandler, {{"threads", "4"}}));
 		socket->setObject("", [this](const esl::http::server::RequestContext&){ return &this->engineObject; });
 
 		bool isHttps = (portListener.second.protocol == "https");
@@ -103,18 +103,18 @@ bool Engine::run() {
 	}
 
 	auto stopFunction = [this]() { stop(); };
-	esl::system::signalHandlerInstall(esl::system::SignalType::interrupt, stopFunction);
-	esl::system::signalHandlerInstall(esl::system::SignalType::terminate, stopFunction);
-	esl::system::signalHandlerInstall(esl::system::SignalType::pipe, stopFunction);
+	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
+	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
+	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
 
 	for(auto& socket : sockets) {
 		socket->listen();
 	}
 	bool rc = messageTimer.run();
 
-	esl::system::signalHandlerRemove(esl::system::SignalType::pipe, stopFunction);
-	esl::system::signalHandlerRemove(esl::system::SignalType::terminate, stopFunction);
-	esl::system::signalHandlerRemove(esl::system::SignalType::interrupt, stopFunction);
+	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::pipe, stopFunction);
+	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
+	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
 
 	for(auto& socket : sockets) {
 		socket->release();

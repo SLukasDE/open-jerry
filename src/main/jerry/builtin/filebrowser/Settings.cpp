@@ -17,7 +17,9 @@
  */
 
 #include <jerry/builtin/filebrowser/Settings.h>
+
 #include <esl/Stacktrace.h>
+
 #include <stdexcept>
 
 namespace jerry {

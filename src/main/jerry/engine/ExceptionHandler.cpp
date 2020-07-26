@@ -101,7 +101,7 @@ bool ExceptionHandler::call(std::function<void()> callFunction, esl::http::serve
     catch (...) {
     	setMessage();
     }
-
+#if 0
 	/* **************** *
 	 * Output on logger *
 	 * **************** */
@@ -111,6 +111,7 @@ bool ExceptionHandler::call(std::function<void()> callFunction, esl::http::serve
 	* HTTP Response *
 	* ************* */
     dump(connection);
+#endif
 
 	return true;
 }

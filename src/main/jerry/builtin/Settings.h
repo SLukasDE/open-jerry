@@ -20,6 +20,7 @@
 #define JERRY_BUILTIN_SETTINGS_H_
 
 #include <esl/object/Settings.h>
+
 #include <string>
 
 namespace jerry {
