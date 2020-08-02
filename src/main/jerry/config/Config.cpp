@@ -25,6 +25,7 @@
 #include <jerry/utility/URL.h>
 
 #include <esl/object/Settings.h>
+#include <esl/object/ValueSettings.h>
 #include <esl/Module.h>
 #include <esl/Stacktrace.h>
 
@@ -215,6 +216,14 @@ void Config::loadLibraries() {
 }
 
 std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
+#if 1
+	esl::object::ValueSettings settings;
+	for(auto const setting : loggerConfig.layoutSettings) {
+		settings.addSetting(setting.key, setting.value);
+	}
+
+	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
+#else
 	std::unique_ptr<esl::logging::Layout> layout(new esl::logging::Layout(loggerConfig.layout));
 
 	for(auto const setting : loggerConfig.layoutSettings) {
@@ -222,6 +231,7 @@ std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
 	}
 
 	return layout;
+#endif
 }
 
 void Config::setLogLevel() const {
