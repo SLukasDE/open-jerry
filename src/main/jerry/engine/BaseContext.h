@@ -31,17 +31,15 @@ namespace engine {
 
 class BaseContext : public esl::http::server::ObjectContext {
 public:
-	virtual ~BaseContext() = default;
-
 	virtual esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation);
-	esl::object::Interface::Object* getObject(const std::string& id) const override;
+	esl::object::Interface::Object* findObject(const std::string& id) const override;
 
 	virtual void initializeContext();
 
-protected:
+	virtual void dumpTree(std::size_t depth) const;
 
 private:
-	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> localObjectsById;
+	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objectsById;
 };
 
 } /* namespace engine */

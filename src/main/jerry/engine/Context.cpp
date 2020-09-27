@@ -65,45 +65,43 @@ Context::Context(Listener& aListener)
 { }
 
 void Context::addReference(const std::string& id, const std::string& refId) {
-	auto allObjectsByIdIter = allObjectsById.find(id);
-	if(allObjectsByIdIter != std::end(allObjectsById)) {
-        throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same name.");
+	esl::object::Interface::Object* objectPtr = findObject(id);
+	if(objectPtr != nullptr) {
+        throw std::runtime_error("Cannot add reference with id '" + id + "', because there exists already an object with same id.");
 	}
 
-	esl::object::Interface::Object* object = getHiddenObject(refId);
-
-	if(object == nullptr) {
-        throw std::runtime_error("Cannot add object with id '" + id + "', because it's reference '" + refId + "' does not exists.");
+	objectPtr = findHiddenObject(refId);
+	if(objectPtr == nullptr) {
+        throw std::runtime_error("Cannot add reference with id '" + id + "', because it's reference id '" + refId + "' does not exists.");
 	}
 
-	allObjectsById[id] = object;
+	localObjectsById[id] = objectPtr;
 }
 
 esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation) {
-	auto allObjectsByIdIter = allObjectsById.find(id);
-	if(allObjectsByIdIter != std::end(allObjectsById)) {
-        throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same name.");
+	esl::object::Interface::Object* objectPtr = findObject(id);
+	if(objectPtr != nullptr) {
+        throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same id.");
 	}
 
 	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation);
 
-	allObjectsById[id] = &object;
+	localObjectsById[id] = &object;
 
 	return object;
 }
 
-esl::object::Interface::Object* Context::getObject(const std::string& id) const {
-	esl::object::Interface::Object* object = getLocalObject(id);
-	if(object) {
-		return object;
+esl::object::Interface::Object* Context::findObject(const std::string& id) const {
+	auto localObjectsByIdIter = localObjectsById.find(id);
+	if(localObjectsByIdIter == std::end(localObjectsById)) {
+		return nullptr;
 	}
 
-	logger.warn << "Lookup for undefined object \"" << id << "\" in context.\n";
-	return nullptr;
+    return localObjectsByIdIter->second;
 }
 
-esl::object::Interface::Object* Context::getHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = getLocalObject(id);
+esl::object::Interface::Object* Context::findHiddenObject(const std::string& id) const {
+	esl::object::Interface::Object* object = findObject(id);
 	if(object) {
 		return object;
 	}
@@ -111,27 +109,27 @@ esl::object::Interface::Object* Context::getHiddenObject(const std::string& id) 
 	/* check if this is NOT an instance of Listener
 	 * check could also be "if(&listener != this) { ... }" */
 	if(parentContext) {
-		return parentContext->getHiddenObject(id);
+		return parentContext->findHiddenObject(id);
 	}
 
 	return nullptr;
 }
 
 Context& Context::addContext() {
-	Context* newContext = new Context(listener, endpoint, *this);
+	Context* contextPtr = new Context(listener, endpoint, *this);
 
-	contextCreateRequestHandlerList.push_back(std::make_tuple(std::unique_ptr<Context>(newContext), nullptr, nullptr));
+	contextCreateRequestHandlerList.push_back(std::make_tuple(std::unique_ptr<Context>(contextPtr), nullptr, nullptr));
 
-	return *newContext;
+	return *contextPtr;
 }
 
 Endpoint& Context::addEndpoint(std::string path) {
 	std::vector<std::string> pathList(esl::utility::String::split(esl::utility::String::trim(std::move(path), '/'), '/'));
 
-	Endpoint* newEndpoint = new Endpoint(listener, endpoint, *this, std::move(pathList));
-	contextCreateRequestHandlerList.push_back(std::make_tuple(nullptr, std::unique_ptr<Endpoint>(newEndpoint), nullptr));
+	Endpoint* endpointPtr = new Endpoint(listener, endpoint, *this, std::move(pathList));
+	contextCreateRequestHandlerList.push_back(std::make_tuple(nullptr, std::unique_ptr<Endpoint>(endpointPtr), nullptr));
 
-	return *newEndpoint;
+	return *endpointPtr;
 }
 
 void Context::addRequestHandler(const std::string& implementation) {
@@ -144,12 +142,19 @@ const Endpoint& Context::getEndpoint() const {
 
 void Context::initializeContext() {
 	// initialize objects of this context
-	for(auto& object : allObjectsById) {
-		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(object.second);
+
+#if 1
+	// Initialize owned objects only, not references
+	BaseContext::initializeContext();
+#else
+	// Don't initialize references
+	for(auto& objectEntry : localObjectsById) {
+		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(objectEntry.second);
 		if(initializeContext) {
 			initializeContext->initializeContext(*this);
 		}
 	}
+#endif
 
 	// call initializeContext() of sub-context's
 	for(auto& createRequestHandler : contextCreateRequestHandlerList) {
@@ -167,6 +172,39 @@ void Context::initializeContext() {
 			 * *************** */
 			Endpoint* subEndpoint = std::get<1>(createRequestHandler).get();
 			subEndpoint->initializeContext();
+		}
+	}
+}
+
+void Context::dumpTree(std::size_t depth) const {
+	for(auto objectEntry : localObjectsById) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|  ";
+		}
+		if(BaseContext::findObject(objectEntry.first)) {
+			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << "\n";
+		}
+		else {
+			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << " (reference)\n";
+		}
+	}
+
+	// call dumpTree() of sub-context's
+	for(auto& createRequestHandler : contextCreateRequestHandlerList) {
+		if(std::get<0>(createRequestHandler)) {
+			/* ************** *
+			 * handle Context *
+			 * ************** */
+			Context* subContext = std::get<0>(createRequestHandler).get();
+			subContext->dumpTree(depth + 1);
+		}
+
+		if(std::get<1>(createRequestHandler)) {
+			/* *************** *
+			 * handle Endpoint *
+			 * *************** */
+			Endpoint* subEndpoint = std::get<1>(createRequestHandler).get();
+			subEndpoint->dumpTree(depth + 1);
 		}
 	}
 }
@@ -223,15 +261,6 @@ bool Context::createRequestHandler(RequestHandler& requestHandler) const {
 	}
 
 	return false;
-}
-
-esl::object::Interface::Object* Context::getLocalObject(const std::string& id) const {
-	auto allObjectsByIdIter = allObjectsById.find(id);
-	if(allObjectsByIdIter != std::end(allObjectsById)) {
-        return allObjectsByIdIter->second;
-	}
-
-	return nullptr;
 }
 
 } /* namespace engine */

@@ -19,9 +19,10 @@
 #ifndef JERRY_CGI_CLIENT_PRODUCER_REQUESTFILE_H_
 #define JERRY_CGI_CLIENT_PRODUCER_REQUESTFILE_H_
 
+#if 0
 #include <jerry/cgi/client/RequestInfo.h>
 
-#include <esl/http/client/RequestFile.h>
+#include <esl/http/client/RequestHandlerFile.h>
 #include <esl/system/process/ProducerFile.h>
 
 #include <string>
@@ -33,7 +34,7 @@ namespace producer {
 
 class RequestFile : public esl::system::process::ProducerFile {
 public:
-	RequestFile(const esl::http::client::RequestFile& request);
+	RequestFile(const esl::http::client::RequestHandlerFile& requestHandler);
 
 	const RequestInfo& getRequestInfo() const noexcept;
 
@@ -45,5 +46,6 @@ private:
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif
 
 #endif /* JERRY_CGI_CLIENT_PRODUCER_REQUESTFILE_H_ */

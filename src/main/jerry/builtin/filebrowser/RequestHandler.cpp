@@ -61,7 +61,7 @@ std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Re
 	if(requestContext.getRequest().getMethod() != "GET") {
 		return nullptr;
 	}
-	const Settings* settings = dynamic_cast<Settings*>(requestContext.getObject(""));
+	const Settings* settings = dynamic_cast<Settings*>(requestContext.findObject(""));
 	if(settings == nullptr) {
 		return nullptr;
 	}

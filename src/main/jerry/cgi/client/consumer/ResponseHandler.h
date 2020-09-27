@@ -18,7 +18,7 @@
 
 #ifndef JERRY_CGI_CLIENT_CONSUMER_RESPONSEHANDLER_H_
 #define JERRY_CGI_CLIENT_CONSUMER_RESPONSEHANDLER_H_
-
+#if 0
 #include <esl/system/Interface.h>
 #include <esl/http/client/ResponseHandler.h>
 
@@ -58,5 +58,6 @@ private:
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif
 
 #endif /* JERRY_CGI_CLIENT_CONSUMER_RESPONSEHANDLER_H_ */

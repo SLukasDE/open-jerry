@@ -207,9 +207,9 @@ Listener& Engine::addListener(utility::URL url) {
 	iterListenerByPort->second.listenerByDomain[hostname] = std::unique_ptr<Listener>(newListener);
 	return *newListener;
 }
-
-esl::object::Interface::Object* Engine::getObject(const std::string& id) const {
-	esl::object::Interface::Object* object = BaseContext::getObject(id);
+/*
+esl::object::Interface::Object* Engine::findObject(const std::string& id) const {
+	esl::object::Interface::Object* object = BaseContext::findObject(id);
 
 	if(object == nullptr) {
 		logger.warn << "Lookup for object \"" << id << "\" in engine failed.\n";
@@ -217,12 +217,36 @@ esl::object::Interface::Object* Engine::getObject(const std::string& id) const {
 
 	return object;
 }
+*/
+
+void Engine::dumpTree(std::size_t depth) const {
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|  ";
+	}
+	logger.info << "+-> Engine\n";
+
+	++depth;
+	BaseContext::dumpTree(depth);
+
+	for(const auto& portListenerEntry: listenerByPort) {
+		for(const auto& listenerByDomainEntry : portListenerEntry.second.listenerByDomain) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|  ";
+			}
+			logger.info << "+-> Socket: \"" << listenerByDomainEntry.first << ":" << portListenerEntry.first << "\"\n";
+
+			if(listenerByDomainEntry.second) {
+				listenerByDomainEntry.second->dumpTree(depth + 1);
+			}
+		}
+	}
+}
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Engine::createRequestHandler(esl::http::server::RequestContext& requestContext) {
 	/* Access log */
 	logger.info << "Request " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getRemoteAddress() << "\n";
 
-	EngineObject* engineObject = dynamic_cast<EngineObject*>(requestContext.getObject(""));
+	EngineObject* engineObject = dynamic_cast<EngineObject*>(requestContext.findObject(""));
 	if(!engineObject) {
     	esl::http::server::exception::StatusCode e(500, "Engine object not found");
 		ExceptionHandler exceptionHandler;

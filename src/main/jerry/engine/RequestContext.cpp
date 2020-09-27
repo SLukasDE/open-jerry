@@ -54,10 +54,10 @@ const std::string& RequestContext::getPath() const {
 	return path;
 }
 
-esl::object::Interface::Object* RequestContext::getObject(const std::string& id) const {
-	esl::object::Interface::Object* object = engineContext.get().getObject(id);
+esl::object::Interface::Object* RequestContext::findObject(const std::string& id) const {
+	esl::object::Interface::Object* object = engineContext.get().findObject(id);
 	if(object == nullptr) {
-		object = baseRequestContext.getObject(id);
+		object = baseRequestContext.findObject(id);
 	}
 	return object;
 }

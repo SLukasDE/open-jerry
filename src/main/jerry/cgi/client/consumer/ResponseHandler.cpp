@@ -17,6 +17,7 @@
  */
 
 #include <jerry/cgi/client/consumer/ResponseHandler.h>
+#if 0
 #include <jerry/Logger.h>
 
 #include <esl/utility/String.h>
@@ -135,7 +136,7 @@ bool ResponseHandler::process(const char* contentData, std::size_t contentSize) 
 		return false;
 	}
 
-	if(responseHandler->process(contentData, contentSize) == false) {
+	if(responseHandler->consumer(contentData, contentSize) == false) {
 		responseHandler = nullptr;
 		return false;
 	}
@@ -168,3 +169,4 @@ void ResponseHandler::addHeader(std::string line) {
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif

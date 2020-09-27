@@ -61,7 +61,9 @@ public:
 
 	Listener& addListener(utility::URL url);
 
-	esl::object::Interface::Object* getObject(const std::string& id) const override;
+	//esl::object::Interface::Object* findObject(const std::string& id) const override;
+
+	void dumpTree(std::size_t depth) const override;
 
 private:
 	class EngineObject : public esl::object::Interface::Object {

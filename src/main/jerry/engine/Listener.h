@@ -38,7 +38,7 @@ friend class Endpoint;
 public:
 	Listener(Engine& engine);
 
-	esl::object::Interface::Object* getHiddenObject(const std::string& id) const override;
+	esl::object::Interface::Object* findHiddenObject(const std::string& id) const override;
 
 	std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(esl::http::server::RequestContext& requestContext);
 

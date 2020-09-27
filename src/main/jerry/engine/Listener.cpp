@@ -44,14 +44,14 @@ Listener::Listener(Engine& aEngine)
   rootEndpointEntry(this)
 { }
 
-esl::object::Interface::Object* Listener::getHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = Context::getObject(id);
+esl::object::Interface::Object* Listener::findHiddenObject(const std::string& id) const {
+	esl::object::Interface::Object* object = Context::findObject(id);
 
-	if(object == nullptr) {
-		object = engine.getObject(id);
+	if(object) {
+		return object;
 	}
 
-	return object;
+	return engine.findObject(id);
 }
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Listener::createRequestHandler(esl::http::server::RequestContext& baseRequestContext) {

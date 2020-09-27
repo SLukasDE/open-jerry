@@ -39,8 +39,10 @@ class Context : public BaseContext {
 public:
 	void addReference(const std::string& id, const std::string& refId);
 	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation) override;
-	esl::object::Interface::Object* getObject(const std::string& id) const override;
-	virtual esl::object::Interface::Object* getHiddenObject(const std::string& id) const;
+	esl::object::Interface::Object* findObject(const std::string& id) const override;
+
+	/* lookup for object up to it's parent context */
+	virtual esl::object::Interface::Object* findHiddenObject(const std::string& id) const;
 
 	Context& addContext();
 	Endpoint& addEndpoint(std::string path);
@@ -49,6 +51,8 @@ public:
 	const Endpoint& getEndpoint() const;
 
 	void initializeContext() override;
+
+	void dumpTree(std::size_t depth) const override;
 
 protected:
 	Context(Listener& listener, const Endpoint& endpoint, const Context& parentContext);
@@ -63,11 +67,9 @@ private:
 	const Endpoint& endpoint;
 	const Context* parentContext = nullptr;
 
-	std::map<std::string, esl::object::Interface::Object*> allObjectsById;
+	std::map<std::string, esl::object::Interface::Object*> localObjectsById;
 
 	std::vector<std::tuple<std::unique_ptr<Context>, std::unique_ptr<Endpoint>, esl::http::server::requesthandler::Interface::CreateRequestHandler>> contextCreateRequestHandlerList;
-
-	esl::object::Interface::Object* getLocalObject(const std::string& id) const;
 };
 
 } /* namespace engine */

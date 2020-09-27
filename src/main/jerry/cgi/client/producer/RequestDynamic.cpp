@@ -17,13 +17,13 @@
  */
 
 #include <jerry/cgi/client/producer/RequestDynamic.h>
-
+#if 0
 namespace jerry {
 namespace cgi {
 namespace client {
 namespace producer {
 namespace {
-RequestInfo createRequestInfo(const esl::http::client::RequestDynamic& request) {
+RequestInfo createRequestInfo(const esl::http::client::RequestHandlerDynamic& request) {
 	bool isEmpty(request.getSize() == 0);
 	bool hasSize(isEmpty ? false : request.hasSize());
 	std::size_t contentSize(hasSize ? 0 : request.getSize());
@@ -32,10 +32,10 @@ RequestInfo createRequestInfo(const esl::http::client::RequestDynamic& request) 
 }
 }
 
-RequestDynamic::RequestDynamic(esl::http::client::RequestDynamic& aRequest)
-: ProducerDynamic([&aRequest](char* buffer, std::size_t count) { return aRequest.produceData(buffer, count); }),
-  request(aRequest),
-  requestInfo(createRequestInfo(request))
+RequestDynamic::RequestDynamic(esl::http::client::RequestHandlerDynamic& aRequestHandler)
+: ProducerDynamic([&aRequestHandler](char* buffer, std::size_t count) { return aRequestHandler.producer(buffer, count); }),
+  requestHandler(aRequestHandler),
+  requestInfo(createRequestInfo(requestHandler))
 { }
 
 const RequestInfo& RequestDynamic::getRequestInfo() const noexcept {
@@ -46,3 +46,4 @@ const RequestInfo& RequestDynamic::getRequestInfo() const noexcept {
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif

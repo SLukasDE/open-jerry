@@ -189,6 +189,11 @@ int main(int argc, const char *argv[]) {
 
 				/* show loaded modules and interfaces */
 				printModules(oStream);
+
+				/* show configuration file */
+				oStream << "\n\nDump tree:\n";
+				engine.dumpTree(0);
+				oStream << "Dump tree done\n\n";
 			}
 
 			bool success;

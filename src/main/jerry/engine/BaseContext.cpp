@@ -32,7 +32,7 @@ Logger logger("jerry::engine::BaseContext");
 esl::object::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation) {
 	logger.trace << "Adding object with id=\"" << id << "\" and implementation=\"" << implementation << "\"\n";
 
-	if(localObjectsById.find(id) != std::end(localObjectsById)) {
+	if(objectsById.find(id) != std::end(objectsById)) {
         throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because there exists already a local object with same id.");
 	}
 
@@ -42,30 +42,35 @@ esl::object::Interface::Object& BaseContext::addObject(const std::string& id, co
 	}
 
 	esl::object::Interface::Object* objectPtr = object.get();
-	localObjectsById[id] = std::move(object);
+	objectsById[id] = std::move(object);
 
 	return *objectPtr;
 }
 
-esl::object::Interface::Object* BaseContext::getObject(const std::string& id) const {
-	logger.trace << "Lookup object with id=\"" << id << "\"\n";
-
-	auto localObjectsByIdIter = localObjectsById.find(id);
-	if(localObjectsByIdIter == std::end(localObjectsById)) {
-		logger.trace << "Object not found in BaseContext\n";
+esl::object::Interface::Object* BaseContext::findObject(const std::string& id) const {
+	auto localObjectsByIdIter = objectsById.find(id);
+	if(localObjectsByIdIter == std::end(objectsById)) {
 		return nullptr;
 	}
 
-	logger.trace << "Object found in BaseContext\n";
     return localObjectsByIdIter->second.get();
 }
 
 void BaseContext::initializeContext() {
-	for(auto& localObject : localObjectsById) {
-		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(localObject.second.get());
+	for(auto& object : objectsById) {
+		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(object.second.get());
 		if(initializeContext) {
 			initializeContext->initializeContext(*this);
 		}
+	}
+}
+
+void BaseContext::dumpTree(std::size_t depth) const {
+	for(const auto& objectEntry : objectsById) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|  ";
+		}
+		logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second.get() << "\n";
 	}
 }
 

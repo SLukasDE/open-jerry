@@ -18,10 +18,10 @@
 
 #ifndef JERRY_CGI_CLIENT_PRODUCER_REQUESTSTATIC_H_
 #define JERRY_CGI_CLIENT_PRODUCER_REQUESTSTATIC_H_
-
+#if 0
 #include <jerry/cgi/client/RequestInfo.h>
 
-#include <esl/http/client/RequestStatic.h>
+#include <esl/http/client/RequestHandlerStatic.h>
 #include <esl/system/process/ProducerStatic.h>
 
 #include <string>
@@ -33,7 +33,7 @@ namespace producer {
 
 class RequestStatic : public esl::system::process::ProducerStatic {
 public:
-	RequestStatic(const esl::http::client::RequestStatic& request);
+	RequestStatic(const esl::http::client::RequestHandlerStatic& request);
 
 	const RequestInfo& getRequestInfo() const noexcept;
 
@@ -45,5 +45,6 @@ private:
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif
 
 #endif /* JERRY_CGI_CLIENT_PRODUCER_REQUESTSTATIC_H_ */

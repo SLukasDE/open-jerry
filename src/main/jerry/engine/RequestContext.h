@@ -48,7 +48,7 @@ public:
 	const esl::http::server::Request& getRequest() const override;
 	const std::string& getPath() const override;
 
-	esl::object::Interface::Object* getObject(const std::string& id) const override;
+	esl::object::Interface::Object* findObject(const std::string& id) const override;
 
 private:
 	esl::http::server::RequestContext& baseRequestContext;

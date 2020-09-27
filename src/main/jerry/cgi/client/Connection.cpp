@@ -17,6 +17,7 @@
  */
 
 #include <jerry/cgi/client/Connection.h>
+#if 0
 #include <jerry/cgi/client/consumer/ResponseHandler.h>
 #include <jerry/cgi/client/producer/RequestStatic.h>
 #include <jerry/cgi/client/producer/RequestDynamic.h>
@@ -105,9 +106,16 @@ Connection::Connection(const esl::utility::URL& aHostUrl, esl::system::process::
 
 }
 
-esl::http::client::Response Connection::send(esl::http::client::RequestDynamic& request, esl::http::client::ResponseHandler* responseHandler) const {
-	producer::RequestDynamic producerRequest(request);
-	return send(request, responseHandler, producerRequest.getRequestInfo(), producerRequest);
+esl::http::client::Response Connection::send(const esl::http::client::Request& request) const {
+	esl::system::process::ProducerDynamic producerDynamic([&request](char* buffer, std::size_t count) { return request.getRequestHandler()->producer(buffer, count); });
+	//producer::RequestDynamic producerDynamic(request);
+	return send(request, responseHandler, producerDynamic);
+}
+
+esl::http::client::Response Connection::send(const esl::http::client::RequestDynamic& request) const {
+	esl::system::process::ProducerDynamic producerDynamic([&request](char* buffer, std::size_t count) { return request.getRequestHandler()->producer(buffer, count); });
+	//producer::RequestDynamic producerDynamic(request);
+	return send(request, responseHandler, producerDynamic);
 }
 
 esl::http::client::Response Connection::send(const esl::http::client::RequestStatic& request, esl::http::client::ResponseHandler* responseHandler) const {
@@ -120,9 +128,7 @@ esl::http::client::Response Connection::send(const esl::http::client::RequestFil
 	return send(request, responseHandler, producerRequest.getRequestInfo(), producerRequest);
 }
 
-esl::http::client::Response Connection::send(const esl::http::client::Request& request, esl::http::client::ResponseHandler* responseHandler, const RequestInfo& requestInfo, esl::system::Interface::Producer& processProducer) const {
-	consumer::ResponseHandler processConsumer(responseHandler);
-
+esl::http::client::Response Connection::send(const esl::http::client::Request& request, esl::http::client::ResponseHandler* responseHandler, esl::system::Interface::Producer& processProducer) const {
 	std::vector<std::pair<std::string, std::string>> environment;
 
 	environment.push_back(std::make_pair("SERVER_SOFTWARE", serverSoftware));
@@ -149,10 +155,11 @@ esl::http::client::Response Connection::send(const esl::http::client::Request& r
 	environment.push_back(std::make_pair("REMOTE_HOST", remoteHost));
 	environment.push_back(std::make_pair("REMOTE_ADDR", remoteAddr));
 	environment.push_back(std::make_pair("REMOTE_USER", remoteUser));
-	if(requestInfo.isContentEmpty() == false) {
-		environment.push_back(std::make_pair("CONTENT_TYPE", request.getContentType().toString()));
-		if(requestInfo.hasContentSize() == false) {
-			environment.push_back(std::make_pair("CONTENT_LENGTH", std::to_string(requestInfo.getContentSize())));
+
+	if(request.getRequestHandler() && request.getRequestHandler()->isEmpty() == false) {
+		environment.push_back(std::make_pair("CONTENT_TYPE", request.getRequestHandler()->getContentType().toString()));
+		if(request.getRequestHandler()->hasSize()) {
+			environment.push_back(std::make_pair("CONTENT_LENGTH", std::to_string(request.getRequestHandler()->getSize())));
 		}
 	}
 
@@ -163,8 +170,33 @@ esl::http::client::Response Connection::send(const esl::http::client::Request& r
 	environment.push_back(std::make_pair("QUERY_STRING", ""));
 	environment.push_back(std::make_pair("", ""));
 
+
+
+
+
+	esl::system::Interface::Process::ParameterStreams parameterStreams;
+	esl::system::Interface::Process::ParameterFeatures parameterFeatures;
+
+	esl::http::client::RequestHandler* requestHandler = request.getRequestHandler();
+	std::unique_ptr<esl::system::process::ProducerDynamic> processProducer2;
+	if(requestHandler) {
+		processProducer2.reset(new esl::system::process::ProducerDynamic([requestHandler](char* buffer, std::size_t count) { return requestHandler->producer(buffer, count); }));
+
+		esl::system::Interface::Process::ParameterStream& parameterStream = parameterStreams[esl::system::Interface::FileDescriptor::stdInHandle];
+		parameterStream.consumer = nullptr;
+		parameterStream.producer = processProducer2;
+	}
+
+	consumer::ResponseHandler processConsumer(responseHandler);
+	{
+		esl::system::Interface::Process::ParameterStream& parameterStream = parameterStreams[esl::system::Interface::FileDescriptor::stdOutHandle];
+		parameterStream.consumer = &processConsumer;
+		parameterStream.producer = nullptr;
+	}
+
 	esl::system::Process process(arguments, esl::system::process::Environment(std::move(environment)), workingDir);
-	process.execute(processProducer, esl::system::Interface::FileDescriptor::stdOutHandle, processConsumer, esl::system::Interface::FileDescriptor::stdInHandle);
+	process.execute(parameterStreams, parameterFeatures);
+	//process.execute(processProducer, esl::system::Interface::FileDescriptor::stdInHandle, processConsumer, esl::system::Interface::FileDescriptor::stdOutHandle);
 
 	return esl::http::client::Response(processConsumer.getStatusCode(), std::move(processConsumer.getHeaders()));
 }
@@ -172,3 +204,4 @@ esl::http::client::Response Connection::send(const esl::http::client::Request& r
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif

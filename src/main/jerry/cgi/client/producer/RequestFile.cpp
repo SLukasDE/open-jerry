@@ -17,7 +17,7 @@
  */
 
 #include <jerry/cgi/client/producer/RequestFile.h>
-
+#if 0
 namespace jerry {
 namespace cgi {
 namespace client {
@@ -31,8 +31,8 @@ RequestInfo createRequestInfo(std::size_t size) {
 }
 }
 
-RequestFile::RequestFile(const esl::http::client::RequestFile& request)
-: ProducerFile(request.getFilename(), {{"read","true"}, {"write", "false"}, {"overwrite", "false"}}),
+RequestFile::RequestFile(const esl::http::client::RequestHandlerFile& requestHandler)
+: ProducerFile(requestHandler.getFilename(), {{"read","true"}, {"write", "false"}, {"overwrite", "false"}}),
   requestInfo(createRequestInfo(getFileSize()))
 { }
 
@@ -44,3 +44,4 @@ const RequestInfo& RequestFile::getRequestInfo() const noexcept {
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif

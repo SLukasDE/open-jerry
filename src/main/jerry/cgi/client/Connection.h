@@ -23,9 +23,6 @@
 
 #include <esl/http/client/Interface.h>
 #include <esl/http/client/Request.h>
-#include <esl/http/client/RequestDynamic.h>
-#include <esl/http/client/RequestStatic.h>
-#include <esl/http/client/RequestFile.h>
 #include <esl/http/client/Response.h>
 #include <esl/http/client/ResponseHandler.h>
 #include <esl/object/Values.h>
@@ -38,27 +35,26 @@
 #include <vector>
 #include <utility>
 #include <memory>
-
+#if 0
 namespace jerry {
 namespace cgi {
 namespace client {
 
 class Connection : public esl::http::client::Interface::Connection {
 public:
+	static std::unique_ptr<esl::http::client::Interface::Connection> create(const esl::utility::URL& hostUrl, const esl::object::Values<std::string>& values);
+
 	static inline const char* getImplementation() {
 		return "cgi4esl";
 	}
 
-	static std::unique_ptr<esl::http::client::Interface::Connection> create(const esl::utility::URL& hostUrl, const esl::object::Values<std::string>& values);
-
+	//Connection(std::string hostUrl, const esl::object::Values<std::string>& settings);
 	Connection(const esl::utility::URL& hostUrl, esl::system::process::Arguments arguments, const esl::object::Values<std::string>& values);
 
-	esl::http::client::Response send(esl::http::client::RequestDynamic& request, esl::http::client::ResponseHandler* responseHandler) const override;
-	esl::http::client::Response send(const esl::http::client::RequestStatic& request, esl::http::client::ResponseHandler* responseHandler) const override;
-	esl::http::client::Response send(const esl::http::client::RequestFile& request, esl::http::client::ResponseHandler* responseHandler) const override;
+	esl::http::client::Response send(esl::http::client::Request request) const override;
 
 private:
-	esl::http::client::Response send(const esl::http::client::Request& request, esl::http::client::ResponseHandler* responseHandler, const RequestInfo& requestInfo, esl::system::Interface::Producer& processProducer) const;
+	esl::http::client::Response send(const esl::http::client::Request& request, esl::http::client::ResponseHandler* responseHandler, esl::system::Interface::Producer& processProducer) const;
 
 	void prepareRequest(esl::http::client::Response& response, const esl::http::client::Request& request, const std::string& method) const;
 
@@ -83,5 +79,6 @@ private:
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif
 
 #endif /* JERRY_CGI_CLIENT_CONNECTION_H_ */

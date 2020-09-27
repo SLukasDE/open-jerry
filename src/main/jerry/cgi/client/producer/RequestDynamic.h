@@ -18,10 +18,10 @@
 
 #ifndef JERRY_CGI_CLIENT_PRODUCER_REQUESTDYNAMIC_H_
 #define JERRY_CGI_CLIENT_PRODUCER_REQUESTDYNAMIC_H_
-
+#if 0
 #include <jerry/cgi/client/RequestInfo.h>
 
-#include <esl/http/client/RequestDynamic.h>
+#include <esl/http/client/RequestHandlerDynamic.h>
 #include <esl/system/process/ProducerDynamic.h>
 
 #include <string>
@@ -33,12 +33,12 @@ namespace producer {
 
 class RequestDynamic : public esl::system::process::ProducerDynamic {
 public:
-	RequestDynamic(esl::http::client::RequestDynamic& request);
+	RequestDynamic(esl::http::client::RequestHandlerDynamic& request);
 
 	const RequestInfo& getRequestInfo() const noexcept;
 
 private:
-	esl::http::client::RequestDynamic& request;
+	esl::http::client::RequestHandlerDynamic& requestHandler;
 	RequestInfo requestInfo;
 };
 
@@ -46,5 +46,6 @@ private:
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif
 
 #endif /* JERRY_CGI_CLIENT_PRODUCER_REQUESTDYNAMIC_H_ */

@@ -17,15 +17,15 @@
  */
 
 #include <jerry/cgi/client/producer/RequestStatic.h>
-
+#if 0
 namespace jerry {
 namespace cgi {
 namespace client {
 namespace producer {
 
-RequestStatic::RequestStatic(const esl::http::client::RequestStatic& request)
-: ProducerStatic(request.getData(), request.getSize()),
-  requestInfo(request.getSize() == 0, true, request.getSize())
+RequestStatic::RequestStatic(const esl::http::client::RequestHandlerStatic& requestHandler)
+: ProducerStatic(requestHandler.getData(), requestHandler.getSize()),
+  requestInfo(requestHandler.getSize() == 0, true, requestHandler.getSize())
 { }
 
 const RequestInfo& RequestStatic::getRequestInfo() const noexcept {
@@ -36,3 +36,4 @@ const RequestInfo& RequestStatic::getRequestInfo() const noexcept {
 } /* namespace client */
 } /* namespace cgi */
 } /* namespace jerry */
+#endif

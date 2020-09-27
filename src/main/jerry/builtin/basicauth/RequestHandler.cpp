@@ -43,7 +43,7 @@ const std::string PAGE_401(
 }
 
 std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create(esl::http::server::RequestContext& requestContext) {
-	const Settings* settings = dynamic_cast<Settings*>(requestContext.getObject(""));
+	const Settings* settings = dynamic_cast<Settings*>(requestContext.findObject(""));
 	if(settings == nullptr) {
 		return nullptr;
 	}
