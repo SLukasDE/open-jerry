@@ -1,6 +1,6 @@
 /*
 MIT License
-Copyright (c) 2019, 2020 Sven Lukas
+Copyright (c) 2019-2021 Sven Lukas
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <jerry/Logger.h>
+
 #include <eslx/utility/Directory.h>
 
 #include <esl/utility/String.h>
 #include <esl/Stacktrace.h>
-#include <jerry/Logger.h>
 
-#include <exception>
+#include <stdexcept>
 
 #include <dirent.h>
 #include <sys/types.h>

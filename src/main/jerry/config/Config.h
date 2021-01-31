@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,12 +23,17 @@
 #include <jerry/config/LoggerConfig.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
-#include <jerry/config/Listener.h>
 #include <jerry/config/OptionalBool.h>
-#include <jerry/engine/Engine.h>
-#include <jerry/engine/Listener.h>
-#include <jerry/engine/Endpoint.h>
-#include <jerry/engine/Context.h>
+#include <jerry/config/http/Server.h>
+#include <jerry/config/http/Context.h>
+#include <jerry/config/http/Listener.h>
+#include <jerry/config/messaging/Broker.h>
+#include <jerry/config/messaging/Context.h>
+#include <jerry/config/messaging/Listener.h>
+//#include <jerry/engine/Engine.h>
+//#include <jerry/engine/http/Listener.h>
+//#include <jerry/engine/http/Endpoint.h>
+//#include <jerry/engine/http/Context.h>
 
 #include <esl/logging/Layout.h>
 #include <esl/module/Library.h>
@@ -52,11 +57,9 @@ public:
 
 	std::unique_ptr<esl::logging::Layout> createLayout() const;
 	void setLogLevel() const;
-	void setEngine(engine::Engine& engine) const;
+	//void setEngine(engine::Engine& engine) const;
 
 	void save(std::ostream& oStream) const;
-
-	//std::string fileName;
 
 	std::vector<std::pair<std::string, esl::module::Library*>> eslLibraries;
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
@@ -64,26 +67,33 @@ public:
 	std::vector<Certificate> certificates;
 	LoggerConfig loggerConfig;
 	std::vector<Object> objects;
-	std::vector<Listener> listeners;
+
+	std::vector<http::Server> httpServers;
+	std::vector<http::Context> httpContext;
+	std::vector<http::Listener> httpListeners;
+
+	std::vector<messaging::Broker> messageBrokers;
+	std::vector<messaging::Context> messageContext;
+	std::vector<messaging::Listener> messageListeners;
 
 	std::set<std::string> filesLoaded;
 
 private:
 	void parseInclude(const tinyxml2::XMLElement& element);
 	void parseLibrary(const tinyxml2::XMLElement& element);
+/*
+	void addObjectToEngineBaseContext(engine::BaseContext& engineBaseContext, const Object& objects) const;
+	void addReferenceToEngineHttpContext(engine::http::Context& engineHttpContext, const Reference& reference) const;
+	void addHttpContextToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Context& httpContext) const;
+	void addHttpEndpointToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Endpoint& httpEndpoint) const;
+	void addHttpRequestHandlerToEngineHttpContext(engine::http::Context& engineHttpContext, const http::RequestHandler& httpRequestHandler) const;
+	void addHttpResponseHeadersToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const;
+	void addExceptionsToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const Exceptions& exceptions) const;
 
-	void setEngineContextObject(engine::BaseContext& engineContext, const std::vector<Object>& objects) const;
-	void setEngineContextReferences(engine::Context& engineContext, const std::vector<Reference>& reference) const;
-	void setEngineContextEntries(engine::Context& engineContext, const std::vector<Entry>& entries) const;
+	void addHttpEntriesToEngineHttpContext(engine::http::Context& engineContext, const std::vector<http::Entry>& entries) const;
 
-	void setEngineEndpointResponseHeaders(engine::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const;
-
-	void setEngineEndpointExceptions(engine::Endpoint& engineEndpoint, const Exceptions& exceptions) const;
-
-	void setEngineContext(engine::Context& engineContext, const Context& configContext) const;
-	void setEngineEndpoint(engine::Endpoint& engineEndpoint, const Endpoint& configEndpoint) const;
-	void setEngineListener(engine::Listener& engineListener, const Listener& configListener) const;
-
+	void addHttpListenerToEngine(engine::Engine& engine, const http::Listener& configListener) const;
+*/
 };
 
 } /* namespace config */

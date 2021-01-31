@@ -1,64 +1,225 @@
 <jerry>
-	<library file="libesl-mhd.so" module="esl"/>
+	<library file="libmhd4esl.so" module="esl"/>
 	<library file="liblogbook4esl.so" module="esl"/>
 	<library file="libzsystem4esl.so" module="esl"/>
-	<library file="libhttp-filebrowser.so"/>
+	<library file="librdkafka4esl.so" module="esl"/>
+	<!-- library file="libhttp-filebrowser.so"/ -->
 	
+	<certificate domain="localhost" key="server.key" cert="server.pem"/>
 	<certificate domain="*" key="server.key" cert="server.pem"/>
 	
 	<!-- include file="../secret/server-secret.xml"/ -->
 	
-	<logger layout="default">
+	<logger layout="esl/logging/builtin">
 		<layout key="showTimestamp" value="true"/>
 		<layout key="showLevel" value="true"/>
-		<layout key="showTypeName" value="true"/>
+		<layout key="showTypeName" value="false"/>
 		<layout key="showAddress" value="false"/>
 		<layout key="showFile" value="false"/>
 		<layout key="showFunction" value="false"/>
 		<layout key="showLineNo" value="false"/>
 		<layout key="showThreadNo" value="false"/>
 		
-		<setting class="*" level="WARN"/>
-		<setting class="jerry::*" level="TRACE"/>
+		<setting class="*" level="TRACE"/>
+		<setting class="jerry::*" level="DEBUG"/>
 	</logger>
 	
 	
-	<object id="fb-setting1" implementation="http/server/filebrowser">
-		<parameter key="workspaceDir" value="/var/"/>
-		<parameter key="showException" value="false"/>
-		<parameter key="showStacktrace" value="false"/>
+	<message-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092" threads="4">
+		<parameter key="group-id" value="mds"/>
+		<parameter key="login-token" value="xyz"/>
+	</message-broker>
+	
+	<object id="echo-queue" implementation="jerry/builtin/messaging/producer-factory">
+		<parameter key="broker" value="broker-1"/>
+		<parameter key="queue" value="test-topic"/>
 	</object>
 	
-	<object id="fb-setting2" implementation="http/server/filebrowser">
-		<parameter key="workspaceDir" value="/tmp/"/>
-		<parameter key="showException" value="false"/>
-		<parameter key="showStacktrace" value="false"/>
+	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
+		<parameter key="threads" value="4"/>
+		<!-- certificate key="server.key" cert="server.pem"/> -->
+	</http-server>
+	
+	
+	<object id="fb-setting1" implementation="jerry/builtin/http/filebrowser">
+		<parameter key="path" value="/var/"/>
+		<parameter key="browsable" value="true"/>
+		<!--parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/ -->
 	</object>
 	
-	<listener url="https://*:8080">
+	<object id="fb-setting2" implementation="jerry/builtin/http/filebrowser">
+		<parameter key="path" value="/tmp/"/>
+		<parameter key="browsable" value="true"/>
+		<!--parameter key="showException" value="false"/>
+		<parameter key="showStacktrace" value="false"/ -->
+	</object>
 	
+	<object id="cd-setting1" implementation="jerry/builtin/messaging/dump">
+		<parameter key="show-all" value="true"/>
+	</object>
+	
+	<http-context id="http-context1">
 		<reference id="" ref-id="fb-setting1"/>
 		<endpoint path="test1">
-			<requesthandler implementation="http/server/filebrowser"/>
+			<requesthandler implementation="jerry/builtin/http/filebrowser"/>
 		</endpoint>
 		
 		<endpoint path="test1/log">
 			<reference id="" ref-id="fb-setting2"/>
-			<requesthandler implementation="http/server/filebrowser"/>
+			<requesthandler implementation="jerry/builtin/http/filebrowser"/>
 			
 			<endpoint path="mc-lukas">
-				<context>
-					<object id="" implementation="http/server/filebrowser">
-						<parameter key="workspaceDir" value="/usr/"/>
-						<parameter key="showException" value="false"/>
-						<parameter key="showStacktrace" value="false"/>
-					</object>
-					<requesthandler implementation="http/server/filebrowser"/>
-				</context>
+				<!--
+					This:
+					
+						<requesthandler implementation="jerry/builtin/http/filebrowser">
+							<parameter key="workspaceDir" value="/usr/"/>
+							<parameter key="showException" value="false"/>
+							<parameter key="showStacktrace" value="false"/>
+						</requesthandler>
+					
+					is a shortcut for this:
+					
+						<context inherit="true">
+							<object id="" implementation="jerry/builtin/http/filebrowser">
+								<parameter key="workspaceDir" value="/usr/"/>
+								<parameter key="showException" value="false"/>
+								<parameter key="showStacktrace" value="false"/>
+							</object>
+							<requesthandler implementation="jerry/builtin/http/filebrowser"/>
+						</context>
+				-->
+				<requesthandler implementation="jerry/builtin/http/filebrowser">
+					<parameter key="path" value="/usr/"/>
+					<!--parameter key="showException" value="false"/>
+					<parameter key="showStacktrace" value="false"/ -->
+				</requesthandler>
+				
+				
+				<!--
+					This:
+					
+						<requesthandler implementation="http/server/NEW-FILEBROWSER" object-implementation="jerry/builtin/http/filebrowser">
+							<parameter key="workspaceDir" value="/usr/"/>
+							<parameter key="showException" value="false"/>
+							<parameter key="showStacktrace" value="false"/>
+						</requesthandler>
+					
+					is a shortcut for this:
+					
+						<context inherit="true">
+							<object id="" implementation="jerry/builtin/http/filebrowser">
+								<parameter key="workspaceDir" value="/usr/"/>
+								<parameter key="showException" value="false"/>
+								<parameter key="showStacktrace" value="false"/>
+							</object>
+							<requesthandler implementation="http/server/NEW-FILEBROWSER"/>
+						</context>
+				-->
+				
+				<requesthandler implementation="http/server/NEW-FILEBROWSER" object-implementation="jerry/builtin/http/filebrowser">
+					<parameter key="path" value="/usr/"/>
+					<!--parameter key="showException" value="false"/>
+					<parameter key="showStacktrace" value="false"/ -->
+				</requesthandler>
 			</endpoint>
 			
 		</endpoint>
+	</http-context>
+	
+	<message-listener ref-id="broker-1">
+		<!-- Broker itself is accessible within this context by id="" -->
 		
-	</listener>
+		<endpoint queue="test-topic">
+			<!--
+				This:
+				
+					<messagehandler implementation="jerry/builtin/messaging/dump">
+						<parameter key="show-all" value="true"/>
+					</messagehandler>
+				
+				is a shortcut for this:
+				
+					<context inherit="true">
+						<object id="" implementation="jerry/builtin/messaging/dump">
+							<parameter key="show-all" value="true"/>
+						</object>
+						<messagehandler implementation="jerry/builtin/messaging/dump"/>
+					</context>
+			-->
+			
+			<messagehandler implementation="jerry/builtin/messaging/dump">
+				<parameter key="show-all" value="true"/>
+			</messagehandler>
+			
+			<messagehandler implementation="jerry/builtin/messaging/echo">
+				<parameter key="queue" value="echo-queue"/>
+				<parameter key="delay-ms" value="1000"/>
+			</messagehandler>
+		</endpoint>
+		
+		<endpoint queue="input-queue2">
+			<context>
+				<reference id="" ref-id="cd-setting1"/>
+				<messagehandler implementation="jerry/builtin/messaging/dump"/>
+			</context>
+				
+			<!--  both message handlers will be executed -->
+			<messagehandler implementation="jerry/builtin/messaging/dump"/>
+		</endpoint>
+		
+		<context>
+			<endpoint queue="input-queue2">
+				<context>
+					<reference id="" ref-id="cd-setting1"/>
+					<messagehandler implementation="jerry/builtin/messaging/dump"/>
+				</context>
+				
+				<!--  both message handlers will be executed -->
+				<messagehandler implementation="jerry/builtin/messaging/dump"/>
+			</endpoint>
+		</context>
+	</message-listener>
+	
+	<!--
+		defaults:
+		- hostname="*"
+		- ref-id=""
+	-->
+	<http-listener hostname="localhost" ref-id="http-1">
+	
+		<reference id="" ref-id="fb-setting2"/>
+		
+		<endpoint path="test1/log">
+			<reference id="" ref-id="fb-setting1"/>
+			
+			<endpoint path="mc-lukas">
+				<context>
+					<object id="" implementation="jerry/builtin/http/filebrowser">
+						<parameter key="path" value="/usr/"/>
+						<parameter key="browsable" value="true"/>
+						<!--parameter key="showException" value="false"/>
+						<parameter key="showStacktrace" value="false"/ -->
+					</object>
+					<requesthandler implementation="jerry/builtin/http/filebrowser"/>
+				</context>
+			</endpoint>
+			
+			<requesthandler implementation="jerry/builtin/http/filebrowser"/>
+		</endpoint>
+		
+		<endpoint path="test1">
+			<requesthandler implementation="jerry/builtin/http/filebrowser"/>
+		</endpoint>
+	</http-listener>
+	
+	<http-listener hostname="*" ref-id="http-1">
+		<context ref-id="http-context1"/>
+	</http-listener>
+	
+	<message-listener ref-id="broker-1">
+		<context ref-id="message-context1"/>
+	</message-listener>
 	
 </jerry>

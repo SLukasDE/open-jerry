@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,6 @@
 #include <esl/http/server/ResponseFile.h>
 #include <esl/http/server/ResponseStatic.h>
 #include <esl/http/server/exception/StatusCode.h>
-//#include <esl/utility/String.h>
 #include <esl/database/exception/SqlError.h>
 
 #include <sstream>
@@ -81,7 +80,8 @@ void ExceptionHandler::setShowStacktrace(bool aShowStacktrace) {
 	showStacktrace = aShowStacktrace;
 }
 
-bool ExceptionHandler::call(std::function<void()> callFunction, esl::http::server::Connection& connection) {
+bool ExceptionHandler::call(std::function<void()> callFunction) {
+//bool ExceptionHandler::call(std::function<void()> callFunction, esl::http::server::Connection& connection) {
     try {
     	callFunction();
     	return false;
@@ -117,15 +117,12 @@ bool ExceptionHandler::call(std::function<void()> callFunction, esl::http::serve
 }
 
 void ExceptionHandler::dump(std::ostream& stream) const {
-	stream << message.title << "\n";
-	stream << message.message << "\n";
-	if(!message.details.empty()) {
-		stream << "\n\n" << message.details << "\n";
-	}
+	stream << plainMessage.title << "\n";
+	stream << plainMessage.message << "\n";
 
-	if(message.stacktrace) {
+	if(plainMessage.stacktrace) {
 		stream << "Stacktrace:\n";
-		message.stacktrace->dump(logger.warn);
+		plainMessage.stacktrace->dump(logger.warn);
 	}
 	else {
 		stream << "Stacktrace: not available\n";
@@ -133,25 +130,22 @@ void ExceptionHandler::dump(std::ostream& stream) const {
 }
 
 void ExceptionHandler::dump(esl::logging::StreamReal& stream, esl::logging::Location location) const {
-	stream(location.object, location.function, location.file, location.line) << message.title << "\n";
-	stream(location.object, location.function, location.file, location.line) << message.message << "\n";
-	if(!message.details.empty()) {
-		stream(location.object, location.function, location.file, location.line) << "\n\n" << message.details << "\n";
-	}
+	stream(location.object, location.function, location.file, location.line) << plainMessage.title << "\n";
+	stream(location.object, location.function, location.file, location.line) << plainMessage.message << "\n";
 
-	if(message.stacktrace) {
+	if(plainMessage.stacktrace) {
 		stream(location.object, location.function, location.file, location.line) << "Stacktrace:\n";
-		message.stacktrace->dump(stream, location);
+		plainMessage.stacktrace->dump(stream, location);
 	}
 	else {
 		stream(location.object, location.function, location.file, location.line) << "Stacktrace: not available\n";
 	}
 }
 
-void ExceptionHandler::dump(esl::http::server::Connection& connection, std::function<const Document*(unsigned short statusCode)> findDocument) const {
-	const Document* errorDocument = nullptr;
+void ExceptionHandler::dump(esl::http::server::Connection& connection, std::function<const http::Document*(unsigned short statusCode)> findDocument) const {
+	const http::Document* errorDocument = nullptr;
 	if(findDocument) {
-		errorDocument = findDocument(message.statusCode);
+		errorDocument = findDocument(httpMessage.statusCode);
 	}
 
 	if(errorDocument) {
@@ -169,7 +163,7 @@ void ExceptionHandler::dump(esl::http::server::Connection& connection, std::func
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
 				esl::utility::MIME mime = utility::MIME::byFilename(url.getPath());
-				std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(message.statusCode, mime, url.getPath()));
+				std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(httpMessage.statusCode, mime, url.getPath()));
 				connection.sendResponse(std::move(response));
 
 				return;
@@ -188,99 +182,113 @@ void ExceptionHandler::dump(esl::http::server::Connection& connection, std::func
 	}
 
     std::string content;
-	if(message.contentType == esl::utility::MIME::textHtml) {
+	if(httpMessage.contentType == esl::utility::MIME::textHtml) {
 	    content = getHTMLContent();
 	}
-	else if(message.contentType == esl::utility::MIME::textPlain) {
+	else if(httpMessage.contentType == esl::utility::MIME::textPlain) {
 	    content = getTextContent();
 	}
 	else {
-		content = message.message;
+		content = httpMessage.message;
 	}
 
 	std::unique_ptr<esl::http::server::ResponseDynamic> response;
-	response.reset(new esl::http::server::ResponseDynamic(message.statusCode, message.contentType, std::move(content)));
+	response.reset(new esl::http::server::ResponseDynamic(httpMessage.statusCode, httpMessage.contentType, std::move(content)));
 	connection.sendResponse(std::move(response));
 }
 
 void ExceptionHandler::setMessage() {
-	message.statusCode = 500;
-	message.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	plainMessage.title = "Unknown Exception Error";
+	plainMessage.message = "unknown exception";
+	plainMessage.stacktrace.reset();
 
-	message.title = "Unknown Exception Error";
-
-	message.message = "unknown exception";
-
-	message.details.clear();
-
-	message.stacktrace.reset();
+	httpMessage.statusCode = 500;
+	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpMessage.title = "Unknown Exception Error";
+	httpMessage.message = "unknown exception";
+	httpMessage.details.clear();
+	httpMessage.stacktrace.reset();
 }
 
 void ExceptionHandler::setMessage(const esl::http::server::exception::StatusCode& e) {
-	message.statusCode = e.getStatusCode();
-	message.contentType = e.getMimeType();
-	message.title = std::to_string(e.getStatusCode()) + " " + http::StatusCode::getMessage(e.getStatusCode());
-
+	plainMessage.title = "HTTP status code " + std::to_string(e.getStatusCode());
 	if(e.what() && std::string(e.what()) != esl::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
-		message.message = e.what();
+		plainMessage.message = e.what();
 	}
 	else {
-		message.message = http::StatusCode::getMessage(e.getStatusCode());
+		plainMessage.message = jerry::http::StatusCode::getMessage(e.getStatusCode());
 	}
+	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 
-	message.details.clear();
+	httpMessage.statusCode = e.getStatusCode();
+	httpMessage.contentType = e.getMimeType();
+	httpMessage.title = std::to_string(e.getStatusCode()) + " " + jerry::http::StatusCode::getMessage(e.getStatusCode());
+	if(e.what() && std::string(e.what()) != esl::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
+		httpMessage.message = e.what();
+	}
+	else {
+		httpMessage.message = jerry::http::StatusCode::getMessage(e.getStatusCode());
+	}
+	httpMessage.details.clear();
+	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 }
 
 void ExceptionHandler::setMessage(const esl::database::exception::SqlError& e) {
-	message.statusCode = 500;
-	message.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-
-	message.title = "SQL Error";
-
-	message.message = e.what();
-
 	std::stringstream s;
 	s << "SQL Return Code:" << e.getSqlReturnCode() << "\n";
 	const esl::database::Diagnostics& diagnostics = e.getDiagnostics();
 	diagnostics.dump(s);
-	message.details = s.str();
 
-	message.stacktrace = createStackstrace(esl::getStacktrace(e));
+	plainMessage.title = "SQL Error";
+	plainMessage.message = e.what();
+	plainMessage.message += "\n\n";
+	plainMessage.message += s.str();
+	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	httpMessage.statusCode = 500;
+	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpMessage.title = "SQL Error";
+	httpMessage.message = e.what();
+	httpMessage.details = s.str();
+	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 }
 
 void ExceptionHandler::setMessage(const std::runtime_error& e) {
-	message.statusCode = 500;
-	message.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	plainMessage.title = "std::runtime_error";
+	plainMessage.message = e.what();
+	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 
-	message.title = "std::runtime_error";
-
-	message.message = e.what();
-
-	message.details.clear();
-
-	message.stacktrace = createStackstrace(esl::getStacktrace(e));
+	httpMessage.statusCode = 500;
+	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpMessage.title = "std::runtime_error";
+	httpMessage.message = e.what();
+	httpMessage.details.clear();
+	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 }
 
 void ExceptionHandler::setMessage(const std::exception& e) {
+	plainMessage.title = "std::runtime_error";
+	plainMessage.message = e.what();
+	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	bool httpMessageFound = false;
 	for(auto exceptionMessageInterface : exceptionMessageInterfaces) {
 		//std::unique_ptr<esl::http::server::exception::Interface::Message> messagePtr;
 		auto messagePtr = exceptionMessageInterface.get().createMessage(e);
 		if(messagePtr) {
-			message = std::move(*messagePtr);
-			return;
+			httpMessage = std::move(*messagePtr);
+			httpMessageFound = true;
+			break;
 		}
 	}
-
-	message.statusCode = 500;
-	message.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-
-	message.title = "std::exception";
-
-	message.message = e.what();
-
-	message.details.clear();
-
-	message.stacktrace = createStackstrace(esl::getStacktrace(e));
+	if(httpMessageFound == false) {
+		httpMessage.statusCode = 500;
+		httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+		httpMessage.title = "std::exception";
+		httpMessage.message = e.what();
+		httpMessage.details.clear();
+		httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+	}
 }
 
 std::string ExceptionHandler::getHTMLContent() const {
@@ -290,29 +298,29 @@ std::string ExceptionHandler::getHTMLContent() const {
 			"<html>\n"
 			"<head>\n";
 
-	outputContent += "<title>" + html::toHTML(message.title) + "</title>\n";
+	outputContent += "<title>" + html::toHTML(httpMessage.title) + "</title>\n";
 	outputContent += "<body bgcolor=\"white\">\n";
 
 	/* print excpetion message, if enabled */
 	if(showException) {
 		outputContent += "<center><h1>\n";
-		outputContent += html::toHTML(message.message) + "\n";
+		outputContent += html::toHTML(httpMessage.message) + "\n";
 		outputContent += "</h1></center>\n";
 
-		if(!message.details.empty()) {
+		if(!httpMessage.details.empty()) {
 			outputContent += "<hr>\n";
-			outputContent += html::toHTML(message.details) + "<br>\n";
+			outputContent += html::toHTML(httpMessage.details) + "<br>\n";
 		}
 	}
 
 	/* print stacktrace, if enabled */
 	if(showStacktrace) {
-		if(message.stacktrace) {
+		if(httpMessage.stacktrace) {
 			outputContent += "Stacktrace:\n"
 					"<br>\n";
 
 			std::stringstream sstream;
-			message.stacktrace->dump(sstream);
+			httpMessage.stacktrace->dump(sstream);
 			outputContent += html::toHTML(sstream.str());
 		}
 		else {
@@ -331,28 +339,28 @@ std::string ExceptionHandler::getHTMLContent() const {
 std::string ExceptionHandler::getTextContent() const {
 	std::string content;
 
-	content = "jerry/0.1.0: " + message.title + "\n";
-	content += "Status code: " + std::to_string(message.statusCode) + "\n";
+	content = "jerry/0.1.0: " + httpMessage.title + "\n";
+	content += "Status code: " + std::to_string(httpMessage.statusCode) + "\n";
 
 	/* print excpetion message, if enabled */
 	if(showException) {
 		content += "\n\n";
-		content += "Exception: " + message.message;
+		content += "Exception: " + httpMessage.message;
 
-		if(!message.details.empty()) {
+		if(!httpMessage.details.empty()) {
 			content += "\n\nException details:\n";
-			content += message.details + "\n";
+			content += httpMessage.details + "\n";
 		}
 	}
 
 	/* print stacktrace, if enabled */
 	if(showStacktrace) {
 		content += "\n\n";
-		if(message.stacktrace) {
+		if(httpMessage.stacktrace) {
 			content += "Stacktrace:\n";
 
 			std::stringstream sstream;
-			message.stacktrace->dump(sstream);
+			httpMessage.stacktrace->dump(sstream);
 			content += sstream.str();
 		}
 		else {

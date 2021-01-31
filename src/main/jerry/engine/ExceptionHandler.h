@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,8 @@
 #ifndef JERRY_ENGINE_EXCEPTIONHANDLER_H_
 #define JERRY_ENGINE_EXCEPTIONHANDLER_H_
 
-#include <jerry/engine/Document.h>
+#include <jerry/engine/ExceptionMessage.h>
+#include <jerry/engine/http/Document.h>
 
 #include <esl/http/server/exception/StatusCode.h>
 #include <esl/http/server/exception/Interface.h>
@@ -38,11 +39,17 @@
 
 namespace jerry {
 namespace engine {
-
+/*
+namespace http {
+class Listener;
+}
+*/
 class ExceptionHandler {
 	// required to call setMessage(const esl::http::server::exception::StatusCode& e)
-	friend class Engine;
-	friend class Listener;
+	// but it's not necessary to call setMessage. It's possible to call 'call(<Lambda-Function that throws ...::StatusCode>)'
+//	friend class Engine;
+//	friend class http::Listener;
+
 public:
 	static void initialize();
 
@@ -50,12 +57,13 @@ public:
 	void setShowStacktrace(bool showStacktrace);
 
 	/* return true if exception occurred */
-	bool call(std::function<void()> callFunction, esl::http::server::Connection& connection);
+	bool call(std::function<void()> callFunction);
+	//bool call(std::function<void()> callFunction, esl::http::server::Connection& connection);
 
 	void dump(std::ostream& stream) const;
 	void dump(esl::logging::StreamReal& stream, esl::logging::Location location = esl::logging::Location{}) const;
 	inline void dump(esl::logging::StreamEmpty& stream, esl::logging::Location location = esl::logging::Location{}) const { };
-	void dump(esl::http::server::Connection& connection, std::function<const Document*(unsigned short statusCode)> findDocument = nullptr) const;
+	void dump(esl::http::server::Connection& connection, std::function<const http::Document*(unsigned short statusCode)> findDocument = nullptr) const;
 
 private:
 	void setMessage();
@@ -69,7 +77,9 @@ private:
 
 	bool showException = false;
 	bool showStacktrace = false;
-	esl::http::server::exception::Interface::Message message;
+
+	ExceptionMessage plainMessage;
+	esl::http::server::exception::Interface::Message httpMessage;
 };
 
 } /* namespace engine */

@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -46,8 +46,8 @@ Socket::Socket(uint16_t aPort, esl::http::server::requesthandler::Interface::Cre
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
 }
 
-void Socket::setObject(const std::string& id, GetObject getObject) {
-	objects[id] = getObject;
+void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory) {
+	objectFactories[id] = objectFactory;
 }
 
 bool Socket::listen() {

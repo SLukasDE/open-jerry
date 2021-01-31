@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,9 @@
  */
 
 #include <jerry/config/Config.h>
-#include <jerry/config/RequestHandler.h>
-#include <jerry/config/Context.h>
-#include <jerry/config/Endpoint.h>
+#include <jerry/config/http/RequestHandler.h>
+#include <jerry/config/http/Context.h>
+#include <jerry/config/http/Endpoint.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 #include <jerry/utility/URL.h>
@@ -93,7 +93,7 @@ std::string space(unsigned int i) {
 	return s;
 }
 
-void addSettings(esl::object::Interface::Object& object, const std::string& implementation, const std::vector<Setting>& settings) {
+void addSettingsToEslObject(esl::object::Interface::Object& object, const std::string& implementation, const std::vector<Setting>& settings) {
 	if(settings.empty()) {
 		return;
 	}
@@ -164,8 +164,23 @@ void Config::loadFile(const std::string& fileName) {
 		else if(innerElementName == "object") {
 			objects.push_back(Object(*innerElement));
 		}
-		else if(innerElementName == "listener") {
-			listeners.push_back(Listener(*innerElement));
+		else if(innerElementName == "http-server") {
+			httpServers.push_back(http::Server(*innerElement));
+		}
+		else if(innerElementName == "http-context") {
+			httpContext.push_back(http::Context(*innerElement, true));
+		}
+		else if(innerElementName == "http-listener") {
+			httpListeners.push_back(http::Listener(*innerElement));
+		}
+		else if(innerElementName == "message-broker") {
+			messageBrokers.push_back(messaging::Broker(*innerElement));
+		}
+		else if(innerElementName == "message-context") {
+			messageContext.push_back(messaging::Context(*innerElement, false, true));
+		}
+		else if(innerElementName == "message-listener") {
+			messageListeners.push_back(messaging::Listener(*innerElement));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
@@ -216,7 +231,7 @@ void Config::loadLibraries() {
 }
 
 std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
-#if 1
+#if 0
 	esl::object::ValueSettings settings;
 	for(auto const setting : loggerConfig.layoutSettings) {
 		settings.addSetting(setting.key, setting.value);
@@ -224,13 +239,13 @@ std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
 
 	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
 #else
-	std::unique_ptr<esl::logging::Layout> layout(new esl::logging::Layout(loggerConfig.layout));
+	esl::object::ValueSettings settings;
 
 	for(auto const setting : loggerConfig.layoutSettings) {
-		layout->addSetting(setting.key, setting.value);
+		settings.addSetting(setting.key, setting.value);
 	}
 
-	return layout;
+	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
 #endif
 }
 
@@ -259,20 +274,31 @@ void Config::setLogLevel() const {
 		}
 	}
 }
-
+/*
 void Config::setEngine(engine::Engine& engine) const {
 	for(const auto& configCertificate : certificates) {
 		engine.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
 	}
 
-	setEngineContextObject(engine, objects);
+	for(const auto& object : objects) {
+		addObjectToEngineBaseContext(engine, object);
+	}
 
-	for(const auto& configListener : listeners) {
-		engine::Listener& engineListener = engine.addListener(utility::URL(configListener.url));
-		setEngineListener(engineListener, configListener);
+	for(const auto& httpServer : httpServers) {
+		std::vector<std::pair<std::string, std::string>> settings;
+
+		for(const auto& setting : httpServer.settings) {
+			settings.push_back(std::make_pair(setting.key, setting.value));
+		}
+
+		engine.addHttpServer(httpServer.id, httpServer.port, httpServer.isHttps, settings, httpServer.implementation);
+	}
+
+	for(const auto& httpListener : httpListeners) {
+		addHttpListenerToEngine(engine, httpListener);
 	}
 }
-
+*/
 void Config::save(std::ostream& oStream) const {
 	oStream << "\n<jerry>\n";
 	for(const auto& entry : eslLibraries) {
@@ -294,9 +320,35 @@ void Config::save(std::ostream& oStream) const {
 		entry.save(oStream, 2);
 	}
 
-	for(const Listener& listener : listeners) {
-		listener.save(oStream, 2);
+
+
+	for(const http::Server& httpServer : httpServers) {
+		httpServer.save(oStream, 2);
 	}
+
+	for(const http::Context& context : httpContext) {
+		context.save(oStream, 2);
+	}
+
+	for(const http::Listener& httpListener : httpListeners) {
+		httpListener.save(oStream, 2);
+	}
+
+
+
+
+	for(const messaging::Broker& messageBroker : messageBrokers) {
+		messageBroker.save(oStream, 2);
+	}
+
+	for(const messaging::Context& context : messageContext) {
+		context.save(oStream, 2);
+	}
+
+	for(const messaging::Listener& messagingListener : messageListeners) {
+		messagingListener.save(oStream, 2);
+	}
+
 
 	oStream << "</jerry>\n";
 }
@@ -364,70 +416,58 @@ void Config::parseLibrary(const tinyxml2::XMLElement& element) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Unknown module \"") + module + "\" at line " + std::to_string(element.GetLineNum())));
 	}
 }
+#if 0
+void Config::addObjectToEngineBaseContext(engine::BaseContext& engineBaseContext, const Object& object) const {
+	esl::object::Interface::Object& eslObject = engineBaseContext.addObject(object.id, object.implementation);
+	addSettingsToEslObject(eslObject, object.implementation, object.settings);
+}
 
-void Config::setEngineContextObject(engine::BaseContext& engineContext, const std::vector<Object>& objects) const {
-	for(const auto& object : objects) {
-		esl::object::Interface::Object& engineObject = engineContext.addObject(object.id, object.implementation);
-		addSettings(engineObject, object.implementation, object.settings);
+void Config::addReferenceToEngineHttpContext(engine::http::Context& engineHttpContext, const Reference& reference) const {
+	engineHttpContext.addReference(reference.id, reference.refId);
+}
+
+void Config::addHttpEndpointToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Endpoint& httpEndpoint) const {
+	engine::http::Endpoint& newEngineEndpoint = engineHttpContext.addEndpoint(httpEndpoint.path);
+
+	addHttpEntriesToEngineHttpContext(newEngineEndpoint, httpEndpoint.entries);
+
+	addHttpResponseHeadersToEngineHttpEndpoint(newEngineEndpoint, httpEndpoint.responseHeaders);
+	addExceptionsToEngineHttpEndpoint(newEngineEndpoint, httpEndpoint.exceptions);
+}
+
+void Config::addHttpContextToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Context& httpContext) const {
+	engine::http::Context& newEngineContext = engineHttpContext.addContext();
+	addHttpEntriesToEngineHttpContext(newEngineContext, httpContext.entries);
+}
+
+void Config::addHttpRequestHandlerToEngineHttpContext(engine::http::Context& engineHttpContext, const http::RequestHandler& httpRequestHandler) const {
+	if(httpRequestHandler.objectImplementation.empty() == false || httpRequestHandler.settings.size() > 0) {
+		engine::http::Context& newEngineContext = engineHttpContext.addContext();
+
+		std::string objectImplementation;
+		if(httpRequestHandler.objectImplementation.empty()) {
+			objectImplementation = httpRequestHandler.implementation;
+		}
+		else {
+			objectImplementation = httpRequestHandler.objectImplementation;
+		}
+		esl::object::Interface::Object& engineObject = newEngineContext.addObject("", objectImplementation);
+		addSettingsToEslObject(engineObject, objectImplementation, httpRequestHandler.settings);
+
+		newEngineContext.addRequestHandler(httpRequestHandler.implementation);
+	}
+	else {
+		engineHttpContext.addRequestHandler(httpRequestHandler.implementation);
 	}
 }
 
-void Config::setEngineContextReferences(engine::Context& engineContext, const std::vector<Reference>& references) const {
-	for(const auto& reference : references) {
-		engineContext.addReference(reference.id, reference.refId);
-	}
-}
-
-void Config::setEngineContextEntries(engine::Context& engineContext, const std::vector<Entry>& entries) const {
-	for(const auto& entry : entries) {
-		if(entry.getRequestHandler()) {
-			if(entry.getRequestHandler()->refId || entry.getRequestHandler()->objectImplementation || entry.getRequestHandler()->settings.size() > 0) {
-				engine::Context& newEngineContext = engineContext.addContext();
-
-				if(entry.getRequestHandler()->refId) {
-					if(entry.getRequestHandler()->objectImplementation || entry.getRequestHandler()->settings.size() > 0) {
-						throw esl::addStacktrace(std::runtime_error("definition of refId in requestHandler does not allow simultaneously definition of object-implementation or adding parameters"));
-					}
-					newEngineContext.addReference("", *entry.getRequestHandler()->refId);
-				}
-				else {
-					std::string objectImplementation;
-					if(entry.getRequestHandler()->objectImplementation) {
-						objectImplementation = *entry.getRequestHandler()->objectImplementation;
-					}
-					else {
-						objectImplementation = entry.getRequestHandler()->implementation;
-					}
-					esl::object::Interface::Object& engineObject = newEngineContext.addObject("", objectImplementation);
-					addSettings(engineObject, objectImplementation, entry.getRequestHandler()->settings);
-				}
-
-				newEngineContext.addRequestHandler(entry.getRequestHandler()->implementation);
-			}
-			else {
-				engineContext.addRequestHandler(entry.getRequestHandler()->implementation);
-			}
-		}
-
-		if(entry.getContext()) {
-			engine::Context& newEngineContext = engineContext.addContext();
-			setEngineContext(newEngineContext, *entry.getContext());
-		}
-
-		if(entry.getEndpoint()) {
-			engine::Endpoint& newEngineEndpoint = engineContext.addEndpoint(entry.getEndpoint()->path);
-			setEngineEndpoint(newEngineEndpoint, *entry.getEndpoint());
-		}
-	}
-}
-
-void Config::setEngineEndpointResponseHeaders(engine::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const {
+void Config::addHttpResponseHeadersToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const {
 	for(const auto& responseHeader : responseHeaders) {
 		engineEndpoint.addHeader(responseHeader.key, responseHeader.value);
 	}
 }
 
-void Config::setEngineEndpointExceptions(engine::Endpoint& engineEndpoint, const Exceptions& exceptions) const {
+void Config::addExceptionsToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const Exceptions& exceptions) const {
 	/* set showExceptions */
 	if(exceptions.showExceptions == OptionalBool::obTrue) {
 		engineEndpoint.setShowException(true);
@@ -451,31 +491,36 @@ void Config::setEngineEndpointExceptions(engine::Endpoint& engineEndpoint, const
 	}
 }
 
-void Config::setEngineContext(engine::Context& engineContext, const Context& configContext) const {
-	setEngineContextObject(engineContext, configContext.objects);
-	setEngineContextReferences(engineContext, configContext.references);
-	setEngineContextEntries(engineContext, configContext.entries);
+void Config::addHttpEntriesToEngineHttpContext(engine::http::Context& engineContext, const std::vector<http::Entry>& entries) const {
+	for(const auto& entry : entries) {
+		switch(entry.getType()) {
+		case http::Entry::etObject:
+			addObjectToEngineBaseContext(engineContext, entry.getObject());
+			break;
+		case http::Entry::etReference:
+			addReferenceToEngineHttpContext(engineContext, entry.getReference());
+			break;
+		case http::Entry::etEndpoint:
+			addHttpEndpointToEngineHttpContext(engineContext, entry.getEndpoint());
+			break;
+		case http::Entry::etContext:
+			addHttpContextToEngineHttpContext(engineContext, entry.getContext());
+			break;
+		case http::Entry::etRequestHandler:
+			addHttpRequestHandlerToEngineHttpContext(engineContext, entry.getRequestHandler());
+			break;
+		}
+	}
 }
 
-void Config::setEngineEndpoint(engine::Endpoint& engineEndpoint, const Endpoint& configEndpoint) const {
-	setEngineContextObject(engineEndpoint, configEndpoint.objects);
-	setEngineContextReferences(engineEndpoint, configEndpoint.references);
-	setEngineContextEntries(engineEndpoint, configEndpoint.entries);
+void Config::addHttpListenerToEngine(engine::Engine& engine, const http::Listener& configListener) const {
+	engine::http::Listener& engineListener = engine.addHttpListener(configListener.hostname, configListener.refId);
 
-	setEngineEndpointResponseHeaders(engineEndpoint, configEndpoint.responseHeaders);
-
-	setEngineEndpointExceptions(engineEndpoint, configEndpoint.exceptions);
+	addHttpEntriesToEngineHttpContext(engineListener, configListener.entries);
+	addHttpResponseHeadersToEngineHttpEndpoint(engineListener, configListener.responseHeaders);
+	addExceptionsToEngineHttpEndpoint(engineListener, configListener.exceptions);
 }
-
-void Config::setEngineListener(engine::Listener& engineListener, const Listener& configListener) const {
-	setEngineContextObject(engineListener, configListener.objects);
-	setEngineContextReferences(engineListener, configListener.references);
-	setEngineContextEntries(engineListener, configListener.entries);
-
-	setEngineEndpointResponseHeaders(engineListener, configListener.responseHeaders);
-
-	setEngineEndpointExceptions(engineListener, configListener.exceptions);
-}
+#endif
 
 } /* namespace config */
 } /* namespace jerry */

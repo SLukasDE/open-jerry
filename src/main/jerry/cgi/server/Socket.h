@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -44,14 +44,14 @@ public:
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
-	void setObject(const std::string& id, GetObject getObject) override;
+	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
 
 	bool listen() override;
 	void release() override;
 
 private:
 	uint16_t port;
-	std::map<std::string, GetObject> objects;
+	std::map<std::string, ObjectFactory> objectFactories;
 };
 
 } /* namespace server */

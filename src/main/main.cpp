@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (c) 2019-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,8 +24,9 @@
 #include <jerry/Logger.h>
 //#include <jerry/utility/URL.h>
 #include <jerry/config/Config.h>
+#include <jerry/config/Engine.h>
 #include <jerry/engine/Engine.h>
-#include <jerry/engine/Listener.h>
+//#include <jerry/engine/Listener.h>
 
 //#include <esl/object/parameter/Interface.h>
 
@@ -177,7 +178,9 @@ int main(int argc, const char *argv[]) {
 			esl::logging::addAppender(appenderMemBuffer);
 
 			config.setLogLevel();
-			config.setEngine(engine);
+			jerry::config::Engine configEngine(engine);
+			configEngine.install(config);
+			//config.setEngine(engine);
 
 			if(isVerbose) {
 				std::ostream& oStream = isCGI ? std::cerr : std::cout;
@@ -191,9 +194,7 @@ int main(int argc, const char *argv[]) {
 				printModules(oStream);
 
 				/* show configuration file */
-				oStream << "\n\nDump tree:\n";
 				engine.dumpTree(0);
-				oStream << "Dump tree done\n\n";
 			}
 
 			bool success;

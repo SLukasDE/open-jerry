@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +19,9 @@
 #ifndef JERRY_ENGINE_BASECONTEXT_H_
 #define JERRY_ENGINE_BASECONTEXT_H_
 
-#include <esl/http/server/ObjectContext.h>
+#include <esl/object/ObjectContext.h>
 #include <esl/object/Interface.h>
+
 #include <string>
 #include <map>
 #include <vector>
@@ -29,9 +30,11 @@
 namespace jerry {
 namespace engine {
 
-class BaseContext : public esl::http::server::ObjectContext {
+class BaseContext : public esl::object::ObjectContext {
 public:
 	virtual esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation);
+	esl::object::Interface::Object& addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object);
+
 	esl::object::Interface::Object* findObject(const std::string& id) const override;
 
 	virtual void initializeContext();

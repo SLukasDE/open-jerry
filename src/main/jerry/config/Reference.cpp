@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020 Sven Lukas
+ * Copyright (C) 2020-2021 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,7 +37,7 @@ std::string makeSpaces(std::size_t spaces) {
 
 Reference::Reference(const tinyxml2::XMLElement& element) {
 	bool hasId = false;
-	bool hasRefName = false;
+	bool hasRefId = false;
 
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
@@ -49,7 +49,7 @@ Reference::Reference(const tinyxml2::XMLElement& element) {
 			id = attribute->Value();
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
-			hasRefName = true;
+			hasRefId = true;
 			refId = attribute->Value();
 		}
 		else {
@@ -60,7 +60,7 @@ Reference::Reference(const tinyxml2::XMLElement& element) {
 	if(hasId == false) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"id\" at line ") + std::to_string(element.GetLineNum())));
 	}
-	if(hasRefName == false) {
+	if(hasRefId == false) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"ref-id\" at line ") + std::to_string(element.GetLineNum())));
 	}
 }
