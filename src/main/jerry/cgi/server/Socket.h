@@ -48,6 +48,7 @@ public:
 
 	void listen(esl::http::server::requesthandler::Interface::CreateInput createInput) override;
 	void release() override;
+	bool wait(std::uint32_t ms) override;
 
 private:
 	uint16_t port;

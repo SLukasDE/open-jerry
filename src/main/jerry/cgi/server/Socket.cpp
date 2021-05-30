@@ -56,6 +56,10 @@ void Socket::listen(esl::http::server::requesthandler::Interface::CreateInput cr
 void Socket::release() {
 }
 
+bool Socket::wait(std::uint32_t ms) {
+	return true;
+}
+
 } /* namespace server */
 } /* namespace cgi */
 } /* namespace jerry */
