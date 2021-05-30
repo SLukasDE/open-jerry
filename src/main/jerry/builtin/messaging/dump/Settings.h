@@ -37,11 +37,18 @@ public:
 
 	void addSetting(const std::string& key, const std::string& value) override;
 
-	void setShowAll(bool showAll);
-	bool getShowAll() const;
+	void setShowContext(bool showContext) noexcept;
+	bool getShowContext() const noexcept;
+
+	void setShowContent(bool showContent) noexcept;
+	bool getShowContent() const noexcept;
+
+	const std::set<std::string>& getNotifiers() const noexcept;
 
 private:
-	bool showAll = false;
+	bool showContext = true;
+	bool showContent = false;
+	std::set<std::string> notifiers;
 };
 
 } /* namespace dump */

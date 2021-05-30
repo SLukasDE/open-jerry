@@ -17,9 +17,7 @@
  */
 
 #include <jerry/config/messaging/Listener.h>
-#include <jerry/config/messaging/Endpoint.h>
 #include <jerry/config/messaging/Context.h>
-#include <jerry/config/messaging/MessageHandler.h>
 
 #include <esl/Stacktrace.h>
 
@@ -74,7 +72,7 @@ Listener::Listener(const tinyxml2::XMLElement& element) {
 			entries.push_back(Entry(*innerElement));
 		}
 		*/
-		entries.push_back(Entry(*innerElement, false));
+		entries.push_back(Entry(*innerElement));
 	}
 }
 

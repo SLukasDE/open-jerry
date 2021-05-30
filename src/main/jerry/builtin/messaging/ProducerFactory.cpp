@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
-
+#if 0
 #include <jerry/builtin/messaging/ProducerFactory.h>
 #include <jerry/Logger.h>
 
@@ -75,3 +75,4 @@ std::unique_ptr<esl::messaging::Producer> ProducerFactory::createProducer() {
 } /* namespace messaging */
 } /* namespace builtin */
 } /* namespace jerry */
+#endif

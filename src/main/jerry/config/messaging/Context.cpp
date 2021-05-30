@@ -17,8 +17,7 @@
  */
 
 #include <jerry/config/messaging/Context.h>
-#include <jerry/config/messaging/Endpoint.h>
-#include <jerry/config/messaging/MessageHandler.h>
+#include <jerry/config/messaging/RequestHandler.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 
@@ -40,9 +39,8 @@ std::string makeSpaces(std::size_t spaces) {
 }
 }
 
-Context::Context(const tinyxml2::XMLElement& element, bool aHasEndpoint, bool aIsGlobal)
-: hasEndpoint(aHasEndpoint),
-  isGlobal(aIsGlobal)
+Context::Context(const tinyxml2::XMLElement& element, bool aIsGlobal)
+: isGlobal(aIsGlobal)
 {
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
@@ -73,7 +71,7 @@ Context::Context(const tinyxml2::XMLElement& element, bool aHasEndpoint, bool aI
 			continue;
 		}
 
-		entries.push_back(Entry(*innerElement, hasEndpoint));
+		entries.push_back(Entry(*innerElement));
 	}
 }
 

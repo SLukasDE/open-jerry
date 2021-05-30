@@ -56,9 +56,6 @@ Broker::Broker(const tinyxml2::XMLElement& element) {
 			brokers = attribute->Value();
 			hasBrokers = true;
 		}
-		else if(std::string(attribute->Name()) == "threads") {
-			threads = std::stoi(std::string(attribute->Value()));
-		}
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
 		}
@@ -93,7 +90,7 @@ Broker::Broker(const tinyxml2::XMLElement& element) {
 
 void Broker::save(std::ostream& oStream, std::size_t spaces) const {
 	// <message-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092" threads="4">
-	oStream << makeSpaces(spaces) << "<message-broker id=\"" << id << "\" implementation=\"" << implementation << "\" brokers=\"" << brokers << "\" threads=\"" << threads << "\">\n";
+	oStream << makeSpaces(spaces) << "<message-broker id=\"" << id << "\" implementation=\"" << implementation << "\" brokers=\"" << brokers << "\">\n";
 
 	for(const auto& entry : settings) {
 		entry.saveParameter(oStream, spaces+2);

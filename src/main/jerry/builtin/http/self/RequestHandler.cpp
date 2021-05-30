@@ -17,8 +17,9 @@
  */
 
 #include <jerry/builtin/http/self/RequestHandler.h>
+#include <jerry/Logger.h>
 
-#include <esl/http/server/ResponseDynamic.h>
+#include <esl/io/output/String.h>
 #include <esl/http/server/Request.h>
 
 #include <iostream>
@@ -28,20 +29,23 @@ namespace builtin {
 namespace http {
 namespace self {
 
-std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create(esl::http::server::RequestContext& requestContext) {
-	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(requestContext));
+namespace {
+Logger logger("jerry::builtin::http::self::RequestHandler");
+}
+
+esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext)));
 }
 
 RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext)
-: esl::http::server::requesthandler::Interface::RequestHandler()
 {
-	std::string content(
-			"<!DOCTYPE html>\n"
-			"<html>\n"
-			"<head>\n"
-			"<title>Self page</title>\n"
-			"</head>\n"
-			"<body>\n");
+	std::string content;
+	content += "<!DOCTYPE html>\n";
+	content += "<html>\n";
+	content += "<head>\n";
+	content += "<title>Self page</title>\n";
+	content += "</head>\n";
+	content += "<body>\n";
 	content += "<table style=\"width:100%\">\n";
 	content += "  <tr>\n";
 	content += "    <th>Key</th>\n";
@@ -88,13 +92,16 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext
 	content += "    <td>" + requestContext.getRequest().getUsername() + "</td>\n";
 	content += "  </tr>\n";
 	content += "</table>\n";
-	content +=
-			"</body>\n"
-			"</html>\n";
+	content += "</body>\n";
+	content += "</html>\n";
 
-	std::unique_ptr<esl::http::server::ResponseDynamic> response;
-	response.reset(new esl::http::server::ResponseDynamic(200, esl::utility::MIME::textHtml, std::move(content)));
-	requestContext.getConnection().sendResponse(std::move(response));
+	esl::http::server::Response response(200, esl::utility::MIME::textHtml);
+	std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(content)));
+	requestContext.getConnection().sendResponse(response, esl::io::Output(std::move(producer)));
+}
+
+bool RequestHandler::consume(esl::io::Reader& reader) {
+	return false;
 }
 
 } /* namespace self */

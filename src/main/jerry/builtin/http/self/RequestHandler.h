@@ -19,7 +19,8 @@
 #ifndef JERRY_BUILTIN_HTTP_SELF_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_HTTP_SELF_REQUESTHANDLER_H_
 
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/io/Consumer.h>
+#include <esl/io/Input.h>
 #include <esl/http/server/RequestContext.h>
 
 #include <string>
@@ -29,11 +30,16 @@ namespace builtin {
 namespace http {
 namespace self {
 
-class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
+class RequestHandler : public esl::io::Consumer {
 public:
-	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
 
 	RequestHandler(esl::http::server::RequestContext& requestContext);
+
+	/* return: true for every kind of success and get called again for more content data
+	 *         false for failure or to get not called again
+	 */
+	bool consume(esl::io::Reader& reader) override;
 };
 
 } /* namespace self */

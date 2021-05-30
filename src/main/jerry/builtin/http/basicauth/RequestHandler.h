@@ -19,6 +19,8 @@
 #ifndef JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
 
+#include <esl/io/Writer.h>
+#include <esl/io/Input.h>
 #include <esl/http/server/requesthandler/Interface.h>
 #include <esl/http/server/RequestContext.h>
 #include <esl/http/server/Request.h>
@@ -30,14 +32,20 @@ namespace builtin {
 namespace http {
 namespace basicauth {
 
-class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
+class RequestHandler : public esl::io::Writer {
 public:
-	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
 
 	RequestHandler(esl::http::server::RequestContext& requestContext, const std::string& realmId);
 	//~RequestHandler() = default;
 
-	//bool process(const char* contentData, std::size_t contentDataSize) override;
+	// if function is called with size=0, this signals that writing is done, so write will not be called anymore.
+	// -> this can be used for cleanup stuff.
+	std::size_t write(const void* data, std::size_t size) override;
+
+	// returns consumable bytes to write.
+	// npos is returned if available size is unknown.
+	std::size_t getSizeWritable() const override;
 };
 
 } /* namespace basicauth */

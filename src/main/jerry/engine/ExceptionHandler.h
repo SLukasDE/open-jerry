@@ -20,14 +20,9 @@
 #define JERRY_ENGINE_EXCEPTIONHANDLER_H_
 
 #include <jerry/engine/ExceptionMessage.h>
-#include <jerry/engine/http/Document.h>
 
 #include <esl/http/server/exception/StatusCode.h>
-#include <esl/http/server/exception/Interface.h>
 #include <esl/database/exception/SqlError.h>
-#include <esl/http/server/Connection.h>
-//#include <esl/utility/MIME.h>
-//#include <esl/Stacktrace.h>
 #include <esl/logging/StreamReal.h>
 #include <esl/logging/StreamEmpty.h>
 #include <esl/logging/Location.h>
@@ -39,22 +34,16 @@
 
 namespace jerry {
 namespace engine {
-/*
-namespace http {
-class Listener;
-}
-*/
-class ExceptionHandler {
-	// required to call setMessage(const esl::http::server::exception::StatusCode& e)
-	// but it's not necessary to call setMessage. It's possible to call 'call(<Lambda-Function that throws ...::StatusCode>)'
-//	friend class Engine;
-//	friend class http::Listener;
 
+class ExceptionHandler {
 public:
-	static void initialize();
+	virtual ~ExceptionHandler() = default;
 
 	void setShowException(bool showException);
+	bool getShowException() const noexcept;
+
 	void setShowStacktrace(bool showStacktrace);
+	bool getShowStacktrace() const noexcept;
 
 	/* return true if exception occurred */
 	bool call(std::function<void()> callFunction);
@@ -63,23 +52,21 @@ public:
 	void dump(std::ostream& stream) const;
 	void dump(esl::logging::StreamReal& stream, esl::logging::Location location = esl::logging::Location{}) const;
 	inline void dump(esl::logging::StreamEmpty& stream, esl::logging::Location location = esl::logging::Location{}) const { };
-	void dump(esl::http::server::Connection& connection, std::function<const http::Document*(unsigned short statusCode)> findDocument = nullptr) const;
+
+protected:
+	const ExceptionMessage& getMessage() const;
+
+	virtual void setMessage();
+	virtual void setMessage(const esl::http::server::exception::StatusCode& e);
+	virtual void setMessage(const esl::database::exception::SqlError& e);
+	virtual void setMessage(const std::runtime_error& e);
+	virtual void setMessage(const std::exception& e);
 
 private:
-	void setMessage();
-	void setMessage(const esl::http::server::exception::StatusCode& e);
-	void setMessage(const esl::database::exception::SqlError& e);
-	void setMessage(const std::runtime_error& e);
-	void setMessage(const std::exception& e);
-
-	std::string getHTMLContent() const;
-	std::string getTextContent() const;
-
 	bool showException = false;
 	bool showStacktrace = false;
 
 	ExceptionMessage plainMessage;
-	esl::http::server::exception::Interface::Message httpMessage;
 };
 
 } /* namespace engine */

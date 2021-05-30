@@ -31,11 +31,10 @@ namespace config {
 namespace messaging {
 
 struct Context {
-	Context(const tinyxml2::XMLElement& element, bool hasEndpoint, bool isGlobal);
+	Context(const tinyxml2::XMLElement& element, bool isGlobal);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	const bool hasEndpoint;
 	const bool isGlobal;
 
 	bool hasId = false;

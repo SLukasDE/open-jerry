@@ -22,10 +22,13 @@
 #include <esl/object/Settings.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Interface.h>
-#include <esl/messaging/Producer.h>
-#include <esl/messaging/Interface.h>
+#include <esl/messaging/broker/Interface.h>
+#include <esl/messaging/client/Interface.h>
 
 #include <string>
+#include <set>
+#include <vector>
+#include <utility>
 #include <memory>
 
 namespace jerry {
@@ -40,13 +43,17 @@ public:
 	void addSetting(const std::string& key, const std::string& value) override;
 	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
-	std::unique_ptr<esl::messaging::Producer> createProducer();
+	const std::set<std::string>& getNotifiers() const noexcept;
+
+	std::unique_ptr<esl::messaging::client::Interface::Connection> createConnection();
 	unsigned long getMSDelay() const;
 
 private:
-	std::string queue;
+	std::set<std::string> notifiers;
 	unsigned long msDelay = 0;
-	esl::messaging::Interface::ProducerFactory* producerFactory = nullptr;;
+	std::string outputRefId;
+	std::vector<std::pair<std::string, std::string>> outputParameters;
+	esl::messaging::broker::Interface::Client* client = nullptr;
 };
 
 } /* namespace echo */

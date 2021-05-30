@@ -3,7 +3,6 @@
 	<library file="liblogbook4esl.so" module="esl"/>
 	<library file="libzsystem4esl.so" module="esl"/>
 	<library file="librdkafka4esl.so" module="esl"/>
-	<!-- library file="libhttp-filebrowser.so"/ -->
 	
 	<certificate domain="localhost" key="server.key" cert="server.pem"/>
 	<certificate domain="*" key="server.key" cert="server.pem"/>
@@ -25,17 +24,12 @@
 	</logger>
 	
 	
-	<message-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092" threads="4">
-		<parameter key="group-id" value="mds"/>
-		<parameter key="login-token" value="xyz"/>
+	<message-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092">
+		<parameter key="kafka.group-id" value="mds"/>
+		<parameter key="threads" value="4"/>
 	</message-broker>
 	
-	<object id="echo-queue" implementation="jerry/builtin/messaging/producer-factory">
-		<parameter key="broker" value="broker-1"/>
-		<parameter key="queue" value="test-topic"/>
-	</object>
-	
-	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
+	<http-server id="http-1" implementation="mhd4esl" port="8080">
 		<parameter key="threads" value="4"/>
 		<!-- certificate key="server.key" cert="server.pem"/> -->
 	</http-server>
@@ -56,7 +50,8 @@
 	</object>
 	
 	<object id="cd-setting1" implementation="jerry/builtin/messaging/dump">
-		<parameter key="show-all" value="true"/>
+		<parameter key="show-context" value="true"/>
+		<parameter key="show-content" value="true"/>
 	</object>
 	
 	<http-context id="http-context1">
@@ -129,57 +124,18 @@
 	</http-context>
 	
 	<message-listener ref-id="broker-1">
-		<!-- Broker itself is accessible within this context by id="" -->
+		<requesthandler implementation="jerry/builtin/messaging/dump">
+			<parameter key="notifier" value="input-queue"/>
+			<parameter key="show-context" value="true"/>
+			<parameter key="show-content" value="true"/>
+		</requesthandler>
 		
-		<endpoint queue="test-topic">
-			<!--
-				This:
-				
-					<messagehandler implementation="jerry/builtin/messaging/dump">
-						<parameter key="show-all" value="true"/>
-					</messagehandler>
-				
-				is a shortcut for this:
-				
-					<context inherit="true">
-						<object id="" implementation="jerry/builtin/messaging/dump">
-							<parameter key="show-all" value="true"/>
-						</object>
-						<messagehandler implementation="jerry/builtin/messaging/dump"/>
-					</context>
-			-->
-			
-			<messagehandler implementation="jerry/builtin/messaging/dump">
-				<parameter key="show-all" value="true"/>
-			</messagehandler>
-			
-			<messagehandler implementation="jerry/builtin/messaging/echo">
-				<parameter key="queue" value="echo-queue"/>
-				<parameter key="delay-ms" value="1000"/>
-			</messagehandler>
-		</endpoint>
-		
-		<endpoint queue="input-queue2">
-			<context>
-				<reference id="" ref-id="cd-setting1"/>
-				<messagehandler implementation="jerry/builtin/messaging/dump"/>
-			</context>
-				
-			<!--  both message handlers will be executed -->
-			<messagehandler implementation="jerry/builtin/messaging/dump"/>
-		</endpoint>
-		
-		<context>
-			<endpoint queue="input-queue2">
-				<context>
-					<reference id="" ref-id="cd-setting1"/>
-					<messagehandler implementation="jerry/builtin/messaging/dump"/>
-				</context>
-				
-				<!--  both message handlers will be executed -->
-				<messagehandler implementation="jerry/builtin/messaging/dump"/>
-			</endpoint>
-		</context>
+		<requesthandler implementation="jerry/builtin/messaging/echo">
+			<parameter key="notifier" value="output-queue"/>
+			<parameter key="delay-ms" value="1000"/>
+			<parameter key="output.ref-id" value="broker-1"/>
+			<parameter key="output.parameter.topic" value="output-queue"/>
+		</requesthandler>
 	</message-listener>
 	
 	<!--
@@ -217,9 +173,5 @@
 	<http-listener hostname="*" ref-id="http-1">
 		<context ref-id="http-context1"/>
 	</http-listener>
-	
-	<message-listener ref-id="broker-1">
-		<context ref-id="message-context1"/>
-	</message-listener>
 	
 </jerry>

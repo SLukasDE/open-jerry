@@ -23,7 +23,6 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <cstdint>
 #include <string>
 #include <vector>
 #include <ostream>
@@ -40,7 +39,6 @@ struct Broker {
 	std::string id;
 	std::string implementation;
 	std::string brokers;
-	std::uint16_t threads = 4;
 	std::vector<Setting> settings;
 };
 

@@ -18,7 +18,7 @@
 
 #ifndef JERRY_BUILTIN_MESSAGING_PRODUCERFACTORY_H_
 #define JERRY_BUILTIN_MESSAGING_PRODUCERFACTORY_H_
-
+#if 0
 #include <esl/messaging/Interface.h>
 #include <esl/messaging/Producer.h>
 #include <esl/object/Interface.h>
@@ -55,5 +55,5 @@ private:
 } /* namespace messaging */
 } /* namespace builtin */
 } /* namespace jerry */
-
+#endif
 #endif /* JERRY_BUILTIN_MESSAGING_PRODUCERFACTORY_H_ */

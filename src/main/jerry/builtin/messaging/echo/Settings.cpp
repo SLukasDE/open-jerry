@@ -22,8 +22,6 @@
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
-//#include <cstdlib>
-
 
 namespace jerry {
 namespace builtin {
@@ -39,11 +37,17 @@ std::unique_ptr<esl::object::Interface::Object> Settings::create() {
 }
 
 void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "queue") {
-		queue = value;
+	if(key == "notifier") {
+		notifiers.insert(value);
 	}
 	else if(key == "delay-ms") {
 		msDelay = std::stoul(value);
+	}
+	else if(key == "output.ref-id") {
+		outputRefId = value;
+	}
+	else if(key.substr(0, 17) == "output.parameter.") {
+		outputParameters.push_back(std::make_pair(key.substr(17), value));
 	}
 	else {
 		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
@@ -51,20 +55,25 @@ void Settings::addSetting(const std::string& key, const std::string& value) {
 }
 
 void Settings::initializeContext(esl::object::ObjectContext& objectContext) {
-	producerFactory = objectContext.findObject<esl::messaging::Interface::ProducerFactory>(queue);
-	if(producerFactory == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Cannot find message producer factory for echo queue \"" + queue + "\""));
+	client = objectContext.findObject<esl::messaging::broker::Interface::Client>(outputRefId);
+	if(client == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Cannot find message-broker with id \"" + outputRefId + "\""));
 	}
 
-	logger.info << "Echo::Setting initialized for queue \"" << queue << "\"\n";
+	logger.info << "Echo::Setting initialized for refId \"" << outputRefId << "\"\n";
 }
 
-std::unique_ptr<esl::messaging::Producer> Settings::createProducer() {
-	if(producerFactory == nullptr) {
-		logger.error << "producerFactory == nullptr\n";
+
+const std::set<std::string>& Settings::getNotifiers() const noexcept {
+	return notifiers;
+}
+
+std::unique_ptr<esl::messaging::client::Interface::Connection> Settings::createConnection() {
+	if(client == nullptr) {
+		logger.error << "client == nullptr\n";
 		return nullptr;
 	}
-	return producerFactory->createProducer();
+	return client->createConnection(outputParameters);
 }
 
 unsigned long Settings::getMSDelay() const {

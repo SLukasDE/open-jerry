@@ -35,7 +35,6 @@
 #include <esl/logging/appender/MemBuffer.h>
 #include <esl/logging/Location.h>
 #include <esl/logging/Layout.h>
-#include <esl/database/exception/RuntimeError.h>
 #include <esl/database/exception/SqlError.h>
 
 #include <iostream>
@@ -212,22 +211,12 @@ int main(int argc, const char *argv[]) {
 
 			return success ? 0 : -2;
 		}
-		catch(const esl::database::exception::RuntimeError& e) {
-			std::cerr << "Exception : esl::database::exception::RuntimeError\n";
-			std::cerr << "Message   : " << e.what() << "\n";
-			throw;
-		}
 		catch(const esl::database::exception::SqlError& e) {
 			std::cerr << "Exception : esl::database::exception::SqlError\n";
 			std::cerr << "Message   : " << e.what() << "\n";
 			std::cerr << "SQL Return Code: " << e.getSqlReturnCode() << "\n";
 			const esl::database::Diagnostics& diagnostics = e.getDiagnostics();
 			diagnostics.dump(std::cerr);
-			throw;
-		}
-		catch(const esl::database::Exception& e) {
-			std::cerr << "Exception : esl::database::Exception\n";
-			std::cerr << "Message   : " << e.what() << "\n";
 			throw;
 		}
 		catch(const std::runtime_error& e) {

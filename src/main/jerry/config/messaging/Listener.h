@@ -20,8 +20,6 @@
 #define JERRY_CONFIG_MESSAGING_LISTENER_H_
 
 #include <jerry/config/messaging/Entry.h>
-//#include <jerry/config/Exceptions.h>
-//#include <jerry/config/Setting.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -41,10 +39,6 @@ struct Listener {
 	std::string refId;
 
 	std::vector<Entry> entries;
-
-	//std::vector<Setting> responseHeaders;
-
-	//Exceptions exceptions;
 };
 
 } /* namespace messaging */

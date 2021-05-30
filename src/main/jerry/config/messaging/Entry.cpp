@@ -17,9 +17,8 @@
  */
 
 #include <jerry/config/messaging/Entry.h>
-#include <jerry/config/messaging/Endpoint.h>
 #include <jerry/config/messaging/Context.h>
-#include <jerry/config/messaging/MessageHandler.h>
+#include <jerry/config/messaging/RequestHandler.h>
 
 #include <esl/Stacktrace.h>
 
@@ -43,18 +42,16 @@ Entry::Entry(Entry&& other)
 : type(other.type),
   object(std::move(other.object)),
   reference(std::move(other.reference)),
-  endpoint(other.endpoint),
   context(other.context),
-  messageHandler(other.messageHandler),
+  requestHandler(other.requestHandler),
   hasQueue(other.hasQueue)
 {
 	other.type = etNone;
-	other.endpoint = nullptr;
 	other.context = nullptr;
-	other.messageHandler = nullptr;
+	other.requestHandler = nullptr;
 }
 
-Entry::Entry(const tinyxml2::XMLElement& element, bool hasEndpoint) {
+Entry::Entry(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(element.GetLineNum())));
 	}
@@ -69,20 +66,13 @@ Entry::Entry(const tinyxml2::XMLElement& element, bool hasEndpoint) {
 		type = etReference;
 		reference = std::unique_ptr<Reference>(new Reference(element));
 	}
-	else if(elementName == "endpoint") {
-		if(hasEndpoint) {
-			throw esl::addStacktrace(std::runtime_error("Defintion of endpoint at line " + std::to_string(element.GetLineNum()) + " within another endpoint is not allowed"));
-		}
-		type = etEndpoint;
-		endpoint = new Endpoint(element);
-	}
 	else if(elementName == "context") {
 		type = etContext;
-		context = new Context(element, hasEndpoint, false);
+		context = new Context(element, false);
 	}
-	else if(elementName == "messagehandler") {
-		type = etMessageHandler;
-		messageHandler = new MessageHandler(element);
+	else if(elementName == "requesthandler") {
+		type = etRequestHandler;
+		requestHandler = new RequestHandler(element);
 	}
 	else {
 		throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + elementName + "\" at line " + std::to_string(element.GetLineNum())));
@@ -99,15 +89,13 @@ Entry& Entry::operator=(Entry&& other) {
 
 		object = std::move(other.object);
 		reference = std::move(other.reference);
-		endpoint = other.endpoint;
 		context = other.context;
-		messageHandler = other.messageHandler;
+		requestHandler = other.requestHandler;
 		hasQueue = other.hasQueue;
 
 		other.type = etNone;
-		other.endpoint = nullptr;
 		other.context = nullptr;
-		other.messageHandler = nullptr;
+		other.requestHandler = nullptr;
 	}
 	return *this;
 }
@@ -120,14 +108,11 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	case etReference:
 		getReference().save(oStream, spaces);
 		break;
-	case etEndpoint:
-		getEndpoint().save(oStream, spaces);
-		break;
 	case etContext:
 		getContext().save(oStream, spaces);
 		break;
-	case etMessageHandler:
-		getMessageHandler().save(oStream, spaces);
+	case etRequestHandler:
+		getRequestHandler().save(oStream, spaces);
 		break;
 	default:
 		throw esl::addStacktrace(std::runtime_error("Entry::save() called, but Entry is empty"));
@@ -152,13 +137,6 @@ Reference& Entry::getReference() const {
 	return *reference;
 }
 
-Endpoint& Entry::getEndpoint() const {
-	if(endpoint == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Entry::getEndpoint() called for empty queue"));
-	}
-	return *endpoint;
-}
-
 Context& Entry::getContext() const {
 	if(context == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Entry::getContext() called for empty context"));
@@ -166,27 +144,22 @@ Context& Entry::getContext() const {
 	return *context;
 }
 
-MessageHandler& Entry::getMessageHandler() const {
-	if(messageHandler == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Entry::geMessageHandler() called for empty messageHandler"));
+RequestHandler& Entry::getRequestHandler() const {
+	if(requestHandler == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Entry::getRequestHandler() called for empty requestHandler"));
 	}
-	return *messageHandler;
+	return *requestHandler;
 }
 
 void Entry::doDelete() {
-	if(messageHandler) {
-		delete messageHandler;
-		messageHandler = nullptr;
+	if(requestHandler) {
+		delete requestHandler;
+		requestHandler = nullptr;
 	}
 
 	if(context) {
 		delete context;
 		context = nullptr;
-	}
-
-	if(endpoint) {
-		delete endpoint;
-		endpoint = nullptr;
 	}
 }
 

@@ -20,8 +20,9 @@
 #include <jerry/builtin/http/basicauth/Settings.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/ResponseBasicAuth.h>
+#include <esl/http/server/Response.h>
 #include <esl/utility/MIME.h>
+#include <esl/io/output/Memory.h>
 
 namespace jerry {
 namespace builtin {
@@ -43,27 +44,39 @@ const std::string PAGE_401(
 		"</html>\n");
 }
 
-std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create(esl::http::server::RequestContext& requestContext) {
-	const Settings* settings = dynamic_cast<Settings*>(requestContext.findObject(""));
+esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+	const Settings* settings = requestContext.findObject<Settings>("");
 	if(settings == nullptr) {
-		return nullptr;
+		return esl::io::Input();
 	}
 
 	if(requestContext.getRequest().getUsername() == settings->getUsername() &&
 			requestContext.getRequest().getPassword() == settings->getPassword()) {
-		return nullptr;
+		return esl::io::Input();
 	}
 
-	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(requestContext, settings->getRealmId()));
+	return esl::io::Input(std::unique_ptr<esl::io::Writer>(new RequestHandler(requestContext, settings->getRealmId())));
 }
 
 RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext, const std::string& realmId)
-: esl::http::server::requesthandler::Interface::RequestHandler()
 {
-	std::unique_ptr<esl::http::server::ResponseBasicAuth> response;
-	response.reset(new esl::http::server::ResponseBasicAuth(realmId, esl::utility::MIME::textHtml, PAGE_401.data(), PAGE_401.size()));
-	requestContext.getConnection().sendResponse(std::move(response));
+	esl::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), realmId);
+	std::unique_ptr<esl::io::Producer> producer(new esl::io::output::Memory(PAGE_401.data(), PAGE_401.size()));
+	requestContext.getConnection().sendResponse(response, esl::io::Output(std::move(producer)));
 }
+
+// if function is called with size=0, this signals that writing is done, so write will not be called anymore.
+// -> this can be used for cleanup stuff.
+std::size_t RequestHandler::write(const void* data, std::size_t size) {
+	return esl::io::Writer::npos;
+}
+
+// returns consumable bytes to write.
+// npos is returned if available size is unknown.
+std::size_t RequestHandler::getSizeWritable() const {
+	return esl::io::Writer::npos;
+}
+
 
 } /* namespace basicauth */
 } /* namespace http */

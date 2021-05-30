@@ -38,15 +38,15 @@ public:
 		return "cgi4esl";
 	}
 
-	static std::unique_ptr<esl::http::server::Interface::Socket> create(uint16_t port, esl::http::server::requesthandler::Interface::CreateRequestHandler createRequestHandler, const esl::object::Values<std::string>& values);
+	static std::unique_ptr<esl::http::server::Interface::Socket> create(uint16_t port, const esl::object::Values<std::string>& values);
 
-	Socket(uint16_t port, esl::http::server::requesthandler::Interface::CreateRequestHandler createRequestHandler, const esl::object::Values<std::string>& values);
+	Socket(uint16_t port, const esl::object::Values<std::string>& values);
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
 
-	bool listen() override;
+	void listen(esl::http::server::requesthandler::Interface::CreateInput createInput) override;
 	void release() override;
 
 private:

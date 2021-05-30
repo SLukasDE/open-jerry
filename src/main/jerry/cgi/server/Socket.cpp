@@ -32,11 +32,11 @@ std::string getEnvVar(std::string const & key) {
 }
 
 
-std::unique_ptr<esl::http::server::Interface::Socket> Socket::create(uint16_t port, esl::http::server::requesthandler::Interface::CreateRequestHandler createRequestHandler, const esl::object::Values<std::string>& values) {
-	return std::unique_ptr<esl::http::server::Interface::Socket>(new Socket(port, createRequestHandler, values));
+std::unique_ptr<esl::http::server::Interface::Socket> Socket::create(uint16_t port, const esl::object::Values<std::string>& values) {
+	return std::unique_ptr<esl::http::server::Interface::Socket>(new Socket(port, values));
 }
 
-Socket::Socket(uint16_t aPort, esl::http::server::requesthandler::Interface::CreateRequestHandler createRequestHandler, const esl::object::Values<std::string>& values)
+Socket::Socket(uint16_t aPort, const esl::object::Values<std::string>& values)
 : esl::http::server::Interface::Socket(),
   port(aPort)
 {
@@ -50,8 +50,7 @@ void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory
 	objectFactories[id] = objectFactory;
 }
 
-bool Socket::listen() {
-	return true;
+void Socket::listen(esl::http::server::requesthandler::Interface::CreateInput createInput) {
 }
 
 void Socket::release() {

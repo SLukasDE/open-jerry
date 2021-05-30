@@ -21,7 +21,6 @@
 #include <jerry/Logger.h>
 
 #include <esl/http/server/Connection.h>
-#include <esl/http/server/ResponseFile.h>
 #include <esl/Stacktrace.h>
 #include <esl/logging/Level.h>
 
@@ -36,21 +35,24 @@ namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
 }
 
-std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create(esl::http::server::RequestContext& requestContext) {
-	const Settings* settings = dynamic_cast<Settings*>(requestContext.findObject(""));
+esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+	const Settings* settings = requestContext.findObject<Settings>("");
 	if(settings == nullptr) {
-		return nullptr;
+		return esl::io::Input();
 	}
 
-	return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(requestContext, *settings));
+	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings)));
 }
 
 RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings)
-: esl::http::server::requesthandler::Interface::RequestHandler()
 {
 	esl::utility::MIME mime = utility::MIME::byFilename(settings.getPath());
-	std::unique_ptr<esl::http::server::ResponseFile> response(new esl::http::server::ResponseFile(settings.getHttpStatus(), mime, settings.getPath()));
-	requestContext.getConnection().sendResponse(std::move(response));
+	esl::http::server::Response response(settings.getHttpStatus(), mime);
+	requestContext.getConnection().sendResponse(response, settings.getPath());
+}
+
+bool RequestHandler::consume(esl::io::Reader& reader) {
+	return false;
 }
 
 } /* namespace file */

@@ -17,19 +17,13 @@
  */
 
 #include <jerry/engine/Engine.h>
-#include <jerry/engine/messaging/MessageHandler.h>
-#include <jerry/engine/http/RequestHandler.h>
-#include <jerry/engine/http/Endpoint.h>
 #include <jerry/engine/ExceptionHandler.h>
+#include <jerry/engine/http/server/ExceptionHandler.h>
 #include <jerry/Logger.h>
 #include <jerry/Module.h>
 
 #include <esl/Module.h>
-#include <esl/messaging/Consumer.h>
-#include <esl/http/server/Request.h>
-#include <esl/http/server/RequestContext.h>
-#include <esl/http/server/exception/StatusCode.h>
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/object/Interface.h>
 #include <esl/utility/String.h>
 #include <esl/system/SignalHandler.h>
 #include <esl/Stacktrace.h>
@@ -45,46 +39,21 @@ namespace engine {
 
 namespace {
 Logger logger("jerry::engine::Engine");
-
-class MessageBrokerObject : public esl::object::Interface::Object {
-public:
-	MessageBrokerObject(messaging::proxy::Client& aMessageBroker, Engine& aEngine)
-	: messageBroker(aMessageBroker),
-	  engine(aEngine)
-	{ }
-
-	messaging::proxy::Client& getMessageBroker() const {
-		return messageBroker;
-	}
-
-	Engine& getEngine() const {
-		return engine;
-	}
-
-private:
-	messaging::proxy::Client& messageBroker;
-	Engine& engine;
-};
 } /* anonymous namespace */
 
 Engine::Engine()
-: messageTimer([this](const Message& message) { message.f(*this); }),
-  httpObject(*this)
+: messageTimer([this](const Message& message) { message.f(*this); })
 { }
 
 bool Engine::run() {
 	runThreadId = std::this_thread::get_id();
-	if(httpListenersByPort.empty() && messageListenerByBroker.empty()) {
-		logger.warn << "no listener defined.\n";
-		return false;
-	}
 
 	/* *********************************************************** *
 	 * initialize ExceptionHandler:                                *
 	 * Load all implementations to convert 'const std::exception&' *
 	 * to esl::http::server::exception::Interface::Message         *
 	 * *********************************************************** */
-	ExceptionHandler::initialize();
+	//http::server::ExceptionHandler::initialize();
 
 	/* ************************* *
 	 * initialize global objects *
@@ -93,128 +62,92 @@ bool Engine::run() {
 	initializeContext();
 	logger.info << "Initialization of global objects done.\n";
 
-	/* ******************************** *
+	/* *********************************** *
 	 * initialize message-listener objects *
-	 * ******************************** */
-	for(auto& entry : messageBrokerById) {
-		messaging::proxy::Client& messageBroker = entry.second.get();
-
-		logger.info << "Initialize context of all objects within message-listener of broker \"" << messageBroker.id << "\" ...\n";
-		for(auto& listener : messageBroker.listeners) {
+	 * *********************************** */
+	logger.info << "Initialize context of all message-listeners ...\n";
+	for(auto& listener : messageListeners) {
+		if(listener) {
 			listener->initializeContext();
 		}
-		logger.info << "Initialization of all objects within message-listener of broker \"" << messageBroker.id << "\" done.\n";
 	}
+	logger.info << "Initialization of all message-listeners done.\n";
 
 	/* ******************************** *
 	 * initialize http-listener objects *
 	 * ******************************** */
-	for(auto& httpListeners : httpListenersByPort) {
-		for(auto& listener : httpListeners.second.listenerByHostname) {
-			logger.info << "Initialize context of objects for http-listener \"" << listener.first << ":" << httpListeners.first << "\" ...\n";
-			listener.second->initializeContext();
-			logger.info << "Initialization of objects for http-listener \"" << listener.first << ":" << httpListeners.first << "\" done.\n";
+	logger.info << "Initialize context of all http-listeners ...\n";
+	for(auto& listener : httpListeners) {
+		if(listener) {
+			listener->initializeContext();
 		}
 	}
+	logger.info << "Initialization of all http-listeners done.\n";
 
-	/* ********************************************* *
-	 * create broker clients for all message-brokers *
-	 * ********************************************* */
-	for(auto& entry : messageBrokerById) {
-		messaging::proxy::Client& messageBroker = entry.second;
+	/* *********************************************************** *
+	 * add certificates to socket if http-server is used for https *
+	 * *********************************************************** */
+	for(auto& entry : httpServerById) {
+		http::server::Socket& httpServer = entry.second.get();
 
-		esl::object::Interface::Object* object = new MessageBrokerObject(messageBroker, *this);
-		messageBroker.object.reset(object);
-		//std::unique_ptr<esl::object::Interface::Object> object(new BokerObject(messageBroker, *this));
-		//messageBroker.object = std::move(object);
+		/* add certificates to http-socket if https is used */
+		if(httpServer.isHttps()) {
+			/* host names for that we need a certificate */
+			std::set<std::string> hostnames = httpServer.getHostnames();
 
-		std::unique_ptr<esl::messaging::Client> client(new esl::messaging::Client(messageBroker.brokers, messageBroker.settings, messageBroker.implementation));
-		client->addObjectFactory("", [object](const esl::messaging::MessageContext&){ return object; });
-		//client->addObjectFactory("", [this](const esl::messaging::MessageContext&){ return &this->engineObject; });
-
-		messageBroker.client = std::move(client);
-//		std::unique_ptr<esl::object::Interface::Object> object;
-
-	}
-
-	/* ******************************************************* *
-	 * create sockets for all http-servers and add             *
-	 * certificates to socket if http-server is used for https *
-	 * ******************************************************* */
-	for(auto& httpServer : httpServerById) {
-		std::unique_ptr<esl::http::server::Socket> socket(new esl::http::server::Socket(httpServer.second.port, createRequestHandler, httpServer.second.settings, httpServer.second.implementation));
-		socket->addObjectFactory("", [this](const esl::http::server::RequestContext&){ return &this->httpObject; });
-
-		std::set<std::string> hostnames;
-
-		if(httpServer.second.isHttps) {
-			for(auto& httpListeners : httpListenersByPort) {
-				if(httpListeners.first != httpServer.second.port) {
-					continue;
+			/* add certificate http-socket for each host name */
+			for(const auto& hostname : hostnames) {
+				auto certIter = certsByHostname.find(hostname);
+				if(certIter == std::end(certsByHostname)) {
+					throw std::runtime_error("No certificate available for hostname '" + hostname + "'.");
 				}
-
-				for(auto& listener : httpListeners.second.listenerByHostname) {
-					hostnames.insert(listener.first);
-				}
+				httpServer.getSocket().addTLSHost(hostname, certIter->second.first, certIter->second.second);
 			}
 		}
-
-		for(const auto& hostname : hostnames) {
-			auto certIter = certsByHostname.find(hostname);
-			if(certIter == std::end(certsByHostname)) {
-				throw std::runtime_error("No certificate available for hostname '" + hostname + "'.");
-			}
-			socket->addTLSHost(hostname, certIter->second.first, certIter->second.second);
-		}
-
-		httpServer.second.socket = std::move(socket);
-	}
-/*
-	std::string hostname = requestContext.getRequest().getHostName();
-	logger.debug << "Lookup ListernerByHostname(" << hostname << ")\"\n";
-	auto iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find(hostname);
-
-	while(iterListenerByHostname == std::end(iterListenerByPort->second.listenerByHostname)) {
-		std::string::size_type pos = hostname.find_first_of('.');
-		if(pos == std::string::npos) {
-			logger.debug << "Lookup ListernerByHostname(*)\"\n";
-			iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find("*");
-			break;
-		}
-		hostname = hostname.substr(pos+1);
-		logger.debug << "Lookup ListernerByHostname(*." << hostname << ")\"\n";
-		iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find("*." + hostname);
 	}
 
-	if(iterListenerByHostname == std::end(iterListenerByPort->second.listenerByHostname)) {
-		logger.debug << "Not found\n";
-		return nullptr;
-	}
- */
 	auto stopFunction = [this]() { stop(); };
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
 
-	logger.debug << "Start message broker consumers.\n";
-	for(const auto& entry : messageBrokerById) {
-		const messaging::proxy::Client& messageBroker = entry.second;
-		std::set<std::string> queues;
+	logger.debug << "Start message brokers.\n";
+	for(auto& entry : messageBrokerById) {
+		messaging::server::Socket& messageServer = entry.second.get().getServer();
 
-		logger.debug << "-> Start consumer of message broker \"" << messageBroker.id << "\" for queues:\n";
-		for(const auto& queue : messageBroker.handlerByQueueName) {
-			logger.debug << "   - \"" << queue.first << "\"\n";
-			queues.insert(queue.first);
+		logger.debug << "-> Start message broker \"" << entry.first << "\" for queues:\n";
+		if(logger.debug) {
+			std::set<std::string> notifiers = messageServer.getNotifier();
+			for(const auto& notifier : notifiers) {
+				logger.debug << "   - \"" << notifier << "\"\n";
+			}
 		}
 
-		esl::messaging::Consumer& consumer = messageBroker.client->getConsumer();
-		consumer.start(queues, createMessageHandler, messageBroker.threads);
+		messageServer.getSocket().listen(messageServer.getNotifier(), messaging::server::Socket::createMessageHandler);
 	}
 
-	logger.debug << "Start http/https servers.\n";
-	for(const auto& httpServer : httpServerById) {
-		logger.debug << "-> Start http/https server \"" << httpServer.first << "\".\n";
-		httpServer.second.socket->listen();
+	logger.debug << "Start message servers.\n";
+	for(auto& entry : messageServerById) {
+		messaging::server::Socket& messageServer = entry.second.get();
+
+		logger.debug << "-> Start message server \"" << entry.first << "\" for queues:\n";
+		if(logger.debug) {
+			std::set<std::string> notifiers = messageServer.getNotifier();
+			for(const auto& notifier : notifiers) {
+				logger.debug << "   - \"" << notifier << "\"\n";
+			}
+		}
+
+		messageServer.getSocket().listen(messageServer.getNotifier(), messaging::server::Socket::createMessageHandler);
+	}
+
+	logger.debug << "Start http servers.\n";
+	for(auto& entry : httpServerById) {
+		http::server::Socket& httpServer = entry.second.get();
+
+		logger.debug << "-> Start http/https server \"" << entry.first << "\".\n";
+
+		httpServer.getSocket().listen(http::server::Socket::createRequestHandler);
 	}
 
 	bool rc = messageTimer.run();
@@ -223,22 +156,45 @@ bool Engine::run() {
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
 
-	logger.debug << "Stop message broker consumers.\n";
-	for(const auto& messageBroker : messageBrokerById) {
-		logger.debug << "-> Stop consumer of message broker \"" << messageBroker.first << "\"\n";
-		messageBroker.second.get().client->getConsumer().stop();
+	logger.debug << "Stop message brokers.\n";
+	for(auto& entry : messageBrokerById) {
+		messaging::server::Socket& messageServer = entry.second.get().getServer();
+
+		logger.debug << "-> Stop message broker \"" << entry.first << "\".\n";
+		messageServer.getSocket().release();
 	}
 
-	logger.debug << "Stop http/https servers.\n";
-	for(const auto& httpServer : httpServerById) {
-		logger.debug << "-> Stop http/https server \"" << httpServer.first << "\".\n";
-		httpServer.second.socket->release();
+	logger.debug << "Stop message servers.\n";
+	for(auto& entry : messageServerById) {
+		messaging::server::Socket& messageServer = entry.second.get();
+
+		logger.debug << "-> Stop message server \"" << entry.first << "\".\n";
+		messageServer.getSocket().release();
 	}
 
-	logger.debug << "Wait for finished message broker consumers.\n";
-	for(const auto& messageBroker : messageBrokerById) {
-		logger.debug << "-> Waiting for consumer of message broker \"" << messageBroker.first << "\"\n";
-		messageBroker.second.get().client->getConsumer().wait(0);
+	logger.debug << "Stop http servers.\n";
+	for(auto& entry : httpServerById) {
+		http::server::Socket& httpServer = entry.second.get();
+
+		logger.debug << "-> Stop http server \"" << httpServer.getId() << "\".\n";
+		httpServer.getSocket().release();
+	}
+
+	logger.debug << "Wait for finished message broker.\n";
+	for(auto& entry : messageBrokerById) {
+		messaging::server::Socket& messageServer = entry.second.get().getServer();
+
+		logger.debug << "-> Waiting for message broker \"" << entry.first << "\"\n";
+		messageServer.getSocket().wait(0);
+		logger.debug << "-> Waiting done.\n";
+	}
+
+	logger.debug << "Wait for finished message servers.\n";
+	for(auto& entry : messageServerById) {
+		messaging::server::Socket& messageServer = entry.second.get();
+
+		logger.debug << "-> Waiting for message server \"" << entry.first << "\"\n";
+		messageServer.getSocket().wait(0);
 		logger.debug << "-> Waiting done.\n";
 	}
 
@@ -274,31 +230,65 @@ void Engine::addCertificate(const std::string& hostname, const std::string& keyF
     addCertificate(hostname, std::move(key), std::move(certificate));
 }
 
-void Engine::addMessageBroker(const std::string& id, const std::string& brokers, std::uint16_t threads, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+void Engine::addMessageBroker(const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding message broker (implementation=\"" << implementation << "\") with id=\"" << id << "\" for broker " << brokers << "\"\n";
 
-	auto iterMessageBroker = messageBrokerById.find(id);
-	if(iterMessageBroker != std::end(messageBrokerById)) {
-        throw std::runtime_error("There are multiple message brokers defined with same id \"" + id + "\".");
+	if(messageBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
 	}
 
-	messaging::proxy::Client* messageBroker = new messaging::proxy::Client(id, brokers, threads, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> messageBrokerObject(messageBroker);
-	addObject(id, std::move(messageBrokerObject));
+	if(messageServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	}
 
-	messageBrokerById.insert(std::make_pair(id, std::ref(*messageBroker)));
+	if(httpServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
+	}
+
+	esl::object::ObjectContext* thisObjectContext = this;
+	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
+	//if(findObject<esl::object::Interface::Object>(id)) {
+        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
+	}
+
+	messaging::broker::Client* messageBrokerPtr = new messaging::broker::Client(*this, id, brokers, settings, implementation);
+	std::unique_ptr<esl::object::Interface::Object> object(messageBrokerPtr);
+	addObject(id, std::move(object));
+
+	messageBrokerById.insert(std::make_pair(id, std::ref(*messageBrokerPtr)));
 }
 
-messaging::Listener& Engine::addMessageListener(const std::string& refId, bool inheritObjects) {
-	auto iterMessageBroker = messageBrokerById.find(refId);
-	if(iterMessageBroker == std::end(messageBrokerById)) {
-        throw std::runtime_error("message-listener has an unknown refId \"" + refId + "\".");
+void Engine::addMessageServer(const std::string& id, std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding message server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
+
+	if(listeningPorts.count(port) > 0) {
+        throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
 	}
 
-	messaging::Listener* messageListener = new messaging::Listener(*this, iterMessageBroker->second.get().handlerByQueueName, inheritObjects);
-	iterMessageBroker->second.get().listeners.push_back(std::unique_ptr<messaging::Listener>(messageListener));
+	if(messageBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
+	}
 
-	return *messageListener;
+	if(messageServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	}
+
+	if(httpServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
+	}
+
+	esl::object::ObjectContext* thisObjectContext = this;
+	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
+	//if(findObject<esl::object::Interface::Object>(id)) {
+        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
+	}
+
+	messaging::server::Socket* messageSocketPtr = new messaging::server::Socket(*this, id, port, settings, implementation);
+	std::unique_ptr<esl::object::Interface::Object> object(messageSocketPtr);
+	addObject(id, std::move(object));
+
+	listeningPorts.insert(port);
+	messageServerById.insert(std::make_pair(id, std::ref(*messageSocketPtr)));
 }
 
 void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
@@ -312,29 +302,105 @@ void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHtt
 	if(listeningPorts.count(port) > 0) {
         throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
 	}
-	listeningPorts.insert(port);
 
-	auto iterHttpServer = httpServerById.find(id);
-	if(iterHttpServer != std::end(httpServerById)) {
-        throw std::runtime_error("There are multiple http servers defined with same id \"" + id + "\".");
+	if(messageBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
 	}
 
-	httpServerById.insert(std::make_pair(id, HttpServer(id, port, isHttps, settings, implementation)));
+	if(messageServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	}
+
+	if(httpServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
+	}
+
+	esl::object::ObjectContext* thisObjectContext = this;
+	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
+	//if(findObject<esl::object::Interface::Object>(id)) {
+        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
+	}
+
+	http::server::Socket* httpSocketPtr = new http::server::Socket(*this, id, port, isHttps, settings, implementation);
+	std::unique_ptr<esl::object::Interface::Object> object(httpSocketPtr);
+	addObject(id, std::move(object));
+
+	listeningPorts.insert(port);
+	httpServerById.insert(std::make_pair(id, std::ref(*httpSocketPtr)));
 }
 
-http::Listener& Engine::addHttpListener(const std::string& hostname, const std::string& refId, bool inheritObjects) {
-	auto iterHttpServer = httpServerById.find(refId);
-	if(iterHttpServer == std::end(httpServerById)) {
-        throw std::runtime_error("http-listener has an unknown refId \"" + refId + "\".");
+messaging::server::Listener& Engine::addMessageListener(const std::string& refId, bool inheritObjects) {
+	std::unique_ptr<messaging::server::Listener> listenerPtr;
+	{
+		std::vector<std::string> refIds = esl::utility::String::split(refId, ',');
+		for(auto& refId : refIds) {
+			refId = esl::utility::String::trim(refId);
+		}
+
+		listenerPtr.reset(new messaging::server::Listener(*this, inheritObjects, std::move(refIds)));
+	}
+	messaging::server::Listener& listener = *listenerPtr;
+
+	for(const auto& refId : listener.getRefIds()) {
+		esl::object::ObjectContext* thisObjectContext = this;
+		esl::object::Interface::Object* object = thisObjectContext->findObject<esl::object::Interface::Object>(refId);
+		//esl::object::Interface::Object* object = findObject<esl::object::Interface::Object>(refId);
+		if(!object) {
+	        throw std::runtime_error("message-listener is referencing an unknown object with id \"" + refId + "\".");
+		}
+
+		messaging::server::Socket* messageServer = nullptr;
+		auto messageBroker = dynamic_cast<messaging::broker::Client*>(object);
+		if(messageBroker) {
+			messageServer = &messageBroker->getServer();
+		}
+		else {
+			messageServer = dynamic_cast<messaging::server::Socket*>(object);
+		}
+
+		if(!messageServer) {
+	        throw std::runtime_error("message-listener is referencing an object with id \"" + refId + "\", but object is neither a message-broker nor a message-server.");
+		}
+
+		messageServer->addListener(listener);
 	}
 
-	HttpListeners& httpListeners = httpListenersByPort[iterHttpServer->second.port];
-	std::unique_ptr<http::Listener>& httpListener = httpListeners.listenerByHostname[hostname];
-	if(!httpListener) {
-		httpListener.reset(new http::Listener(*this, inheritObjects));
+	messageListeners.push_back(std::move(listenerPtr));
+
+	return listener;
+}
+
+http::server::Listener& Engine::addHttpListener(const std::string& refId, bool inheritObjects, const std::string& hostname) {
+	std::unique_ptr<http::server::Listener> listenerPtr;
+	{
+		std::vector<std::string> refIds = esl::utility::String::split(refId, ',');
+		for(auto& refId : refIds) {
+			refId = esl::utility::String::trim(refId);
+		}
+
+		listenerPtr.reset(new http::server::Listener(*this, inheritObjects, hostname, std::move(refIds)));
+	}
+	http::server::Listener& listener = *listenerPtr;
+
+	for(const auto& refId : listener.getRefIds()) {
+		esl::object::ObjectContext* thisObjectContext = this;
+		esl::object::Interface::Object* object = thisObjectContext->findObject<esl::object::Interface::Object>(refId);
+		//esl::object::Interface::Object* object = findObject<esl::object::Interface::Object>(refId);
+		if(!object) {
+	        throw std::runtime_error("http-listener is referencing an unknown object with id \"" + refId + "\".");
+		}
+
+		auto httpServer = dynamic_cast<http::server::Socket*>(object);
+		if(!httpServer) {
+	        throw std::runtime_error("http-listener is referencing an object with id \"" + refId + "\", but object is not a http-server.");
+		}
+
+		httpServer->addListener(listener);
 	}
 
-	return *httpListener;
+	httpListeners.push_back(std::move(listenerPtr));
+
+	return listener;
 }
 
 void Engine::dumpTree(std::size_t depth) const {
@@ -342,203 +408,74 @@ void Engine::dumpTree(std::size_t depth) const {
 		logger.info << "|   ";
 	}
 	logger.info << "+-> Engine\n";
-
 	++depth;
+
 	BaseContext::dumpTree(depth);
 
 	dumpTreeMessageBrokers(depth);
-	dumpTreeHttpServers(depth, false);
-	dumpTreeHttpServers(depth, true);
+	dumpTreeMessageServers(depth);
+	dumpTreeHttpServers(depth);
+	dumpTreeMessageListener(depth);
+	dumpTreeHttpListener(depth);
 }
 
 void Engine::dumpTreeMessageBrokers(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> Messaging-Servers\n";
+	logger.info << "+-> Messaging brokers\n";
+	++depth;
+
 	for(const auto& entry: messageBrokerById) {
-		const messaging::proxy::Client& messageBroker = entry.second;
-
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   +-> ID: \"" << messageBroker.id << "\"\n";
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   |   Implementation: \"" << messageBroker.implementation << "\"\n";
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   |   Threads: " << messageBroker.threads << "\n";
-
-		for(const auto& messageListener : messageBroker.listeners) {
-			/*
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "|   |   +-> Hostname: \"" << httpListener.first << "\"\n";
-			*/
-			messageListener->dumpTree(depth + 3);
-		}
+		entry.second.get().dumpTree(depth);
 	}
-
 }
 
-void Engine::dumpTreeHttpServers(std::size_t depth, bool isHttps) const {
+void Engine::dumpTreeMessageServers(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	if(isHttps) {
-		logger.info << "+-> HTTPS Servers\n";
-	}
-	else {
-		logger.info << "+-> HTTP Servers\n";
-	}
-	for(const auto& httpServer: httpServerById) {
-		if(httpServer.second.isHttps != isHttps) {
-			continue;
-		}
+	logger.info << "+-> Messaging servers\n";
+	++depth;
 
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   +-> ID: \"" << httpServer.first << "\"\n";
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   |   Implementation: \"" << httpServer.second.implementation << "\"\n";
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "|   |   Port: " << httpServer.second.port << "\n";
-
-		auto iterHttpListeners = httpListenersByPort.find(httpServer.second.port);
-		if(iterHttpListeners != std::end(httpListenersByPort)) {
-			for(const auto& httpListener : iterHttpListeners->second.listenerByHostname) {
-				for(std::size_t i=0; i<depth; ++i) {
-					logger.info << "|   ";
-				}
-				logger.info << "|   |   +-> Hostname: \"" << httpListener.first << "\"\n";
-				httpListener.second->dumpTree(depth + 3);
-			}
-		}
+	for(const auto& entry: messageServerById) {
+		entry.second.get().dumpTree(depth);
 	}
 }
 
-std::unique_ptr<esl::utility::Consumer> Engine::createMessageHandler(esl::messaging::MessageContext& baseMessageContext) {
-	/* Access log */
-	logger.info << "Message for queueName \"" << baseMessageContext.getMessage().getId() << "\"\n";
-
-	MessageBrokerObject* messageObject = dynamic_cast<MessageBrokerObject*>(baseMessageContext.findObject(""));
-	if(!messageObject) {
-		logger.warn << "MessageObject object not found\n";
-		return nullptr;
+void Engine::dumpTreeHttpServers(std::size_t depth) const {
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
 	}
+	logger.info << "+-> HTTP servers\n";
+	++depth;
 
-	messaging::proxy::Client& messageBroker = messageObject->getMessageBroker();
-	auto iter = messageBroker.handlerByQueueName.find(baseMessageContext.getMessage().getId());
-
-	if(iter == std::end(messageBroker.handlerByQueueName) || iter->second.empty()) {
-		logger.warn << "No message handler defined for incoming message on queue \"" << baseMessageContext.getMessage().getId() << "\"\n";
-		return nullptr;
+	for(const auto& entry: httpServerById) {
+		entry.second.get().dumpTree(depth);
 	}
-
-	return messaging::MessageHandler::create(baseMessageContext, iter->second);
 }
 
-std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> Engine::createRequestHandler(esl::http::server::RequestContext& requestContext) {
-	/* Access log */
-	logger.info << "Request for hostname " << requestContext.getRequest().getHostName() << ": " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getRemoteAddress() << "\n";
-
-	HttpObject* httpObject = dynamic_cast<HttpObject*>(requestContext.findObject(""));
-	if(!httpObject) {
-		ExceptionHandler exceptionHandler;
-
-		exceptionHandler.setShowException(false);
-		exceptionHandler.setShowStacktrace(false);
-		//esl::http::server::exception::StatusCode e(500, "Engine object not found");
-		//exceptionHandler.setMessage(e);
-		exceptionHandler.call([]() {
-			throw esl::http::server::exception::StatusCode(500, "Engine object not found");
-		});
-		exceptionHandler.dump(logger.error);
-		exceptionHandler.dump(requestContext.getConnection());
-		return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new esl::http::server::requesthandler::Interface::RequestHandler);
-		/*
-		logger.error << "Engine object not found\n";
-
-		return nullptr;
-		*/
+void Engine::dumpTreeMessageListener(std::size_t depth) const {
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
 	}
+	logger.info << "+-> Message listeners\n";
+	++depth;
 
-	Engine& engine = httpObject->getEngine();
-
-	http::Listener* listener = engine.getHttpListener(requestContext);
-
-	if(listener == nullptr) {
-		/* Error log */
-		logger.info << "ERROR: No listener available for invalid request \"" << requestContext.getRequest().getPath() << "\"\n";
-
-		//esl::http::server::exception::StatusCode e(404);
-		ExceptionHandler exceptionHandler;
-
-		exceptionHandler.setShowException(false);
-		exceptionHandler.setShowStacktrace(false);
-		//exceptionHandler.setMessage(esl::http::server::exception::StatusCode(500));
-		exceptionHandler.call([]() {
-			throw esl::http::server::exception::StatusCode(500);
-		});
-		exceptionHandler.dump(requestContext.getConnection());
-
-		return std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler>(new esl::http::server::requesthandler::Interface::RequestHandler);
+	for(const auto& listener: messageListeners) {
+		listener->dumpTree(depth);
 	}
-	return listener->createRequestHandler(requestContext);
 }
 
-http::Listener* Engine::getHttpListener(esl::http::server::RequestContext& requestContext) const {
-	logger.debug << "Lookup ListernerByPort(" << requestContext.getRequest().getHostPort() << ")\"\n";
-	auto iterListenerByPort = httpListenersByPort.find(requestContext.getRequest().getHostPort());
-	if(iterListenerByPort == std::end(httpListenersByPort)) {
-		logger.debug << "Not found\n";
-		return nullptr;
+void Engine::dumpTreeHttpListener(std::size_t depth) const {
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
 	}
-	logger.debug << "Found\n";
+	logger.info << "+-> HTTP listeners\n";
+	++depth;
 
-	std::string hostname = requestContext.getRequest().getHostName();
-	logger.debug << "Lookup ListernerByHostname(" << hostname << ")\"\n";
-	auto iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find(hostname);
-
-	while(iterListenerByHostname == std::end(iterListenerByPort->second.listenerByHostname)) {
-		std::string::size_type pos = hostname.find_first_of('.');
-		if(pos == std::string::npos) {
-			logger.debug << "Lookup ListernerByHostname(*)\"\n";
-			iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find("*");
-			break;
-		}
-		hostname = hostname.substr(pos+1);
-		logger.debug << "Lookup ListernerByHostname(*." << hostname << ")\"\n";
-		iterListenerByHostname = iterListenerByPort->second.listenerByHostname.find("*." + hostname);
-	}
-
-	if(iterListenerByHostname == std::end(iterListenerByPort->second.listenerByHostname)) {
-		logger.debug << "Not found\n";
-		return nullptr;
-	}
-
-	logger.debug << "Found\n";
-	return iterListenerByHostname->second.get();
-}
-
-
-Engine::HttpServer::HttpServer(const std::string& aId, std::uint16_t aPort, bool aIsHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
-: id(aId),
-  port(aPort),
-  isHttps(aIsHttps),
-  implementation(aImplementation)
-{
-	for(const auto& setting : aSettings) {
-		settings.addSetting(setting.first, setting.second);
+	for(const auto& listener: httpListeners) {
+		listener->dumpTree(depth);
 	}
 }
 

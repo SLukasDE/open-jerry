@@ -21,31 +21,36 @@
 
 #include <jerry/builtin/http/filebrowser/Settings.h>
 
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/io/Consumer.h>
+#include <esl/io/Input.h>
 #include <esl/http/server/RequestContext.h>
 #include <esl/http/server/Request.h>
-
-#include <string>
 
 namespace jerry {
 namespace builtin {
 namespace http {
 namespace filebrowser {
 
-class RequestHandler : public esl::http::server::requesthandler::Interface::RequestHandler {
+class RequestHandler : public esl::io::Consumer {
 public:
-	static std::unique_ptr<esl::http::server::requesthandler::Interface::RequestHandler> create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
 
 	RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings, bool isDirectory);
+
+	/* return: true for every kind of success and get called again for more content data
+	 *         false for failure or to get not called again
+	 */
+	bool consume(esl::io::Reader& reader) override;
 
 private:
 	esl::http::server::RequestContext& requestContext;
 	const Settings& settings;
-
+/*
 	std::string outputContent;
 	std::size_t outputPos = 0;
 
 	int getData(char* buffer, std::size_t count);
+*/
 };
 
 } /* namespace filebrowser */

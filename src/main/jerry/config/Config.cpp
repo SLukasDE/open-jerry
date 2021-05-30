@@ -25,7 +25,7 @@
 #include <jerry/utility/URL.h>
 
 #include <esl/object/Settings.h>
-#include <esl/object/ValueSettings.h>
+#include <esl/object/Properties.h>
 #include <esl/Module.h>
 #include <esl/Stacktrace.h>
 
@@ -176,8 +176,11 @@ void Config::loadFile(const std::string& fileName) {
 		else if(innerElementName == "message-broker") {
 			messageBrokers.push_back(messaging::Broker(*innerElement));
 		}
+		else if(innerElementName == "message-server") {
+			messageServers.push_back(messaging::Server(*innerElement));
+		}
 		else if(innerElementName == "message-context") {
-			messageContext.push_back(messaging::Context(*innerElement, false, true));
+			messageContext.push_back(messaging::Context(*innerElement, true));
 		}
 		else if(innerElementName == "message-listener") {
 			messageListeners.push_back(messaging::Listener(*innerElement));
@@ -239,7 +242,7 @@ std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
 
 	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
 #else
-	esl::object::ValueSettings settings;
+	esl::object::Properties settings;
 
 	for(auto const setting : loggerConfig.layoutSettings) {
 		settings.addSetting(setting.key, setting.value);

@@ -32,20 +32,38 @@ std::unique_ptr<esl::object::Interface::Object> Settings::create() {
 }
 
 void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "show-all") {
-		setShowAll(toBoolean(value));
+	if(key == "show-context") {
+		setShowContent(toBoolean(value));
+	}
+	else if(key == "show-content") {
+		setShowContent(toBoolean(value));
+	}
+	else if(key == "notifier") {
+		notifiers.insert(value);
 	}
 	else {
 		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
 	}
 }
 
-void Settings::setShowAll(bool aShowAll) {
-	showAll = aShowAll;
+void Settings::setShowContext(bool aShowContext) noexcept {
+	showContext = aShowContext;
 }
 
-bool Settings::getShowAll() const {
-	return showAll;
+bool Settings::getShowContext() const noexcept {
+	return showContext;
+}
+
+void Settings::setShowContent(bool aShowContent) noexcept {
+	showContent = aShowContent;
+}
+
+bool Settings::getShowContent() const noexcept {
+	return showContent;
+}
+
+const std::set<std::string>& Settings::getNotifiers() const noexcept {
+	return notifiers;
 }
 
 } /* namespace dump */

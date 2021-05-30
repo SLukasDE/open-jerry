@@ -31,9 +31,8 @@ namespace jerry {
 namespace config {
 namespace messaging {
 
-class Endpoint;
 class Context;
-class MessageHandler;
+class RequestHandler;
 
 class Entry {
 public:
@@ -41,15 +40,14 @@ public:
 		etNone,
 		etObject,
 		etReference,
-		etEndpoint,
 		etContext,
-		etMessageHandler
+		etRequestHandler
 	};
 
 	Entry() = delete;
 	Entry(const Entry&) = delete;
 	Entry(Entry&& other);
-	Entry(const tinyxml2::XMLElement& element, bool hasEndpoint);
+	Entry(const tinyxml2::XMLElement& element);
 	~Entry();
 
 	Entry& operator=(const Entry&) = delete;
@@ -61,9 +59,8 @@ public:
 
 	Object& getObject() const;
 	Reference& getReference() const;
-	Endpoint& getEndpoint() const;
 	Context& getContext() const;
-	MessageHandler& getMessageHandler() const;
+	RequestHandler& getRequestHandler() const;
 
 private:
 	void doDelete();
@@ -71,9 +68,8 @@ private:
 	Type type = etNone;
 	std::unique_ptr<config::Object> object;
 	std::unique_ptr<config::Reference> reference;
-	Endpoint* endpoint = nullptr;
 	Context* context = nullptr;
-	MessageHandler* messageHandler = nullptr;
+	RequestHandler* requestHandler = nullptr;
 
 	bool hasQueue = false;
 };

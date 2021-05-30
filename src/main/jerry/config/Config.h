@@ -28,6 +28,7 @@
 #include <jerry/config/http/Context.h>
 #include <jerry/config/http/Listener.h>
 #include <jerry/config/messaging/Broker.h>
+#include <jerry/config/messaging/Server.h>
 #include <jerry/config/messaging/Context.h>
 #include <jerry/config/messaging/Listener.h>
 //#include <jerry/engine/Engine.h>
@@ -73,6 +74,7 @@ public:
 	std::vector<http::Listener> httpListeners;
 
 	std::vector<messaging::Broker> messageBrokers;
+	std::vector<messaging::Server> messageServers;
 	std::vector<messaging::Context> messageContext;
 	std::vector<messaging::Listener> messageListeners;
 
