@@ -56,6 +56,7 @@ public:
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
 	void listen(esl::http::server::requesthandler::Interface::CreateInput createInput) override;
 	void release() override;
+	bool wait(std::uint32_t ms) override;
 
 	void dumpTree(std::size_t depth) const;
 

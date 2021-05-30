@@ -71,6 +71,12 @@ void Socket::release() {
 	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
 }
 
+bool Socket::wait(std::uint32_t ms) {
+	logger.warn << "Calling 'wait' is not allowed.\n";
+	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
+	return false;
+}
+
 void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
