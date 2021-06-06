@@ -24,10 +24,10 @@
 	</logger>
 	
 	
-	<message-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092">
+	<basic-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092">
 		<parameter key="kafka.group-id" value="mds"/>
 		<parameter key="threads" value="4"/>
-	</message-broker>
+	</basic-broker>
 	
 	<http-server id="http-1" implementation="mhd4esl" port="8080">
 		<parameter key="threads" value="4"/>
@@ -123,20 +123,20 @@
 		</endpoint>
 	</http-context>
 	
-	<message-listener ref-id="broker-1">
-		<requesthandler implementation="jerry/builtin/messaging/dump">
+	<basic-listener ref-id="broker-1">
+		<requesthandler implementation="jerry/builtin/basic/dump">
 			<parameter key="notifier" value="input-queue"/>
 			<parameter key="show-context" value="true"/>
 			<parameter key="show-content" value="true"/>
 		</requesthandler>
 		
-		<requesthandler implementation="jerry/builtin/messaging/echo">
+		<requesthandler implementation="jerry/builtin/basic/echo">
 			<parameter key="notifier" value="output-queue"/>
 			<parameter key="delay-ms" value="1000"/>
 			<parameter key="output.ref-id" value="broker-1"/>
 			<parameter key="output.parameter.topic" value="output-queue"/>
 		</requesthandler>
-	</message-listener>
+	</basic-listener>
 	
 	<!--
 		defaults:

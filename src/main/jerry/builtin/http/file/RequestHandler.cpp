@@ -20,7 +20,7 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/Connection.h>
+#include <esl/com/http/server/Connection.h>
 #include <esl/Stacktrace.h>
 #include <esl/logging/Level.h>
 
@@ -35,7 +35,7 @@ namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
 }
 
-esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
 	const Settings* settings = requestContext.findObject<Settings>("");
 	if(settings == nullptr) {
 		return esl::io::Input();
@@ -44,11 +44,11 @@ esl::io::Input RequestHandler::create(esl::http::server::RequestContext& request
 	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings)));
 }
 
-RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings)
+RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestContext, const Settings& settings)
 {
 	esl::utility::MIME mime = utility::MIME::byFilename(settings.getPath());
-	esl::http::server::Response response(settings.getHttpStatus(), mime);
-	requestContext.getConnection().sendResponse(response, settings.getPath());
+	esl::com::http::server::Response response(settings.getHttpStatus(), mime);
+	requestContext.getConnection().send(response, settings.getPath());
 }
 
 bool RequestHandler::consume(esl::io::Reader& reader) {

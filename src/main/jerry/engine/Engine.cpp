@@ -45,7 +45,7 @@ Engine::Engine()
 : messageTimer([this](const Message& message) { message.f(*this); })
 { }
 
-bool Engine::run() {
+bool Engine::run(bool isDaemon) {
 	runThreadId = std::this_thread::get_id();
 
 	/* *********************************************************** *
@@ -63,15 +63,15 @@ bool Engine::run() {
 	logger.info << "Initialization of global objects done.\n";
 
 	/* *********************************** *
-	 * initialize message-listener objects *
+	 * initialize basic-listener objects *
 	 * *********************************** */
-	logger.info << "Initialize context of all message-listeners ...\n";
-	for(auto& listener : messageListeners) {
+	logger.info << "Initialize context of all basic-listeners ...\n";
+	for(auto& listener : basicListeners) {
 		if(listener) {
 			listener->initializeContext();
 		}
 	}
-	logger.info << "Initialization of all message-listeners done.\n";
+	logger.info << "Initialization of all basic-listeners done.\n";
 
 	/* ******************************** *
 	 * initialize http-listener objects *
@@ -111,90 +111,111 @@ bool Engine::run() {
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
 
-	logger.debug << "Start message brokers.\n";
-	for(auto& entry : messageBrokerById) {
-		messaging::server::Socket& messageServer = entry.second.get().getServer();
+	logger.debug << "Start basic brokers.\n";
+	for(auto& entry : basicBrokerById) {
+		basic::server::Socket& socket = entry.second.get().getServer();
 
-		logger.debug << "-> Start message broker \"" << entry.first << "\" for queues:\n";
+		logger.debug << "-> Start basic broker \"" << entry.first << "\" for queues:\n";
 		if(logger.debug) {
-			std::set<std::string> notifiers = messageServer.getNotifier();
+			std::set<std::string> notifiers = socket.getNotifier();
 			for(const auto& notifier : notifiers) {
 				logger.debug << "   - \"" << notifier << "\"\n";
 			}
 		}
 
-		messageServer.getSocket().listen(messageServer.getNotifier(), messaging::server::Socket::createMessageHandler);
+		socket.getSocket().listen(socket.getNotifier(), basic::server::Socket::createMessageHandler);
 	}
 
-	logger.debug << "Start message servers.\n";
-	for(auto& entry : messageServerById) {
-		messaging::server::Socket& messageServer = entry.second.get();
+	logger.debug << "Start basic servers.\n";
+	for(auto& entry : basicServerById) {
+		basic::server::Socket& socket = entry.second.get();
 
-		logger.debug << "-> Start message server \"" << entry.first << "\" for queues:\n";
+		logger.debug << "-> Start basic server \"" << entry.first << "\" for queues:\n";
 		if(logger.debug) {
-			std::set<std::string> notifiers = messageServer.getNotifier();
+			std::set<std::string> notifiers = socket.getNotifier();
 			for(const auto& notifier : notifiers) {
 				logger.debug << "   - \"" << notifier << "\"\n";
 			}
 		}
 
-		messageServer.getSocket().listen(messageServer.getNotifier(), messaging::server::Socket::createMessageHandler);
+		socket.getSocket().listen(socket.getNotifier(), basic::server::Socket::createMessageHandler);
 	}
 
 	logger.debug << "Start http servers.\n";
 	for(auto& entry : httpServerById) {
-		http::server::Socket& httpServer = entry.second.get();
+		http::server::Socket& socket = entry.second.get();
 
 		logger.debug << "-> Start http/https server \"" << entry.first << "\".\n";
 
-		httpServer.getSocket().listen(http::server::Socket::createRequestHandler);
+		socket.getSocket().listen(http::server::Socket::createRequestHandler);
 	}
 
-	bool rc = messageTimer.run();
+	bool rc = true;
+
+	if(isDaemon) {
+		logger.debug << "Switch into daemon mode.\n";
+		if(daemon(1, 1) != 0) {
+			rc = false;
+			logger.error << "Daemon failed: \"" << strerror(errno) << "\"\n";
+		}
+	}
+
+	if(rc) {
+		rc = messageTimer.run();
+	}
 
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::pipe, stopFunction);
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
 
-	logger.debug << "Stop message brokers.\n";
-	for(auto& entry : messageBrokerById) {
-		messaging::server::Socket& messageServer = entry.second.get().getServer();
+	logger.debug << "Stop basic brokers.\n";
+	for(auto& entry : basicBrokerById) {
+		basic::server::Socket& socket = entry.second.get().getServer();
 
-		logger.debug << "-> Stop message broker \"" << entry.first << "\".\n";
-		messageServer.getSocket().release();
+		logger.debug << "-> Stop basic broker \"" << entry.first << "\".\n";
+		socket.getSocket().release();
 	}
 
-	logger.debug << "Stop message servers.\n";
-	for(auto& entry : messageServerById) {
-		messaging::server::Socket& messageServer = entry.second.get();
+	logger.debug << "Stop basic servers.\n";
+	for(auto& entry : basicServerById) {
+		basic::server::Socket& socket = entry.second.get();
 
-		logger.debug << "-> Stop message server \"" << entry.first << "\".\n";
-		messageServer.getSocket().release();
+		logger.debug << "-> Stop basic server \"" << entry.first << "\".\n";
+		socket.getSocket().release();
 	}
 
 	logger.debug << "Stop http servers.\n";
 	for(auto& entry : httpServerById) {
-		http::server::Socket& httpServer = entry.second.get();
+		http::server::Socket& socket = entry.second.get();
 
-		logger.debug << "-> Stop http server \"" << httpServer.getId() << "\".\n";
-		httpServer.getSocket().release();
+		logger.debug << "-> Stop http server \"" << socket.getId() << "\".\n";
+		socket.getSocket().release();
 	}
 
-	logger.debug << "Wait for finished message broker.\n";
-	for(auto& entry : messageBrokerById) {
-		messaging::server::Socket& messageServer = entry.second.get().getServer();
+	logger.debug << "Wait for finished basic brokers.\n";
+	for(auto& entry : basicBrokerById) {
+		basic::server::Socket& socket = entry.second.get().getServer();
 
-		logger.debug << "-> Waiting for message broker \"" << entry.first << "\"\n";
-		messageServer.getSocket().wait(0);
+		logger.debug << "-> Waiting for basic broker \"" << entry.first << "\"\n";
+		socket.getSocket().wait(0);
 		logger.debug << "-> Waiting done.\n";
 	}
 
-	logger.debug << "Wait for finished message servers.\n";
-	for(auto& entry : messageServerById) {
-		messaging::server::Socket& messageServer = entry.second.get();
+	logger.debug << "Wait for finished basic servers.\n";
+	for(auto& entry : basicServerById) {
+		basic::server::Socket& socket = entry.second.get();
 
-		logger.debug << "-> Waiting for message server \"" << entry.first << "\"\n";
-		messageServer.getSocket().wait(0);
+		logger.debug << "-> Waiting for basic server \"" << entry.first << "\"\n";
+		socket.getSocket().wait(0);
+		logger.debug << "-> Waiting done.\n";
+	}
+
+	logger.debug << "Wait for finished http servers.\n";
+	for(auto& entry : httpServerById) {
+		http::server::Socket& socket = entry.second.get();
+
+		logger.debug << "-> Waiting for http server \"" << entry.first << "\"\n";
+		socket.getSocket().wait(0);
 		logger.debug << "-> Waiting done.\n";
 	}
 
@@ -230,15 +251,15 @@ void Engine::addCertificate(const std::string& hostname, const std::string& keyF
     addCertificate(hostname, std::move(key), std::move(certificate));
 }
 
-void Engine::addMessageBroker(const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding message broker (implementation=\"" << implementation << "\") with id=\"" << id << "\" for broker " << brokers << "\"\n";
+void Engine::addBasicBroker(const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding basic broker (implementation=\"" << implementation << "\") with id=\"" << id << "\" for broker " << brokers << "\"\n";
 
-	if(messageBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
+	if(basicBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
 	}
 
-	if(messageServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	if(basicServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
 	}
 
 	if(httpServerById.count(id) != 0) {
@@ -251,26 +272,26 @@ void Engine::addMessageBroker(const std::string& id, const std::string& brokers,
         throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
 	}
 
-	messaging::broker::Client* messageBrokerPtr = new messaging::broker::Client(*this, id, brokers, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> object(messageBrokerPtr);
+	basic::broker::Client* basicBrokerPtr = new basic::broker::Client(*this, id, brokers, settings, implementation);
+	std::unique_ptr<esl::object::Interface::Object> object(basicBrokerPtr);
 	addObject(id, std::move(object));
 
-	messageBrokerById.insert(std::make_pair(id, std::ref(*messageBrokerPtr)));
+	basicBrokerById.insert(std::make_pair(id, std::ref(*basicBrokerPtr)));
 }
 
-void Engine::addMessageServer(const std::string& id, std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding message server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
+void Engine::addBasicServer(const std::string& id, std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding basic server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
 
 	if(listeningPorts.count(port) > 0) {
         throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
 	}
 
-	if(messageBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
+	if(basicBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
 	}
 
-	if(messageServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	if(basicServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
 	}
 
 	if(httpServerById.count(id) != 0) {
@@ -283,12 +304,12 @@ void Engine::addMessageServer(const std::string& id, std::uint16_t port, const s
         throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
 	}
 
-	messaging::server::Socket* messageSocketPtr = new messaging::server::Socket(*this, id, port, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> object(messageSocketPtr);
+	basic::server::Socket* basicSocketPtr = new basic::server::Socket(*this, id, port, settings, implementation);
+	std::unique_ptr<esl::object::Interface::Object> object(basicSocketPtr);
 	addObject(id, std::move(object));
 
 	listeningPorts.insert(port);
-	messageServerById.insert(std::make_pair(id, std::ref(*messageSocketPtr)));
+	basicServerById.insert(std::make_pair(id, std::ref(*basicSocketPtr)));
 }
 
 void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
@@ -303,12 +324,12 @@ void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHtt
         throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
 	}
 
-	if(messageBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message brokers defined with id \"" + id + "\".");
+	if(basicBrokerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
 	}
 
-	if(messageServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a message servers defined with id \"" + id + "\".");
+	if(basicServerById.count(id) != 0) {
+        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
 	}
 
 	if(httpServerById.count(id) != 0) {
@@ -329,43 +350,43 @@ void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHtt
 	httpServerById.insert(std::make_pair(id, std::ref(*httpSocketPtr)));
 }
 
-messaging::server::Listener& Engine::addMessageListener(const std::string& refId, bool inheritObjects) {
-	std::unique_ptr<messaging::server::Listener> listenerPtr;
+basic::server::Listener& Engine::addBasicListener(const std::string& refId, bool inheritObjects) {
+	std::unique_ptr<basic::server::Listener> listenerPtr;
 	{
 		std::vector<std::string> refIds = esl::utility::String::split(refId, ',');
 		for(auto& refId : refIds) {
 			refId = esl::utility::String::trim(refId);
 		}
 
-		listenerPtr.reset(new messaging::server::Listener(*this, inheritObjects, std::move(refIds)));
+		listenerPtr.reset(new basic::server::Listener(*this, inheritObjects, std::move(refIds)));
 	}
-	messaging::server::Listener& listener = *listenerPtr;
+	basic::server::Listener& listener = *listenerPtr;
 
 	for(const auto& refId : listener.getRefIds()) {
 		esl::object::ObjectContext* thisObjectContext = this;
 		esl::object::Interface::Object* object = thisObjectContext->findObject<esl::object::Interface::Object>(refId);
 		//esl::object::Interface::Object* object = findObject<esl::object::Interface::Object>(refId);
 		if(!object) {
-	        throw std::runtime_error("message-listener is referencing an unknown object with id \"" + refId + "\".");
+	        throw std::runtime_error("basic-listener is referencing an unknown object with id \"" + refId + "\".");
 		}
 
-		messaging::server::Socket* messageServer = nullptr;
-		auto messageBroker = dynamic_cast<messaging::broker::Client*>(object);
-		if(messageBroker) {
-			messageServer = &messageBroker->getServer();
+		basic::server::Socket* basicServer = nullptr;
+		auto basicBroker = dynamic_cast<basic::broker::Client*>(object);
+		if(basicBroker) {
+			basicServer = &basicBroker->getServer();
 		}
 		else {
-			messageServer = dynamic_cast<messaging::server::Socket*>(object);
+			basicServer = dynamic_cast<basic::server::Socket*>(object);
 		}
 
-		if(!messageServer) {
-	        throw std::runtime_error("message-listener is referencing an object with id \"" + refId + "\", but object is neither a message-broker nor a message-server.");
+		if(!basicServer) {
+	        throw std::runtime_error("basic-listener is referencing an object with id \"" + refId + "\", but object is neither a basic-broker nor a basic-server.");
 		}
 
-		messageServer->addListener(listener);
+		basicServer->addListener(listener);
 	}
 
-	messageListeners.push_back(std::move(listenerPtr));
+	basicListeners.push_back(std::move(listenerPtr));
 
 	return listener;
 }
@@ -412,33 +433,33 @@ void Engine::dumpTree(std::size_t depth) const {
 
 	BaseContext::dumpTree(depth);
 
-	dumpTreeMessageBrokers(depth);
-	dumpTreeMessageServers(depth);
+	dumpTreeBasicBrokers(depth);
+	dumpTreeBasicServers(depth);
 	dumpTreeHttpServers(depth);
-	dumpTreeMessageListener(depth);
+	dumpTreeBasicListener(depth);
 	dumpTreeHttpListener(depth);
 }
 
-void Engine::dumpTreeMessageBrokers(std::size_t depth) const {
+void Engine::dumpTreeBasicBrokers(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> Messaging brokers\n";
+	logger.info << "+-> Basic brokers\n";
 	++depth;
 
-	for(const auto& entry: messageBrokerById) {
+	for(const auto& entry: basicBrokerById) {
 		entry.second.get().dumpTree(depth);
 	}
 }
 
-void Engine::dumpTreeMessageServers(std::size_t depth) const {
+void Engine::dumpTreeBasicServers(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> Messaging servers\n";
+	logger.info << "+-> Basic servers\n";
 	++depth;
 
-	for(const auto& entry: messageServerById) {
+	for(const auto& entry: basicServerById) {
 		entry.second.get().dumpTree(depth);
 	}
 }
@@ -455,14 +476,14 @@ void Engine::dumpTreeHttpServers(std::size_t depth) const {
 	}
 }
 
-void Engine::dumpTreeMessageListener(std::size_t depth) const {
+void Engine::dumpTreeBasicListener(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> Message listeners\n";
+	logger.info << "+-> Basic listeners\n";
 	++depth;
 
-	for(const auto& listener: messageListeners) {
+	for(const auto& listener: basicListeners) {
 		listener->dumpTree(depth);
 	}
 }

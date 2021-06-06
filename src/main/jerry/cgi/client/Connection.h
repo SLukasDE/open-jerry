@@ -21,9 +21,9 @@
 
 #include <jerry/cgi/client/RequestInfo.h>
 
-#include <esl/http/client/Interface.h>
-#include <esl/http/client/Request.h>
-#include <esl/http/client/Response.h>
+#include <esl/com/http/client/Interface.h>
+#include <esl/com/http/client/Request.h>
+#include <esl/com/http/client/Response.h>
 //#include <esl/http/client/ResponseHandler.h>
 #include <esl/object/Values.h>
 #include <esl/system/Interface.h>

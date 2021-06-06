@@ -21,7 +21,7 @@
 
 #include <jerry/engine/ExceptionMessage.h>
 
-#include <esl/http/server/exception/StatusCode.h>
+#include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/database/exception/SqlError.h>
 #include <esl/logging/StreamReal.h>
 #include <esl/logging/StreamEmpty.h>
@@ -57,7 +57,7 @@ protected:
 	const ExceptionMessage& getMessage() const;
 
 	virtual void setMessage();
-	virtual void setMessage(const esl::http::server::exception::StatusCode& e);
+	virtual void setMessage(const esl::com::http::server::exception::StatusCode& e);
 	virtual void setMessage(const esl::database::exception::SqlError& e);
 	virtual void setMessage(const std::runtime_error& e);
 	virtual void setMessage(const std::exception& e);

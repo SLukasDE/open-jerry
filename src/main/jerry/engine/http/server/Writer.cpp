@@ -31,7 +31,7 @@ namespace {
 Logger logger("jerry::engine::http::server::Writer");
 } /* anonymous namespace */
 
-Writer::Writer(const Listener& listener, esl::http::server::RequestContext& aRequestContext)
+Writer::Writer(const Listener& listener, esl::com::http::server::RequestContext& aRequestContext)
 : requestContext(aRequestContext, *this, listener)
 { }
 

@@ -23,7 +23,7 @@
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/Connection.h>
+#include <esl/com/http/server/Connection.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -83,7 +83,7 @@ const std::string& Listener::getHostname() const {
 	return hostname;
 }
 
-esl::io::Input Listener::createRequestHandler(esl::http::server::RequestContext& baseRequestContext) {
+esl::io::Input Listener::createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext) {
 	std::unique_ptr<Writer> writer(new Writer(*this, baseRequestContext));
 
 	/* *************************************************************************** *
@@ -104,7 +104,7 @@ esl::io::Input Listener::createRequestHandler(esl::http::server::RequestContext&
 
 		//exceptionHandler.setMessage(esl::http::server::exception::StatusCode(404));
 		exceptionHandler.call([]() {
-			throw esl::http::server::exception::StatusCode(404);
+			throw esl::com::http::server::exception::StatusCode(404);
 		});
 
 		/* send exception message on HTTP connection */

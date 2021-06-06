@@ -17,9 +17,6 @@
  */
 
 #include <jerry/config/Config.h>
-#include <jerry/config/http/RequestHandler.h>
-#include <jerry/config/http/Context.h>
-#include <jerry/config/http/Endpoint.h>
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 #include <jerry/utility/URL.h>
@@ -173,17 +170,17 @@ void Config::loadFile(const std::string& fileName) {
 		else if(innerElementName == "http-listener") {
 			httpListeners.push_back(http::Listener(*innerElement));
 		}
-		else if(innerElementName == "message-broker") {
-			messageBrokers.push_back(messaging::Broker(*innerElement));
+		else if(innerElementName == "basic-broker") {
+			basicBrokers.push_back(basic::Broker(*innerElement));
 		}
-		else if(innerElementName == "message-server") {
-			messageServers.push_back(messaging::Server(*innerElement));
+		else if(innerElementName == "basic-server") {
+			basicServers.push_back(basic::Server(*innerElement));
 		}
-		else if(innerElementName == "message-context") {
-			messageContext.push_back(messaging::Context(*innerElement, true));
+		else if(innerElementName == "basic-context") {
+			basicContext.push_back(basic::Context(*innerElement, true));
 		}
-		else if(innerElementName == "message-listener") {
-			messageListeners.push_back(messaging::Listener(*innerElement));
+		else if(innerElementName == "basic-listener") {
+			basicListeners.push_back(basic::Listener(*innerElement));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
@@ -234,14 +231,6 @@ void Config::loadLibraries() {
 }
 
 std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
-#if 0
-	esl::object::ValueSettings settings;
-	for(auto const setting : loggerConfig.layoutSettings) {
-		settings.addSetting(setting.key, setting.value);
-	}
-
-	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
-#else
 	esl::object::Properties settings;
 
 	for(auto const setting : loggerConfig.layoutSettings) {
@@ -249,7 +238,6 @@ std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
 	}
 
 	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
-#endif
 }
 
 void Config::setLogLevel() const {
@@ -340,16 +328,16 @@ void Config::save(std::ostream& oStream) const {
 
 
 
-	for(const messaging::Broker& messageBroker : messageBrokers) {
-		messageBroker.save(oStream, 2);
+	for(const basic::Broker& basicBroker : basicBrokers) {
+		basicBroker.save(oStream, 2);
 	}
 
-	for(const messaging::Context& context : messageContext) {
+	for(const basic::Context& context : basicContext) {
 		context.save(oStream, 2);
 	}
 
-	for(const messaging::Listener& messagingListener : messageListeners) {
-		messagingListener.save(oStream, 2);
+	for(const basic::Listener& basicListener : basicListeners) {
+		basicListener.save(oStream, 2);
 	}
 
 
@@ -419,111 +407,6 @@ void Config::parseLibrary(const tinyxml2::XMLElement& element) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Unknown module \"") + module + "\" at line " + std::to_string(element.GetLineNum())));
 	}
 }
-#if 0
-void Config::addObjectToEngineBaseContext(engine::BaseContext& engineBaseContext, const Object& object) const {
-	esl::object::Interface::Object& eslObject = engineBaseContext.addObject(object.id, object.implementation);
-	addSettingsToEslObject(eslObject, object.implementation, object.settings);
-}
-
-void Config::addReferenceToEngineHttpContext(engine::http::Context& engineHttpContext, const Reference& reference) const {
-	engineHttpContext.addReference(reference.id, reference.refId);
-}
-
-void Config::addHttpEndpointToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Endpoint& httpEndpoint) const {
-	engine::http::Endpoint& newEngineEndpoint = engineHttpContext.addEndpoint(httpEndpoint.path);
-
-	addHttpEntriesToEngineHttpContext(newEngineEndpoint, httpEndpoint.entries);
-
-	addHttpResponseHeadersToEngineHttpEndpoint(newEngineEndpoint, httpEndpoint.responseHeaders);
-	addExceptionsToEngineHttpEndpoint(newEngineEndpoint, httpEndpoint.exceptions);
-}
-
-void Config::addHttpContextToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Context& httpContext) const {
-	engine::http::Context& newEngineContext = engineHttpContext.addContext();
-	addHttpEntriesToEngineHttpContext(newEngineContext, httpContext.entries);
-}
-
-void Config::addHttpRequestHandlerToEngineHttpContext(engine::http::Context& engineHttpContext, const http::RequestHandler& httpRequestHandler) const {
-	if(httpRequestHandler.objectImplementation.empty() == false || httpRequestHandler.settings.size() > 0) {
-		engine::http::Context& newEngineContext = engineHttpContext.addContext();
-
-		std::string objectImplementation;
-		if(httpRequestHandler.objectImplementation.empty()) {
-			objectImplementation = httpRequestHandler.implementation;
-		}
-		else {
-			objectImplementation = httpRequestHandler.objectImplementation;
-		}
-		esl::object::Interface::Object& engineObject = newEngineContext.addObject("", objectImplementation);
-		addSettingsToEslObject(engineObject, objectImplementation, httpRequestHandler.settings);
-
-		newEngineContext.addRequestHandler(httpRequestHandler.implementation);
-	}
-	else {
-		engineHttpContext.addRequestHandler(httpRequestHandler.implementation);
-	}
-}
-
-void Config::addHttpResponseHeadersToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const {
-	for(const auto& responseHeader : responseHeaders) {
-		engineEndpoint.addHeader(responseHeader.key, responseHeader.value);
-	}
-}
-
-void Config::addExceptionsToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const Exceptions& exceptions) const {
-	/* set showExceptions */
-	if(exceptions.showExceptions == OptionalBool::obTrue) {
-		engineEndpoint.setShowException(true);
-	}
-	else if(exceptions.showExceptions == OptionalBool::obFalse) {
-		engineEndpoint.setShowException(false);
-	}
-
-	/* set showStacktrace */
-	if(exceptions.showStacktrace == OptionalBool::obTrue) {
-		engineEndpoint.setShowStacktrace(true);
-	}
-	else if(exceptions.showStacktrace == OptionalBool::obFalse) {
-		engineEndpoint.setShowStacktrace(false);
-	}
-
-	engineEndpoint.setInheritErrorDocuments(exceptions.inheritDocuments);
-
-	for(const auto& exceptionDocument : exceptions.documents) {
-		engineEndpoint.addErrorDocument(exceptionDocument.statusCode, exceptionDocument.path, exceptionDocument.parser);
-	}
-}
-
-void Config::addHttpEntriesToEngineHttpContext(engine::http::Context& engineContext, const std::vector<http::Entry>& entries) const {
-	for(const auto& entry : entries) {
-		switch(entry.getType()) {
-		case http::Entry::etObject:
-			addObjectToEngineBaseContext(engineContext, entry.getObject());
-			break;
-		case http::Entry::etReference:
-			addReferenceToEngineHttpContext(engineContext, entry.getReference());
-			break;
-		case http::Entry::etEndpoint:
-			addHttpEndpointToEngineHttpContext(engineContext, entry.getEndpoint());
-			break;
-		case http::Entry::etContext:
-			addHttpContextToEngineHttpContext(engineContext, entry.getContext());
-			break;
-		case http::Entry::etRequestHandler:
-			addHttpRequestHandlerToEngineHttpContext(engineContext, entry.getRequestHandler());
-			break;
-		}
-	}
-}
-
-void Config::addHttpListenerToEngine(engine::Engine& engine, const http::Listener& configListener) const {
-	engine::http::Listener& engineListener = engine.addHttpListener(configListener.hostname, configListener.refId);
-
-	addHttpEntriesToEngineHttpContext(engineListener, configListener.entries);
-	addHttpResponseHeadersToEngineHttpEndpoint(engineListener, configListener.responseHeaders);
-	addExceptionsToEngineHttpEndpoint(engineListener, configListener.exceptions);
-}
-#endif
 
 } /* namespace config */
 } /* namespace jerry */

@@ -20,7 +20,7 @@
 #include <jerry/builtin/http/basicauth/Settings.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/Response.h>
+#include <esl/com/http/server/Response.h>
 #include <esl/utility/MIME.h>
 #include <esl/io/output/Memory.h>
 
@@ -44,7 +44,7 @@ const std::string PAGE_401(
 		"</html>\n");
 }
 
-esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
 	const Settings* settings = requestContext.findObject<Settings>("");
 	if(settings == nullptr) {
 		return esl::io::Input();
@@ -58,11 +58,11 @@ esl::io::Input RequestHandler::create(esl::http::server::RequestContext& request
 	return esl::io::Input(std::unique_ptr<esl::io::Writer>(new RequestHandler(requestContext, settings->getRealmId())));
 }
 
-RequestHandler::RequestHandler(esl::http::server::RequestContext& requestContext, const std::string& realmId)
+RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestContext, const std::string& realmId)
 {
-	esl::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), realmId);
+	esl::com::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), realmId);
 	std::unique_ptr<esl::io::Producer> producer(new esl::io::output::Memory(PAGE_401.data(), PAGE_401.size()));
-	requestContext.getConnection().sendResponse(response, esl::io::Output(std::move(producer)));
+	requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
 }
 
 // if function is called with size=0, this signals that writing is done, so write will not be called anymore.

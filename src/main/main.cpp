@@ -80,6 +80,8 @@ void printUsage() {
 	std::cout << "    Specifying this flags switches the server to a CGI client that processes just one request with output on STDOUT.\n";
 	std::cout << "  -v\n";
 	std::cout << "    Specifying this flags results to some extra output on startup phase.\n";
+	std::cout << "  -v\n";
+	std::cout << "    Run this server as daemon.\n";
 	std::cout << "  -dry\n";
 	std::cout << "    Make a dry run. Just read server configuration file and load libraries.\n";
 	std::cout << "  <path to server.xml>\n";
@@ -106,7 +108,7 @@ int calcFlagIndexSum(int argc, int flags) {
 }
 
 int main(int argc, const char *argv[]) {
-	if(argc > 4) {
+	if(argc > 5) {
 		printUsage();
 		return 0;
 	}
@@ -117,13 +119,18 @@ int main(int argc, const char *argv[]) {
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
 
+	int flagIndexDaemon = findFlagIndex(argc, argv, "-d");
+	bool isDaemon = (flagIndexDaemon > 0);
+
 	int flagIndexDryRun = findFlagIndex(argc, argv, "-dry");
 	bool isDryRun = (flagIndexDryRun > 0);
 
 	int flagIndexConfigFile = -1;
 	for(int i=1; i<argc; ++i) {
 		if(flagIndexCGI != i
-		&& flagIndexVerbose != i) {
+		&& flagIndexVerbose != i
+		&& flagIndexDaemon != i
+		&& flagIndexDryRun != i) {
 			flagIndexConfigFile = i;
 			break;
 		}
@@ -137,8 +144,8 @@ int main(int argc, const char *argv[]) {
 		return 0;
 	}
 
-	int flagIndexSum1 = flagIndexCGI + flagIndexVerbose + flagIndexDryRun + flagIndexConfigFile;
-	int flagIndexSum2 = calcFlagIndexSum(argc, 4);
+	int flagIndexSum1 = flagIndexCGI + flagIndexVerbose + flagIndexDryRun + flagIndexConfigFile + flagIndexDaemon;
+	int flagIndexSum2 = calcFlagIndexSum(argc, 5);
 	if(flagIndexSum1 != flagIndexSum2) {
 		printUsage();
 		return 0;
@@ -205,7 +212,7 @@ int main(int argc, const char *argv[]) {
 					success = engine.runCGI();
 				}
 				else {
-					success = engine.run();
+					success = engine.run(isDaemon);
 				}
 			}
 

@@ -19,8 +19,8 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_CONNECTION_H_
 #define JERRY_ENGINE_HTTP_SERVER_CONNECTION_H_
 
-#include <esl/http/server/Connection.h>
-#include <esl/http/server/Response.h>
+#include <esl/com/http/server/Connection.h>
+#include <esl/com/http/server/Response.h>
 
 #include <boost/filesystem.hpp>
 
@@ -31,18 +31,18 @@ namespace server {
 
 class RequestContext;
 
-class Connection : public esl::http::server::Connection {
+class Connection : public esl::com::http::server::Connection {
 public:
-	Connection(RequestContext& requestContext, esl::http::server::Connection& baseConnection);
+	Connection(RequestContext& requestContext, esl::com::http::server::Connection& baseConnection);
 
-	bool sendResponse(const esl::http::server::Response& response, esl::io::Output output) noexcept override;
-	bool sendResponse(const esl::http::server::Response& response, boost::filesystem::path path) noexcept override;
+	bool send(const esl::com::http::server::Response& response, esl::io::Output output) override;
+	bool send(const esl::com::http::server::Response& response, boost::filesystem::path path) override;
 
 private:
 	RequestContext& requestContext;
-	esl::http::server::Connection& baseConnection;
+	esl::com::http::server::Connection& baseConnection;
 
-	void addHeaders(esl::http::server::Response& response);
+	void addHeaders(esl::com::http::server::Response& response);
 };
 
 } /* namespace server */

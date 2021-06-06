@@ -21,7 +21,7 @@
 
 #include <jerry/engine/http/server/Endpoint.h>
 
-#include <esl/http/server/RequestContext.h>
+#include <esl/com/http/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/object/Interface.h>
 #include <esl/object/ObjectContext.h>
@@ -48,7 +48,7 @@ friend class Endpoint;
 	const std::vector<std::string>& getRefIds() const;
 
 	const std::string& getHostname() const;
-	esl::io::Input createRequestHandler(esl::http::server::RequestContext& baseRequestContext);
+	esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext);
 
 private:
 	struct EndpointEntry {

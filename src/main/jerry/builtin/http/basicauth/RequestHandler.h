@@ -21,9 +21,9 @@
 
 #include <esl/io/Writer.h>
 #include <esl/io/Input.h>
-#include <esl/http/server/requesthandler/Interface.h>
-#include <esl/http/server/RequestContext.h>
-#include <esl/http/server/Request.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestContext.h>
+#include <esl/com/http/server/Request.h>
 
 #include <string>
 
@@ -34,9 +34,9 @@ namespace basicauth {
 
 class RequestHandler : public esl::io::Writer {
 public:
-	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::com::http::server::RequestContext& requestContext);
 
-	RequestHandler(esl::http::server::RequestContext& requestContext, const std::string& realmId);
+	RequestHandler(esl::com::http::server::RequestContext& requestContext, const std::string& realmId);
 	//~RequestHandler() = default;
 
 	// if function is called with size=0, this signals that writing is done, so write will not be called anymore.

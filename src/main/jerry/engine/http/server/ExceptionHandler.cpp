@@ -23,9 +23,9 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/Response.h>
-#include <esl/http/server/exception/StatusCode.h>
-#include <esl/http/server/exception/Interface.h>
+#include <esl/com/http/server/Response.h>
+#include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/com/http/server/exception/Interface.h>
 #include <esl/database/exception/SqlError.h>
 #include <esl/io/Producer.h>
 #include <esl/io/output/Memory.h>
@@ -62,18 +62,18 @@ std::unique_ptr<esl::Stacktrace> createStackstrace(const esl::Stacktrace* stackt
 	return nullptr;
 }
 
-const std::vector<std::reference_wrapper<const esl::http::server::exception::Interface>>& getExceptionMessageInterfaces() {
-	static std::unique_ptr<std::vector<std::reference_wrapper<const esl::http::server::exception::Interface>>> exceptionMessageInterfaces;
+const std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>& getExceptionMessageInterfaces() {
+	static std::unique_ptr<std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>> exceptionMessageInterfaces;
 
 	if(!exceptionMessageInterfaces) {
-		exceptionMessageInterfaces.reset(new std::vector<std::reference_wrapper<const esl::http::server::exception::Interface>>);
+		exceptionMessageInterfaces.reset(new std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>);
 
 		for(const auto& metaInterface : esl::getModule().getMetaInterfaces()) {
-			if(metaInterface.type != esl::http::server::exception::Interface::getType()) {
+			if(metaInterface.type != esl::com::http::server::exception::Interface::getType()) {
 				continue;
 			}
 
-			const esl::http::server::exception::Interface& exceptionMessageInterface = esl::getModule().getInterface<esl::http::server::exception::Interface>(metaInterface.implementation);
+			const esl::com::http::server::exception::Interface& exceptionMessageInterface = esl::getModule().getInterface<esl::com::http::server::exception::Interface>(metaInterface.implementation);
 			exceptionMessageInterfaces->emplace_back(exceptionMessageInterface);
 		}
 	}
@@ -83,7 +83,7 @@ const std::vector<std::reference_wrapper<const esl::http::server::exception::Int
 
 } /* anonymous namespace */
 
-void ExceptionHandler::dump(esl::http::server::Connection& connection, std::function<const http::server::Document*(unsigned short statusCode)> findDocument) const {
+void ExceptionHandler::dump(esl::com::http::server::Connection& connection, std::function<const http::server::Document*(unsigned short statusCode)> findDocument) const {
 	const http::server::Document* errorDocument = nullptr;
 	if(findDocument) {
 		errorDocument = findDocument(httpMessage.statusCode);
@@ -93,17 +93,17 @@ void ExceptionHandler::dump(esl::http::server::Connection& connection, std::func
 		utility::URL url(errorDocument->getPath());
 
 		if(url.getScheme() == "http" || url.getScheme() == "https") {
-			esl::http::server::Response response(301, esl::utility::MIME::textHtml);
+			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
-			connection.sendResponse(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
+			connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
 		}
 		if(url.getScheme().empty() || url.getScheme() == "file") {
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
-				esl::http::server::Response response(httpMessage.statusCode, utility::MIME::byFilename(url.getPath()));
-				connection.sendResponse(response, url.getPath());
+				esl::com::http::server::Response response(httpMessage.statusCode, utility::MIME::byFilename(url.getPath()));
+				connection.send(response, url.getPath());
 
 				return;
 			}
@@ -131,8 +131,8 @@ void ExceptionHandler::dump(esl::http::server::Connection& connection, std::func
 		content = httpMessage.message;
 	}
 
-	esl::http::server::Response response(httpMessage.statusCode, httpMessage.contentType);
-	connection.sendResponse(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
+	esl::com::http::server::Response response(httpMessage.statusCode, httpMessage.contentType);
+	connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
 }
 
 void ExceptionHandler::setMessage() {
@@ -146,13 +146,13 @@ void ExceptionHandler::setMessage() {
 	httpMessage.stacktrace.reset();
 }
 
-void ExceptionHandler::setMessage(const esl::http::server::exception::StatusCode& e) {
+void ExceptionHandler::setMessage(const esl::com::http::server::exception::StatusCode& e) {
 	engine::ExceptionHandler::setMessage(e);
 
 	httpMessage.statusCode = e.getStatusCode();
 	httpMessage.contentType = e.getMimeType();
 	httpMessage.title = std::to_string(e.getStatusCode()) + " " + jerry::http::StatusCode::getMessage(e.getStatusCode());
-	if(e.what() && std::string(e.what()) != esl::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
+	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
 		httpMessage.message = e.what();
 	}
 	else {

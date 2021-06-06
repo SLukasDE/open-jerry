@@ -19,9 +19,9 @@
 #ifndef JERRY_CGI_SERVER_SOCKET_H_
 #define JERRY_CGI_SERVER_SOCKET_H_
 
-#include <esl/http/server/requesthandler/Interface.h>
-#include <esl/http/server/Interface.h>
-#include <esl/http/server/Request.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/Interface.h>
+#include <esl/com/http/server/Request.h>
 #include <esl/object/Values.h>
 
 #include <cstdint>
@@ -32,13 +32,13 @@ namespace jerry {
 namespace cgi {
 namespace server {
 
-class Socket : public esl::http::server::Interface::Socket {
+class Socket : public esl::com::http::server::Interface::Socket {
 public:
 	static inline const char* getImplementation() {
 		return "cgi4esl";
 	}
 
-	static std::unique_ptr<esl::http::server::Interface::Socket> create(uint16_t port, const esl::object::Values<std::string>& values);
+	static std::unique_ptr<esl::com::http::server::Interface::Socket> create(uint16_t port, const esl::object::Values<std::string>& values);
 
 	Socket(uint16_t port, const esl::object::Values<std::string>& values);
 
@@ -46,7 +46,7 @@ public:
 
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
 
-	void listen(esl::http::server::requesthandler::Interface::CreateInput createInput) override;
+	void listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 

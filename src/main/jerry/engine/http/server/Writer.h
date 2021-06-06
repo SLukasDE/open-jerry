@@ -22,7 +22,7 @@
 #include <jerry/engine/http/server/RequestContext.h>
 
 #include <esl/io/Writer.h>
-#include <esl/http/server/RequestContext.h>
+#include <esl/com/http/server/RequestContext.h>
 
 #include <string>
 
@@ -35,7 +35,7 @@ class Listener;
 
 class Writer : public esl::io::Writer {
 public:
-	Writer(const Listener& listener, esl::http::server::RequestContext& baseRequestContext);
+	Writer(const Listener& listener, esl::com::http::server::RequestContext& baseRequestContext);
 
 	RequestContext& getRequestContext();
 

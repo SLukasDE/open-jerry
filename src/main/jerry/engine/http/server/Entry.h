@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_ENTRY_H_
 #define JERRY_ENGINE_HTTP_SERVER_ENTRY_H_
 
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
 
 #include <memory>
 
@@ -34,11 +34,11 @@ class Endpoint;
 struct Entry {
 	Entry(std::unique_ptr<Context> context);
 	Entry(std::unique_ptr<Endpoint> endpoint);
-	Entry(esl::http::server::requesthandler::Interface::CreateInput createInput);
+	Entry(esl::com::http::server::requesthandler::Interface::CreateInput createInput);
 
 	std::unique_ptr<Context> context;
 	std::unique_ptr<Endpoint> endpoint;
-	esl::http::server::requesthandler::Interface::CreateInput createRequestHandler = nullptr;
+	esl::com::http::server::requesthandler::Interface::CreateInput createRequestHandler = nullptr;
 };
 
 } /* namespace server */

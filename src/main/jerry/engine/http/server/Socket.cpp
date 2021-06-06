@@ -45,7 +45,7 @@ Socket::Socket(Engine& aEngine, const std::string& aId, std::uint16_t aPort, boo
   https(aHttps),
   implementation(aImplementation)
 {
-	getSocket().addObjectFactory("", [this](const esl::http::server::RequestContext&) {
+	getSocket().addObjectFactory("", [this](const esl::com::http::server::RequestContext&) {
 		esl::object::Interface::Object* object = this;
 		return object;
 	});
@@ -61,7 +61,7 @@ void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory
 	//throw esl::addStacktrace(std::runtime_error("Calling 'addObjectFactory' is not allowed."));
 }
 
-void Socket::listen(esl::http::server::requesthandler::Interface::CreateInput createInput) {
+void Socket::listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) {
 	logger.warn << "Calling 'listen' is not allowed.\n";
 	//throw esl::addStacktrace(std::runtime_error("Calling 'listen' is not allowed."));
 }
@@ -123,7 +123,7 @@ void Socket::addListener(Listener& listener) {
 	refListeners.push_back(std::ref(listener));
 }
 
-esl::http::server::Interface::Socket& Socket::getSocket() noexcept {
+esl::com::http::server::Interface::Socket& Socket::getSocket() noexcept {
 	return socket;
 }
 
@@ -161,7 +161,7 @@ Listener* Socket::getListenerByHostname(const std::string& hostname) {
 	return iter->second;
 }
 
-esl::io::Input Socket::createRequestHandler(esl::http::server::RequestContext& baseRequestContext) {
+esl::io::Input Socket::createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext) {
 	/* Access log */
 	logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
 
@@ -176,7 +176,7 @@ esl::io::Input Socket::createRequestHandler(esl::http::server::RequestContext& b
 		//esl::http::server::exception::StatusCode e(500, "Engine object not found");
 		//exceptionHandler.setMessage(e);
 		exceptionHandler.call([]() {
-			throw esl::http::server::exception::StatusCode(500, "Engine object not found");
+			throw esl::com::http::server::exception::StatusCode(500, "Engine object not found");
 		});
 
 		// TODO
@@ -222,7 +222,7 @@ esl::io::Input Socket::createRequestHandler(esl::http::server::RequestContext& b
 		exceptionHandler.setShowStacktrace(false);
 		//exceptionHandler.setMessage(esl::http::server::exception::StatusCode(500));
 		exceptionHandler.call([]() {
-			throw esl::http::server::exception::StatusCode(500);
+			throw esl::com::http::server::exception::StatusCode(500);
 		});
 		exceptionHandler.dump(baseRequestContext.getConnection());
 

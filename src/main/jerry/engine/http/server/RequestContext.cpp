@@ -57,9 +57,8 @@ bool checkIfEndingWithSlash(const std::string& path) {
 }
 } /* anonymous namespace */
 
-RequestContext::RequestContext(esl::http::server::RequestContext& aBaseRequestContext, Writer& aWriter, const Endpoint& aEndpoint)
-: esl::http::server::RequestContext(),
-  baseRequestContext(aBaseRequestContext),
+RequestContext::RequestContext(esl::com::http::server::RequestContext& aBaseRequestContext, Writer& aWriter, const Endpoint& aEndpoint)
+: baseRequestContext(aBaseRequestContext),
   writer(aWriter),
   connection(*this, aBaseRequestContext.getConnection()),
   context(aEndpoint),
@@ -69,7 +68,7 @@ RequestContext::RequestContext(esl::http::server::RequestContext& aBaseRequestCo
 { }
 
 
-esl::io::Input RequestContext::createRequestHandler(std::unique_ptr<Writer>& writer, esl::http::server::requesthandler::Interface::CreateInput createRequestHandler) {
+esl::io::Input RequestContext::createRequestHandler(std::unique_ptr<Writer>& writer, esl::com::http::server::requesthandler::Interface::CreateInput createRequestHandler) {
 	ExceptionHandler exceptionHandler;
 
     /* setting 'exceptionOccured' is important to make hasRequestHandler() return true */
@@ -121,11 +120,11 @@ const esl::io::Input& RequestContext::getInput() const {
 	return input;
 }
 
-esl::http::server::Connection& RequestContext::getConnection() const {
+esl::com::http::server::Connection& RequestContext::getConnection() const {
 	return connection;
 }
 
-const esl::http::server::Request& RequestContext::getRequest() const {
+const esl::com::http::server::Request& RequestContext::getRequest() const {
 	return baseRequestContext.getRequest();
 }
 

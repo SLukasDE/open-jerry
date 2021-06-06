@@ -24,8 +24,8 @@
 
 #include <esl/io/output/Memory.h>
 #include <esl/io/output/String.h>
-#include <esl/http/server/Connection.h>
-#include <esl/http/server/exception/StatusCode.h>
+#include <esl/com/http/server/Connection.h>
+#include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/logging/Logger.h>
 #include <esl/logging/Level.h>
 #include <esl/Stacktrace.h>
@@ -58,7 +58,7 @@ const std::string PAGE_301(
 		"</html>\n");
 }
 
-esl::io::Input RequestHandler::create(esl::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
 	if(requestContext.getRequest().getMethod() != "GET") {
 		logger.warn << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
 		return esl::io::Input();
@@ -77,13 +77,13 @@ esl::io::Input RequestHandler::create(esl::http::server::RequestContext& request
 		isDirectory = directory.getEntry().isDirectory;
 	}
 	catch(...) {
-		throw esl::http::server::exception::StatusCode(404);
+		throw esl::com::http::server::exception::StatusCode(404);
 	}
 
 	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings, isDirectory)));
 }
 
-RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool isDirectory)
+RequestHandler::RequestHandler(esl::com::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool isDirectory)
 : requestContext(aRequestContext),
   settings(aSettings)
 {
@@ -95,10 +95,10 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
 
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
-    		esl::http::server::Response response(301, esl::utility::MIME::textHtml);
+    		esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
     		response.addHeader("Location", requestContext.getRequest().getPath() + "/");
     		std::unique_ptr<esl::io::Producer> producer(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size()));
-    		requestContext.getConnection().sendResponse(response, esl::io::Output(std::move(producer)));
+    		requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
 
     		return;
     	}
@@ -132,18 +132,18 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
     		}
     		outputContent += "</body></html>";
 
-    		esl::http::server::Response response(200, esl::utility::MIME::textHtml);
+    		esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
     		std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(outputContent)));
-    		requestContext.getConnection().sendResponse(response, esl::io::Output(std::move(producer)));
+    		requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
     	}
     	else {
-    		throw esl::http::server::exception::StatusCode(403);
+    		throw esl::com::http::server::exception::StatusCode(403);
     	}
 	}
     else {
     	esl::utility::MIME mime = utility::MIME::byFilename(path);
-		esl::http::server::Response response(settings.getHttpStatus(), esl::utility::MIME(esl::utility::MIME::textHtml));
-		requestContext.getConnection().sendResponse(response, path);
+		esl::com::http::server::Response response(settings.getHttpStatus(), esl::utility::MIME(esl::utility::MIME::textHtml));
+		requestContext.getConnection().send(response, path);
 
 #if 0
         std::ifstream fileStream(path, std::ios::binary);
@@ -156,9 +156,9 @@ RequestHandler::RequestHandler(esl::http::server::RequestContext& aRequestContex
 		outputContent.clear();
 		outputContent.append(&fileBuffer[0], fileBuffer.size());
 
-		std::unique_ptr<esl::http::server::ResponseDynamic> response;
+		std::unique_ptr<esl::com::http::server::ResponseDynamic> response;
 		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
-		response.reset(new esl::http::server::ResponseDynamic(settings.getHttpStatus(), utility::MIME::byFilename(path).getContentType(), lambda ));
+		response.reset(new esl::com::http::server::ResponseDynamic(settings.getHttpStatus(), utility::MIME::byFilename(path).getContentType(), lambda ));
 		requestContext.getConnection().sendResponse(std::move(response));
 #endif
     }

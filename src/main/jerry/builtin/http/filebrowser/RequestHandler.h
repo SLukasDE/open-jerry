@@ -23,8 +23,8 @@
 
 #include <esl/io/Consumer.h>
 #include <esl/io/Input.h>
-#include <esl/http/server/RequestContext.h>
-#include <esl/http/server/Request.h>
+#include <esl/com/http/server/RequestContext.h>
+#include <esl/com/http/server/Request.h>
 
 namespace jerry {
 namespace builtin {
@@ -33,9 +33,9 @@ namespace filebrowser {
 
 class RequestHandler : public esl::io::Consumer {
 public:
-	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::com::http::server::RequestContext& requestContext);
 
-	RequestHandler(esl::http::server::RequestContext& requestContext, const Settings& settings, bool isDirectory);
+	RequestHandler(esl::com::http::server::RequestContext& requestContext, const Settings& settings, bool isDirectory);
 
 	/* return: true for every kind of success and get called again for more content data
 	 *         false for failure or to get not called again
@@ -43,7 +43,7 @@ public:
 	bool consume(esl::io::Reader& reader) override;
 
 private:
-	esl::http::server::RequestContext& requestContext;
+	esl::com::http::server::RequestContext& requestContext;
 	const Settings& settings;
 /*
 	std::string outputContent;

@@ -22,10 +22,10 @@
 #include <jerry/config/Setting.h>
 #include <jerry/config/Exceptions.h>
 #include <jerry/config/ExceptionDocument.h>
-#include <jerry/config/messaging/Listener.h>
-#include <jerry/config/messaging/Context.h>
-#include <jerry/config/messaging/Entry.h>
-#include <jerry/config/messaging/RequestHandler.h>
+#include <jerry/config/basic/Listener.h>
+#include <jerry/config/basic/Context.h>
+#include <jerry/config/basic/Entry.h>
+#include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/http/Listener.h>
 #include <jerry/config/http/Endpoint.h>
 #include <jerry/config/http/Context.h>
@@ -34,8 +34,8 @@
 #include <jerry/config/OptionalBool.h>
 
 #include <jerry/engine/BaseContext.h>
-#include <jerry/engine/messaging/server/Listener.h>
-#include <jerry/engine/messaging/server/Context.h>
+#include <jerry/engine/basic/server/Listener.h>
+#include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/http/server/Listener.h>
 #include <jerry/engine/http/server/Endpoint.h>
 #include <jerry/engine/http/server/Context.h>
@@ -58,11 +58,11 @@ Logger logger("jerry::config::Engine");
 
 void add(engine::BaseContext& engineBaseContext, const Object& objects);
 
-void add(engine::Engine& engine, const messaging::Listener& configMessageListener);
-void add(engine::messaging::server::Context& engineMessageContext, const Reference& reference);
-void add(engine::messaging::server::Context& engineMessageContext, const std::vector<messaging::Entry>& configMessageEntries);
-void add(engine::messaging::server::Context& engineMessageContext, const messaging::Context& configMessageContext);
-void add(engine::messaging::server::Context& engineMessageContext, const messaging::RequestHandler& configMessageRequestHandler);
+void add(engine::Engine& engine, const basic::Listener& configBasicListener);
+void add(engine::basic::server::Context& engineBasicContext, const Reference& reference);
+void add(engine::basic::server::Context& engineBasicContext, const std::vector<basic::Entry>& configBasicEntries);
+void add(engine::basic::server::Context& engineBasicContext, const basic::Context& configBasicContext);
+void add(engine::basic::server::Context& engineBasicContext, const basic::RequestHandler& configBasicRequestHandler);
 
 void add(engine::Engine& engine, const http::Listener& configHttpListener);
 void add(engine::http::server::Context& engineHttpContext, const Reference& reference);
@@ -97,31 +97,31 @@ void add(engine::BaseContext& engineBaseContext, const Object& object) {
 
 
 
-void add(engine::Engine& engine, const messaging::Listener& configMessageListener) {
-	// TODO: last parameter is still missing in configMessageListener. So it's temporary hard coded to "true".
-	engine::messaging::server::Listener& engineMessageListener = engine.addMessageListener(configMessageListener.refId, true /*configMessageListener.inherit*/);
+void add(engine::Engine& engine, const basic::Listener& configBasicListener) {
+	// TODO: last parameter is still missing in configBasicListener. So it's temporary hard coded to "true".
+	engine::basic::server::Listener& engineBasicListener = engine.addBasicListener(configBasicListener.refId, true /*configMessageListener.inherit*/);
 
-	add(engineMessageListener, configMessageListener.entries);
+	add(engineBasicListener, configBasicListener.entries);
 }
 
-void add(engine::messaging::server::Context& engineMessageContext, const Reference& reference) {
-	engineMessageContext.addReference(reference.id, reference.refId);
+void add(engine::basic::server::Context& engineBasicContext, const Reference& reference) {
+	engineBasicContext.addReference(reference.id, reference.refId);
 }
 
-void add(engine::messaging::server::Context& engineMessageContext, const std::vector<messaging::Entry>& configMessageEntries) {
-	for(const auto& entry : configMessageEntries) {
+void add(engine::basic::server::Context& engineBasicContext, const std::vector<basic::Entry>& entries) {
+	for(const auto& entry : entries) {
 		switch(entry.getType()) {
-		case messaging::Entry::etObject:
-			add(engineMessageContext, entry.getObject());
+		case basic::Entry::etObject:
+			add(engineBasicContext, entry.getObject());
 			break;
-		case messaging::Entry::etReference:
-			add(engineMessageContext, entry.getReference());
+		case basic::Entry::etReference:
+			add(engineBasicContext, entry.getReference());
 			break;
-		case messaging::Entry::etContext:
-			add(engineMessageContext, entry.getContext());
+		case basic::Entry::etContext:
+			add(engineBasicContext, entry.getContext());
 			break;
-		case messaging::Entry::etRequestHandler:
-			add(engineMessageContext, entry.getRequestHandler());
+		case basic::Entry::etRequestHandler:
+			add(engineBasicContext, entry.getRequestHandler());
 			break;
 		default:
 			logger.warn << "There is an entry with an unkown type\n";
@@ -130,30 +130,30 @@ void add(engine::messaging::server::Context& engineMessageContext, const std::ve
 	}
 }
 
-void add(engine::messaging::server::Context& engineMessageContext, const messaging::Context& configMessageContext) {
+void add(engine::basic::server::Context& engineBasicContext, const basic::Context& configBasicContext) {
 	// TODO: last parameter is still missing in configMessageContext. So it's temporary hard coded to "true".
-	engine::messaging::server::Context& newEngineMessageContext = engineMessageContext.addContext(true /*configMessageContext.inherit*/);
-	add(newEngineMessageContext, configMessageContext.entries);
+	engine::basic::server::Context& newEngineMessageContext = engineBasicContext.addContext(true /*configMessageContext.inherit*/);
+	add(newEngineMessageContext, configBasicContext.entries);
 }
 
-void add(engine::messaging::server::Context& engineMessageContext, const messaging::RequestHandler& configMessageRequestHandler) {
-	if(configMessageRequestHandler.objectImplementation || configMessageRequestHandler.settings.size() > 0) {
-		engine::messaging::server::Context& newEngineMessageContext = engineMessageContext.addContext(true);
+void add(engine::basic::server::Context& engineBasicContext, const basic::RequestHandler& configBasicRequestHandler) {
+	if(configBasicRequestHandler.objectImplementation || configBasicRequestHandler.settings.size() > 0) {
+		engine::basic::server::Context& newEngineMessageContext = engineBasicContext.addContext(true);
 
 		std::string objectImplementation;
-		if(configMessageRequestHandler.objectImplementation) {
-			objectImplementation = *configMessageRequestHandler.objectImplementation;
+		if(configBasicRequestHandler.objectImplementation) {
+			objectImplementation = *configBasicRequestHandler.objectImplementation;
 		}
 		else {
-			objectImplementation = configMessageRequestHandler.implementation;
+			objectImplementation = configBasicRequestHandler.implementation;
 		}
 		esl::object::Interface::Object& engineObject = newEngineMessageContext.addObject("", objectImplementation);
-		addSettingsToEslObject(engineObject, objectImplementation, configMessageRequestHandler.settings);
+		addSettingsToEslObject(engineObject, objectImplementation, configBasicRequestHandler.settings);
 
-		newEngineMessageContext.addMessageHandler(configMessageRequestHandler.implementation);
+		newEngineMessageContext.addRequestHandler(configBasicRequestHandler.implementation);
 	}
 	else {
-		engineMessageContext.addMessageHandler(configMessageRequestHandler.implementation);
+		engineBasicContext.addRequestHandler(configBasicRequestHandler.implementation);
 	}
 }
 
@@ -277,25 +277,25 @@ void Engine::install(const Config& config) {
 	}
 
 
-	for(const auto& messageBroker : config.messageBrokers) {
+	for(const auto& basicBroker : config.basicBrokers) {
 		std::vector<std::pair<std::string, std::string>> settings;
 
-		for(const auto& setting : messageBroker.settings) {
+		for(const auto& setting : basicBroker.settings) {
 			settings.push_back(std::make_pair(setting.key, setting.value));
 		}
 
-		engine.addMessageBroker(messageBroker.id, messageBroker.brokers, settings, messageBroker.implementation);
+		engine.addBasicBroker(basicBroker.id, basicBroker.brokers, settings, basicBroker.implementation);
 	}
 
 
-	for(const auto& messageServer : config.messageServers) {
+	for(const auto& basicServer : config.basicServers) {
 		std::vector<std::pair<std::string, std::string>> settings;
 
-		for(const auto& setting : messageServer.settings) {
+		for(const auto& setting : basicServer.settings) {
 			settings.push_back(std::make_pair(setting.key, setting.value));
 		}
 
-		engine.addMessageServer(messageServer.id, messageServer.port, settings, messageServer.implementation);
+		engine.addBasicServer(basicServer.id, basicServer.port, settings, basicServer.implementation);
 	}
 
 
@@ -309,8 +309,8 @@ void Engine::install(const Config& config) {
 		engine.addHttpServer(httpServer.id, httpServer.port, httpServer.isHttps, settings, httpServer.implementation);
 	}
 
-	for(const auto& messageListener : config.messageListeners) {
-		add(engine, messageListener);
+	for(const auto& basicListener : config.basicListeners) {
+		add(engine, basicListener);
 	}
 
 	for(const auto& httpListener : config.httpListeners) {

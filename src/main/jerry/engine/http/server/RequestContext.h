@@ -21,10 +21,10 @@
 
 #include <jerry/engine/http/server/Connection.h>
 
-#include <esl/http/server/RequestContext.h>
-#include <esl/http/server/Connection.h>
-#include <esl/http/server/Request.h>
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestContext.h>
+#include <esl/com/http/server/Connection.h>
+#include <esl/com/http/server/Request.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/Interface.h>
 #include <esl/io/Input.h>
 
@@ -40,16 +40,16 @@ class Context;
 class Endpoint;
 class Writer;
 
-class RequestContext : public esl::http::server::RequestContext {
+class RequestContext : public esl::com::http::server::RequestContext {
 public:
-	RequestContext(esl::http::server::RequestContext& baseRequestContext, Writer& writer, const Endpoint& endpoint);
+	RequestContext(esl::com::http::server::RequestContext& baseRequestContext, Writer& writer, const Endpoint& endpoint);
 
-	esl::io::Input createRequestHandler(std::unique_ptr<Writer>& writer, esl::http::server::requesthandler::Interface::CreateInput createRequestHandler);
+	esl::io::Input createRequestHandler(std::unique_ptr<Writer>& writer, esl::com::http::server::requesthandler::Interface::CreateInput createRequestHandler);
 	esl::io::Input& getInput();
 	const esl::io::Input& getInput() const;
 
-	esl::http::server::Connection& getConnection() const override;
-	const esl::http::server::Request& getRequest() const override;
+	esl::com::http::server::Connection& getConnection() const override;
+	const esl::com::http::server::Request& getRequest() const override;
 
 	void setPath(std::string path);
 	const std::string& getPath() const override;
@@ -66,7 +66,7 @@ protected:
 
 private:
 	esl::io::Input input;
-	esl::http::server::RequestContext& baseRequestContext;
+	esl::com::http::server::RequestContext& baseRequestContext;
 	Writer& writer;
 	mutable Connection connection;
 	std::reference_wrapper<const Context> context;

@@ -24,7 +24,7 @@
 #include <jerry/Module.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/utility/String.h>
 
@@ -139,7 +139,7 @@ Endpoint& Context::addEndpoint(std::string path, bool inheritObjects) {
 }
 
 void Context::addRequestHandler(const std::string& implementation) {
-	entries.push_back(Entry(jerry::getModule().getInterface<esl::http::server::requesthandler::Interface>(implementation).createInput));
+	entries.push_back(Entry(jerry::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createInput));
 }
 
 const Endpoint& Context::getEndpoint() const {

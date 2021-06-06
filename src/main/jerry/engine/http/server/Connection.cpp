@@ -25,24 +25,24 @@ namespace engine {
 namespace http {
 namespace server {
 
-Connection::Connection(RequestContext& aRequestContext, esl::http::server::Connection& aBaseConnection)
+Connection::Connection(RequestContext& aRequestContext, esl::com::http::server::Connection& aBaseConnection)
 : requestContext(aRequestContext),
   baseConnection(aBaseConnection)
 { }
 
-bool Connection::sendResponse(const esl::http::server::Response& aResponse, esl::io::Output output) noexcept {
-	esl::http::server::Response response(aResponse);
+bool Connection::send(const esl::com::http::server::Response& aResponse, esl::io::Output output) {
+	esl::com::http::server::Response response(aResponse);
 	addHeaders(response);
-	return baseConnection.sendResponse(response, std::move(output));
+	return baseConnection.send(response, std::move(output));
 }
 
-bool Connection::sendResponse(const esl::http::server::Response& aResponse, boost::filesystem::path path) noexcept {
-	esl::http::server::Response response(aResponse);
+bool Connection::send(const esl::com::http::server::Response& aResponse, boost::filesystem::path path) {
+	esl::com::http::server::Response response(aResponse);
 	addHeaders(response);
-	return baseConnection.sendResponse(response, std::move(path));
+	return baseConnection.send(response, std::move(path));
 }
 
-void Connection::addHeaders(esl::http::server::Response& response) {
+void Connection::addHeaders(esl::com::http::server::Response& response) {
 	const std::map<std::string, std::string> headers = requestContext.getContext().getEndpoint().getHeaders();
 
 	for(const auto& header : headers) {

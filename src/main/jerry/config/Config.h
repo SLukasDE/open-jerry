@@ -27,14 +27,10 @@
 #include <jerry/config/http/Server.h>
 #include <jerry/config/http/Context.h>
 #include <jerry/config/http/Listener.h>
-#include <jerry/config/messaging/Broker.h>
-#include <jerry/config/messaging/Server.h>
-#include <jerry/config/messaging/Context.h>
-#include <jerry/config/messaging/Listener.h>
-//#include <jerry/engine/Engine.h>
-//#include <jerry/engine/http/Listener.h>
-//#include <jerry/engine/http/Endpoint.h>
-//#include <jerry/engine/http/Context.h>
+#include <jerry/config/basic/Broker.h>
+#include <jerry/config/basic/Server.h>
+#include <jerry/config/basic/Context.h>
+#include <jerry/config/basic/Listener.h>
 
 #include <esl/logging/Layout.h>
 #include <esl/module/Library.h>
@@ -73,29 +69,16 @@ public:
 	std::vector<http::Context> httpContext;
 	std::vector<http::Listener> httpListeners;
 
-	std::vector<messaging::Broker> messageBrokers;
-	std::vector<messaging::Server> messageServers;
-	std::vector<messaging::Context> messageContext;
-	std::vector<messaging::Listener> messageListeners;
+	std::vector<basic::Broker> basicBrokers;
+	std::vector<basic::Server> basicServers;
+	std::vector<basic::Context> basicContext;
+	std::vector<basic::Listener> basicListeners;
 
 	std::set<std::string> filesLoaded;
 
 private:
 	void parseInclude(const tinyxml2::XMLElement& element);
 	void parseLibrary(const tinyxml2::XMLElement& element);
-/*
-	void addObjectToEngineBaseContext(engine::BaseContext& engineBaseContext, const Object& objects) const;
-	void addReferenceToEngineHttpContext(engine::http::Context& engineHttpContext, const Reference& reference) const;
-	void addHttpContextToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Context& httpContext) const;
-	void addHttpEndpointToEngineHttpContext(engine::http::Context& engineHttpContext, const http::Endpoint& httpEndpoint) const;
-	void addHttpRequestHandlerToEngineHttpContext(engine::http::Context& engineHttpContext, const http::RequestHandler& httpRequestHandler) const;
-	void addHttpResponseHeadersToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders) const;
-	void addExceptionsToEngineHttpEndpoint(engine::http::Endpoint& engineEndpoint, const Exceptions& exceptions) const;
-
-	void addHttpEntriesToEngineHttpContext(engine::http::Context& engineContext, const std::vector<http::Entry>& entries) const;
-
-	void addHttpListenerToEngine(engine::Engine& engine, const http::Listener& configListener) const;
-*/
 };
 
 } /* namespace config */

@@ -21,7 +21,7 @@
 
 #include <esl/io/Consumer.h>
 #include <esl/io/Input.h>
-#include <esl/http/server/RequestContext.h>
+#include <esl/com/http/server/RequestContext.h>
 
 #include <string>
 
@@ -32,9 +32,9 @@ namespace self {
 
 class RequestHandler : public esl::io::Consumer {
 public:
-	static esl::io::Input create(esl::http::server::RequestContext& requestContext);
+	static esl::io::Input create(esl::com::http::server::RequestContext& requestContext);
 
-	RequestHandler(esl::http::server::RequestContext& requestContext);
+	RequestHandler(esl::com::http::server::RequestContext& requestContext);
 
 	/* return: true for every kind of success and get called again for more content data
 	 *         false for failure or to get not called again

@@ -21,9 +21,9 @@
 
 #include <jerry/engine/http/server/Listener.h>
 
-#include <esl/http/server/Interface.h>
-#include <esl/http/server/Socket.h>
-#include <esl/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/Interface.h>
+#include <esl/com/http/server/Socket.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/Values.h>
 
 #include <cstdint>
@@ -45,7 +45,7 @@ namespace engine {
 namespace http {
 namespace server {
 
-class Socket final : public esl::http::server::Interface::Socket {
+class Socket final : public esl::com::http::server::Interface::Socket {
 public:
 	Socket(Engine& engine, const std::string& id, std::uint16_t port, bool https,
 			const std::vector<std::pair<std::string, std::string>>& settings,
@@ -54,7 +54,7 @@ public:
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
-	void listen(esl::http::server::requesthandler::Interface::CreateInput createInput) override;
+	void listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 
@@ -66,7 +66,7 @@ public:
 		getSocket().listen(createRequestHandler);
 	}
 */
-	esl::http::server::Interface::Socket& getSocket() noexcept;
+	esl::com::http::server::Interface::Socket& getSocket() noexcept;
 	const std::string& getId() const noexcept;
 	const std::string& getImplementation() const noexcept;
 	std::uint16_t getPort() const noexcept;
@@ -74,12 +74,12 @@ public:
 
 	std::set<std::string> getHostnames() const;
 
-	static esl::io::Input createRequestHandler(esl::http::server::RequestContext& baseRequestContext);
+	static esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext);
 
 private:
 	Listener* getListenerByHostname(const std::string& hostname);
 
-	esl::http::server::Socket socket;
+	esl::com::http::server::Socket socket;
 
 	Engine& engine;
 	std::string id;

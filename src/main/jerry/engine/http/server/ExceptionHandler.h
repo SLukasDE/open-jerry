@@ -23,9 +23,9 @@
 #include <jerry/engine/ExceptionMessage.h>
 #include <jerry/engine/http/server/Document.h>
 
-#include <esl/http/server/Connection.h>
-#include <esl/http/server/exception/StatusCode.h>
-#include <esl/http/server/exception/Interface.h>
+#include <esl/com/http/server/Connection.h>
+#include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/com/http/server/exception/Interface.h>
 #include <esl/database/exception/SqlError.h>
 
 #include <stdexcept>
@@ -38,11 +38,11 @@ namespace server {
 
 class ExceptionHandler : public engine::ExceptionHandler {
 public:
-	void dump(esl::http::server::Connection& connection, std::function<const http::server::Document*(unsigned short statusCode)> findDocument = nullptr) const;
+	void dump(esl::com::http::server::Connection& connection, std::function<const http::server::Document*(unsigned short statusCode)> findDocument = nullptr) const;
 
 protected:
 	void setMessage() override;
-	void setMessage(const esl::http::server::exception::StatusCode& e) override;
+	void setMessage(const esl::com::http::server::exception::StatusCode& e) override;
 	void setMessage(const esl::database::exception::SqlError& e) override;
 	void setMessage(const std::runtime_error& e) override;
 	void setMessage(const std::exception& e) override;
@@ -51,7 +51,7 @@ private:
 	std::string getHTMLContent() const;
 	std::string getTextContent() const;
 
-	esl::http::server::exception::Interface::Message httpMessage;
+	esl::com::http::server::exception::Interface::Message httpMessage;
 };
 
 } /* namespace server */

@@ -33,7 +33,7 @@ Entry::Entry(std::unique_ptr<Endpoint> aEndpoint)
 : endpoint(std::move(aEndpoint))
 { }
 
-Entry::Entry(esl::http::server::requesthandler::Interface::CreateInput aCreateInput)
+Entry::Entry(esl::com::http::server::requesthandler::Interface::CreateInput aCreateInput)
 : createRequestHandler(aCreateInput)
 { }
 

@@ -20,10 +20,6 @@
 #include <jerry/http/StatusCode.h>
 #include <jerry/Logger.h>
 
-#include <esl/http/server/Response.h>
-#include <esl/http/server/exception/StatusCode.h>
-#include <esl/database/exception/SqlError.h>
-//#include <esl/utility/MIME.h>
 #include <esl/Stacktrace.h>
 
 #include <sstream>
@@ -64,7 +60,7 @@ bool ExceptionHandler::call(std::function<void()> callFunction) {
     	callFunction();
     	return false;
     }
-	catch(const esl::http::server::exception::StatusCode& e) {
+	catch(const esl::com::http::server::exception::StatusCode& e) {
     	setMessage(e);
 	}
 	catch(const esl::database::exception::SqlError& e) {
@@ -84,11 +80,6 @@ bool ExceptionHandler::call(std::function<void()> callFunction) {
 	 * Output on logger *
 	 * **************** */
     dump(logger.warn);
-
-	/* ************* *
-	* HTTP Response *
-	* ************* */
-    dump(connection);
 #endif
 
 	return true;
@@ -130,9 +121,9 @@ void ExceptionHandler::setMessage() {
 	plainMessage.stacktrace.reset();
 }
 
-void ExceptionHandler::setMessage(const esl::http::server::exception::StatusCode& e) {
+void ExceptionHandler::setMessage(const esl::com::http::server::exception::StatusCode& e) {
 	plainMessage.title = "HTTP status code " + std::to_string(e.getStatusCode());
-	if(e.what() && std::string(e.what()) != esl::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
+	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
 		plainMessage.message = e.what();
 	}
 	else {

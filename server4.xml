@@ -26,7 +26,11 @@
 	
 	
 	<!-- listener port="8080" protocol="https" domain="" ipv4="" ipv6="" -->
-	<listener url="https://*:8080">
+	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
+		<parameter key="threads" value="4"/>
+	</http-server>
+	
+	<http-listener ref-id="http-1" hostname="*">
 		<requesthandler implementation="jerry/buildin/filebrowser">
 			<parameter key="path" value="404.html"/>
 			<parameter key="http-status" value="404"/>
@@ -69,6 +73,6 @@
 				<requesthandler implementation="jerry/buildin/filebrowser"/>
 			</context>
 		</endpoint>
-	</listener>
+	</http-listener>
 	
 </jerry>
