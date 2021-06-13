@@ -50,8 +50,9 @@ esl::com::basic::server::Interface::Socket& Client::getSocket() {
 }
 
 std::unique_ptr<esl::com::basic::client::Interface::Connection> Client::createConnection(std::vector<std::pair<std::string, std::string>> parameters) {
-	throw esl::addStacktrace(std::runtime_error("Calling 'createConnection' is not allowed."));
-	return nullptr;
+	//throw esl::addStacktrace(std::runtime_error("Calling 'createConnection' is not allowed."));
+	//return nullptr;
+	return client.createConnection(std::move(parameters));
 }
 
 void Client::dumpTree(std::size_t depth) const {

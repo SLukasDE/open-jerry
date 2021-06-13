@@ -80,7 +80,7 @@ void printUsage() {
 	std::cout << "    Specifying this flags switches the server to a CGI client that processes just one request with output on STDOUT.\n";
 	std::cout << "  -v\n";
 	std::cout << "    Specifying this flags results to some extra output on startup phase.\n";
-	std::cout << "  -v\n";
+	std::cout << "  -d\n";
 	std::cout << "    Run this server as daemon.\n";
 	std::cout << "  -dry\n";
 	std::cout << "    Make a dry run. Just read server configuration file and load libraries.\n";
