@@ -142,7 +142,7 @@ RequestHandler::RequestHandler(esl::com::http::server::RequestContext& aRequestC
 	}
     else {
     	esl::utility::MIME mime = utility::MIME::byFilename(path);
-		esl::com::http::server::Response response(settings.getHttpStatus(), esl::utility::MIME(esl::utility::MIME::textHtml));
+		esl::com::http::server::Response response(settings.getHttpStatus(), mime);
 		requestContext.getConnection().send(response, path);
 
 #if 0
