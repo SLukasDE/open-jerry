@@ -27,32 +27,27 @@ namespace builtin {
 namespace http {
 namespace file {
 
-std::unique_ptr<esl::object::Interface::Object> Settings::create() {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
-}
-
-void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "path") {
-		setPath(value);
+Settings::Settings(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "path") {
+			path = setting.second;
+		}
+		else if(setting.first == "http-status") {
+			try {
+				httpStatus = std::stoi(setting.second);
+			}
+			catch(...) {
+				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+			}
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
-	else if(key == "http-status") {
-		setHttpStatus(toInteger(value));
-	}
-	else {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
-	}
-}
-
-void Settings::setPath(const std::string& aPath) {
-	path = aPath;
 }
 
 const std::string& Settings::getPath() const {
 	return path;
-}
-
-void Settings::setHttpStatus(int aHttpStatus) {
-	httpStatus = aHttpStatus;
 }
 
 const int Settings::getHttpStatus() const {

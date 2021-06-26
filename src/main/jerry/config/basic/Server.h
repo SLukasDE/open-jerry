@@ -39,7 +39,7 @@ struct Server {
 
 	std::string id;
 	std::string implementation;
-	std::uint16_t port = 0;
+	//std::uint16_t port = 0;
 	std::vector<Setting> settings;
 };
 

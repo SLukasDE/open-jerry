@@ -83,7 +83,7 @@ Listener::Listener(const tinyxml2::XMLElement& element) {
 		std::string innerElementName(innerElement->Name());
 
 		if(innerElementName == "response-header") {
-			responseHeaders.push_back(Setting(*innerElement));
+			responseHeaders.push_back(Setting(*innerElement, false));
 		}
 		else if(innerElementName == "exceptions") {
 			exceptions = Exceptions(*innerElement);

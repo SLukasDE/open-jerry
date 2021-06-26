@@ -19,11 +19,10 @@
 #ifndef JERRY_BUILTIN_BASIC_ECHO_SETTINGS_H_
 #define JERRY_BUILTIN_BASIC_ECHO_SETTINGS_H_
 
-#include <esl/object/Settings.h>
-#include <esl/object/InitializeContext.h>
-#include <esl/object/Interface.h>
 #include <esl/com/basic/broker/Interface.h>
 #include <esl/com/basic/client/Interface.h>
+#include <esl/object/InitializeContext.h>
+#include <esl/object/Interface.h>
 
 #include <string>
 #include <set>
@@ -36,11 +35,10 @@ namespace builtin {
 namespace basic {
 namespace echo {
 
-class Settings : public esl::object::Settings, public esl::object::InitializeContext {
+class Settings : public virtual esl::object::Interface::Object, public esl::object::InitializeContext {
 public:
-	static std::unique_ptr<esl::object::Interface::Object> create();
+	Settings(const esl::object::Interface::Settings& settings);
 
-	void addSetting(const std::string& key, const std::string& value) override;
 	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
 	const std::set<std::string>& getNotifiers() const noexcept;

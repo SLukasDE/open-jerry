@@ -42,7 +42,7 @@ class Endpoint;
 class Context : public BaseContext {
 public:
 	void addReference(const std::string& id, const std::string& refId);
-	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation) override;
+	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) override;
 
 	/* lookup for object only in this context */
 	virtual esl::object::Interface::Object* findLocalObject(const std::string& id) const;

@@ -17,17 +17,19 @@
  */
 
 #include <jerry/builtin/Settings.h>
+
 #include <esl/Stacktrace.h>
+
 #include <stdexcept>
 
 namespace jerry {
 namespace builtin {
-
+/*
 void Settings::setParameterBool(const std::string& key, const std::string& value, SetBoolMember setBoolMember) {
 	(this->*setBoolMember)(toBoolean(value));
 }
-
-bool Settings::toBoolean(const std::string& value) {
+*/
+bool Settings2::toBoolean(const std::string& value) {
 	bool b;
 
 	if(value == "true") {
@@ -42,12 +44,12 @@ bool Settings::toBoolean(const std::string& value) {
 
 	return b;
 }
-
+/*
 void Settings::setParameterInteger(const std::string& key, const std::string& value, SetIntegerMember setIntegerMember) {
 	(this->*setIntegerMember)(toInteger(value));
 }
-
-int Settings::toInteger(const std::string& value) {
+*/
+int Settings2::toInteger(const std::string& value) {
 	int i;
 
 	try {

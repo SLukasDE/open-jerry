@@ -35,15 +35,15 @@ namespace {
 Logger logger("jerry::engine::http::server::Socket");
 }
 
-Socket::Socket(Engine& aEngine, const std::string& aId, std::uint16_t aPort, bool aHttps,
-		const std::vector<std::pair<std::string, std::string>>& settings,
+Socket::Socket(Engine& aEngine, const std::string& aId, bool aHttps,
+		const esl::object::Interface::Settings& aSettings,
 		const std::string& aImplementation)
-: socket(aPort, esl::object::Properties(settings), aImplementation),
+: socket(aSettings, aImplementation),
   engine(aEngine),
   id(aId),
-  port(aPort),
   https(aHttps),
-  implementation(aImplementation)
+  implementation(aImplementation),
+  settings(aSettings)
 {
 	getSocket().addObjectFactory("", [this](const esl::com::http::server::RequestContext&) {
 		esl::object::Interface::Object* object = this;
@@ -89,21 +89,6 @@ void Socket::dumpTree(std::size_t depth) const {
 	}
 	logger.info << "Implementation: \"" << getImplementation() << "\"\n";
 
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "Port: " << getPort() << "\n";
-
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	if(isHttps()) {
-		logger.info << "HTTPS: YES\n";
-	}
-	else {
-		logger.info << "HTTPS: NO\n";
-	}
-
 	for(auto& entry : listenerByHostname) {
 		for(std::size_t i=0; i<depth; ++i) {
 			logger.info << "|   ";
@@ -111,6 +96,29 @@ void Socket::dumpTree(std::size_t depth) const {
 		logger.info << "+-> Hostname: \"" << entry.first << "\"\n";
 
 		entry.second->dumpTree(depth + 1);
+	}
+
+    for(std::size_t i=0; i<depth; ++i) {
+            logger.info << "|   ";
+    }
+    if(isHttps()) {
+    	logger.info << "HTTPS: YES\n";
+    }
+    else {
+    	logger.info << "HTTPS: NO\n";
+    }
+
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
+	}
+	logger.info << "+-> Parameters:\n";
+	++depth;
+
+	for(const auto& setting : settings) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
 	}
 }
 
@@ -133,10 +141,6 @@ const std::string& Socket::getId() const noexcept {
 
 const std::string& Socket::getImplementation() const noexcept {
 	return implementation;
-}
-
-std::uint16_t Socket::getPort() const noexcept {
-	return port;
 }
 
 bool Socket::isHttps() const noexcept {

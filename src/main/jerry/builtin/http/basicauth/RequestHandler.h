@@ -34,7 +34,12 @@ namespace basicauth {
 
 class RequestHandler : public esl::io::Writer {
 public:
-	static esl::io::Input create(esl::com::http::server::RequestContext& requestContext);
+	static esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& requestContext);
+	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
+
+	static inline const char* getImplementation() {
+		return "jerry/builtin/http/basicauth";
+	}
 
 	RequestHandler(esl::com::http::server::RequestContext& requestContext, const std::string& realmId);
 	//~RequestHandler() = default;

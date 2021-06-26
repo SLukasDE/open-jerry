@@ -27,35 +27,41 @@ namespace builtin {
 namespace basic {
 namespace dump {
 
-std::unique_ptr<esl::object::Interface::Object> Settings::create() {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
-}
-
-void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "show-context") {
-		setShowContent(toBoolean(value));
+Settings::Settings(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "show-context") {
+			if(setting.second == "true") {
+				showContext = true;
+			}
+			else if(setting.second == "false") {
+				showContext = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		else if(setting.first == "show-content") {
+			if(setting.second == "true") {
+				showContent = true;
+			}
+			else if(setting.second == "false") {
+				showContent = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		else if(setting.first == "notifier") {
+			notifiers.insert(setting.second);
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
-	else if(key == "show-content") {
-		setShowContent(toBoolean(value));
-	}
-	else if(key == "notifier") {
-		notifiers.insert(value);
-	}
-	else {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
-	}
-}
-
-void Settings::setShowContext(bool aShowContext) noexcept {
-	showContext = aShowContext;
 }
 
 bool Settings::getShowContext() const noexcept {
 	return showContext;
-}
-
-void Settings::setShowContent(bool aShowContent) noexcept {
-	showContent = aShowContent;
 }
 
 bool Settings::getShowContent() const noexcept {

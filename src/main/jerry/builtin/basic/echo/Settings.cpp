@@ -32,25 +32,28 @@ namespace {
 Logger logger("jerry::builtin::basic::echo::Settings");
 }
 
-std::unique_ptr<esl::object::Interface::Object> Settings::create() {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
-}
-
-void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "notifier") {
-		notifiers.insert(value);
-	}
-	else if(key == "delay-ms") {
-		msDelay = std::stoul(value);
-	}
-	else if(key == "output.ref-id") {
-		outputRefId = value;
-	}
-	else if(key.substr(0, 17) == "output.parameter.") {
-		outputParameters.push_back(std::make_pair(key.substr(17), value));
-	}
-	else {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
+Settings::Settings(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "notifier") {
+			notifiers.insert(setting.second);
+		}
+		else if(setting.first == "delay-ms") {
+			try {
+				msDelay = std::stoul(setting.second);
+			}
+			catch(...) {
+				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+			}
+		}
+		else if(setting.first == "output.ref-id") {
+			outputRefId = setting.second;
+		}
+		else if(setting.first.substr(0, 17) == "output.parameter.") {
+			outputParameters.push_back(std::make_pair(setting.first.substr(17), setting.second));
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
 }
 

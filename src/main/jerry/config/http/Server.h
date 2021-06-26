@@ -23,7 +23,7 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <cstdint>
+//#include <cstdint>
 #include <string>
 #include <vector>
 #include <ostream>
@@ -39,7 +39,6 @@ struct Server {
 
 	std::string id;
 	std::string implementation;
-	std::uint16_t port = 0;
 	bool isHttps = false;
 	std::vector<Setting> settings;
 };

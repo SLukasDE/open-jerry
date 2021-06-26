@@ -24,6 +24,7 @@
 #include <esl/com/basic/server/Interface.h>
 #include <esl/io/Input.h>
 #include <esl/object/ObjectContext.h>
+#include <esl/object/Interface.h>
 
 #include <cstdint>
 #include <string>
@@ -41,8 +42,7 @@ class Socket final : public esl::com::basic::server::Interface::Socket {
 public:
 	Socket(esl::object::ObjectContext& engineContext, const std::string& id, esl::com::basic::server::Interface::Socket& socket);
 	Socket(esl::object::ObjectContext& engineContext, const std::string& id,
-			std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings,
-			const std::string& implementation);
+			const esl::object::Interface::Settings& settings, const std::string& implementation);
 
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
 
@@ -57,7 +57,6 @@ public:
 	esl::com::basic::server::Interface::Socket& getSocket() const noexcept;
 	const std::string& getId() const noexcept;
 	const std::string& getImplementation() const noexcept;
-	std::uint16_t getPort() const noexcept;
 
 	std::set<std::string> getNotifier() const;
 
@@ -69,9 +68,9 @@ private:
 	std::unique_ptr<esl::com::basic::server::Interface::Socket> socketPtr;
 	esl::com::basic::server::Interface::Socket& socket;
 
-	std::string id;
-	std::string implementation;
-	std::uint16_t port = 0;
+	const std::string id;
+	const std::string implementation;
+	const esl::object::Interface::Settings settings;
 
 	Listener* listener = nullptr;
 };

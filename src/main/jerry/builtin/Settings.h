@@ -19,21 +19,21 @@
 #ifndef JERRY_BUILTIN_SETTINGS_H_
 #define JERRY_BUILTIN_SETTINGS_H_
 
-#include <esl/object/Settings.h>
+//#include <esl/object/Settings.h>
 
 #include <string>
 
 namespace jerry {
 namespace builtin {
 
-class Settings : public esl::object::Settings {
+class Settings2 {// : public esl::object::Settings {
 protected:
-	using SetBoolMember = void (Settings::*)(bool);
-	void setParameterBool(const std::string& key, const std::string& value, SetBoolMember setBoolMember);
+	//using SetBoolMember = void (Settings::*)(bool);
+	//void setParameterBool(const std::string& key, const std::string& value, SetBoolMember setBoolMember);
 	static bool toBoolean(const std::string& value);
 
-	using SetIntegerMember = void (Settings::*)(int);
-	void setParameterInteger(const std::string& key, const std::string& value, SetIntegerMember setIntegerMember);
+	//using SetIntegerMember = void (Settings::*)(int);
+	//void setParameterInteger(const std::string& key, const std::string& value, SetIntegerMember setIntegerMember);
 	static int toInteger(const std::string& value);
 };
 

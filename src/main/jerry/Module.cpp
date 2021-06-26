@@ -58,37 +58,46 @@ Module::Module()
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
 			getId(), "jerry/builtin/messaging/producer-factory", &jerry::builtin::messaging::ProducerFactory::create)));
 */
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::basic::server::requesthandler::Interface(
-			getId(), "jerry/builtin/basic/dump",
+	addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+			jerry::builtin::basic::dump::RequestHandler::getImplementation(),
 			&jerry::builtin::basic::dump::RequestHandler::createInput,
-			&jerry::builtin::basic::dump::RequestHandler::getNotifiers)));
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/basic/dump", &jerry::builtin::basic::dump::Settings::create)));
+			&jerry::builtin::basic::dump::RequestHandler::getNotifiers));
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::basic::dump::RequestHandler::getImplementation(),
+			&jerry::builtin::basic::dump::RequestHandler::createSettings));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::basic::server::requesthandler::Interface(
-			getId(), "jerry/builtin/basic/echo",
+	addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+			jerry::builtin::basic::echo::RequestHandler::getImplementation(),
 			&jerry::builtin::basic::echo::RequestHandler::createInput,
-			&jerry::builtin::basic::echo::RequestHandler::getNotifiers)));
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/basic/echo", &jerry::builtin::basic::echo::Settings::create)));
+			&jerry::builtin::basic::echo::RequestHandler::getNotifiers));
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::basic::echo::RequestHandler::getImplementation(),
+			&jerry::builtin::basic::echo::RequestHandler::createSettings));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::http::server::requesthandler::Interface(
-			getId(), "jerry/builtin/http/basicauth", &jerry::builtin::http::basicauth::RequestHandler::create)));
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/http/basicauth", &jerry::builtin::http::basicauth::Settings::create)));
+	addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			jerry::builtin::http::basicauth::RequestHandler::getImplementation(),
+			&jerry::builtin::http::basicauth::RequestHandler::createRequestHandler));
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::http::basicauth::RequestHandler::getImplementation(),
+			&jerry::builtin::http::basicauth::RequestHandler::createSettings));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::http::server::requesthandler::Interface(
-			getId(), "jerry/builtin/http/filebrowser", &jerry::builtin::http::filebrowser::RequestHandler::create)));
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/http/filebrowser", &jerry::builtin::http::filebrowser::Settings::create)));
+	addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			jerry::builtin::http::filebrowser::RequestHandler::getImplementation(),
+			&jerry::builtin::http::filebrowser::RequestHandler::createRequestHandler));
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::http::filebrowser::RequestHandler::getImplementation(),
+			&jerry::builtin::http::filebrowser::RequestHandler::createSettings));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::http::server::requesthandler::Interface(
-			getId(), "jerry/builtin/http/file", &jerry::builtin::http::file::RequestHandler::create)));
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/http/file", &jerry::builtin::http::file::Settings::create)));
+	addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			jerry::builtin::http::file::RequestHandler::getImplementation(),
+			&jerry::builtin::http::file::RequestHandler::createRequestHandler));
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::http::file::RequestHandler::getImplementation(),
+			&jerry::builtin::http::file::RequestHandler::createSettings));
 
-	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::com::http::server::requesthandler::Interface(
-			getId(), "jerry/builtin/http/self", &jerry::builtin::http::self::RequestHandler::create)));
+	addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			jerry::builtin::http::self::RequestHandler::getImplementation(),
+			&jerry::builtin::http::self::RequestHandler::createRequestHandler));
 }
 
 } /* anonymous namespace */

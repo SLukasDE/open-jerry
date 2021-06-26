@@ -19,27 +19,22 @@
 #ifndef JERRY_BUILTIN_HTTP_BASICAUTH_SETTINGS_H_
 #define JERRY_BUILTIN_HTTP_BASICAUTH_SETTINGS_H_
 
-#include <jerry/builtin/Settings.h>
+#include <esl/object/Interface.h>
+
 #include <string>
+#include <memory>
 
 namespace jerry {
 namespace builtin {
 namespace http {
 namespace basicauth {
 
-class Settings : public builtin::Settings {
+class Settings : public esl::object::Interface::Object {
 public:
-	static std::unique_ptr<esl::object::Interface::Object> create();
+	Settings(const esl::object::Interface::Settings& settings);
 
-	void addSetting(const std::string& key, const std::string& value) override;
-
-	void setUsername(std::string username);
 	const std::string& getUsername() const;
-
-	void setPassword(std::string password);
 	const std::string& getPassword() const;
-
-	void setRealmId(std::string realmId);
 	const std::string& getRealmId() const;
 
 private:

@@ -29,7 +29,6 @@
 
 #include <chrono>
 #include <thread>
-#include <memory>
 
 namespace jerry {
 namespace builtin {
@@ -53,6 +52,10 @@ esl::io::Input RequestHandler::createInput(esl::com::basic::server::RequestConte
 const std::set<std::string>& RequestHandler::getNotifiers(const esl::object::ObjectContext& objectContext) {
 	const Settings* settings = objectContext.findObject<Settings>("");
 	return settings->getNotifiers();
+}
+
+std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
 RequestHandler::RequestHandler(esl::com::basic::server::RequestContext& aRequestContext, Settings& aSettings)

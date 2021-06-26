@@ -33,7 +33,7 @@ namespace {
 Logger logger("jerry::builtin::http::self::RequestHandler");
 }
 
-esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
 	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext)));
 }
 

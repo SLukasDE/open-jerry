@@ -35,7 +35,7 @@ std::string makeSpaces(std::size_t spaces) {
 }
 }
 
-Setting::Setting(const tinyxml2::XMLElement& element) {
+Setting::Setting(const tinyxml2::XMLElement& element, bool isParameter) {
 	bool hasKey = false;
 	bool hasValue = false;
 
@@ -52,6 +52,9 @@ Setting::Setting(const tinyxml2::XMLElement& element) {
 			hasValue = true;
 			value = attribute->Value();
 		}
+		else if(std::string(attribute->Name()) == "language" && isParameter) {
+			language = attribute->Value();
+		}
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
 		}
@@ -66,7 +69,7 @@ Setting::Setting(const tinyxml2::XMLElement& element) {
 }
 
 void Setting::saveParameter(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<parameter key=\"" << key << "\" value=\"" << value << "\"/>\n";
+	oStream << makeSpaces(spaces) << "<parameter key=\"" << key << "\" value=\"" << value << "\" language=\"" << language << "\"/>\n";
 }
 
 void Setting::saveLayout(std::ostream& oStream, std::size_t spaces) const {

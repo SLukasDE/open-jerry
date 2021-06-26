@@ -58,9 +58,9 @@ public:
 	void addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate);
 	void addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile);
 
-	void addBasicBroker(const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	void addBasicServer(const std::string& id, std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	void addHttpServer(const std::string& id, std::uint16_t port, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	void addBasicBroker(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	void addBasicServer(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	void addHttpServer(const std::string& id, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
 	basic::server::Listener& addBasicListener(const std::string& refId, bool inheritObjects);
 	http::server::Listener& addHttpListener(const std::string& refId, bool inheritObjects, const std::string& hostname);
@@ -78,11 +78,6 @@ private:
 
     esl::utility::MessageTimer<std::string, Message> messageTimer;
 	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
-
-	/* *********************** *
-	 * General listening ports *
-	 * *********************** */
-	std::set<std::uint16_t> listeningPorts;
 
 
 	/* ***************** *

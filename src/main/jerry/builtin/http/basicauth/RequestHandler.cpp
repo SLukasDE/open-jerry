@@ -44,7 +44,7 @@ const std::string PAGE_401(
 		"</html>\n");
 }
 
-esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
 	const Settings* settings = requestContext.findObject<Settings>("");
 	if(settings == nullptr) {
 		return esl::io::Input();
@@ -56,6 +56,10 @@ esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& re
 	}
 
 	return esl::io::Input(std::unique_ptr<esl::io::Writer>(new RequestHandler(requestContext, settings->getRealmId())));
+}
+
+std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
 RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestContext, const std::string& realmId)

@@ -48,7 +48,7 @@ namespace config {
 
 class Config {
 public:
-	void loadFile(const std::string& fileName);
+	void loadFile(const std::string& fileName, const tinyxml2::XMLElement* element = nullptr);
 
 	void loadLibraries();
 

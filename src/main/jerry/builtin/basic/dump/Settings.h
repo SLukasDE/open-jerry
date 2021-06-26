@@ -21,8 +21,6 @@
 
 #include <esl/object/Interface.h>
 
-#include <jerry/builtin/Settings.h>
-
 #include <string>
 #include <set>
 
@@ -31,18 +29,12 @@ namespace builtin {
 namespace basic {
 namespace dump {
 
-class Settings : public builtin::Settings {
+class Settings : public esl::object::Interface::Object {
 public:
-	static std::unique_ptr<esl::object::Interface::Object> create();
+	Settings(const esl::object::Interface::Settings& settings);
 
-	void addSetting(const std::string& key, const std::string& value) override;
-
-	void setShowContext(bool showContext) noexcept;
 	bool getShowContext() const noexcept;
-
-	void setShowContent(bool showContent) noexcept;
 	bool getShowContent() const noexcept;
-
 	const std::set<std::string>& getNotifiers() const noexcept;
 
 private:

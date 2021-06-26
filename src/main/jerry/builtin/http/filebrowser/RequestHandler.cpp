@@ -17,6 +17,7 @@
  */
 
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
+#include <jerry/builtin/http/filebrowser/Settings.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
@@ -58,7 +59,7 @@ const std::string PAGE_301(
 		"</html>\n");
 }
 
-esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& requestContext) {
+esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
 	if(requestContext.getRequest().getMethod() != "GET") {
 		logger.warn << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
 		return esl::io::Input();
@@ -81,6 +82,10 @@ esl::io::Input RequestHandler::create(esl::com::http::server::RequestContext& re
 	}
 
 	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings, isDirectory)));
+}
+
+std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
 RequestHandler::RequestHandler(esl::com::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool isDirectory)

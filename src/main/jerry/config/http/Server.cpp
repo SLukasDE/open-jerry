@@ -52,10 +52,6 @@ Server::Server(const tinyxml2::XMLElement& element) {
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 		}
-		else if(std::string(attribute->Name()) == "port") {
-			port = std::stoi(std::string(attribute->Value()));
-			hasPort = true;
-		}
 		else if(std::string(attribute->Name()) == "https") {
 			std::string httpsStr = esl::utility::String::toLower(attribute->Value());
 			if(httpsStr == "true") {
@@ -92,7 +88,7 @@ Server::Server(const tinyxml2::XMLElement& element) {
 		std::string innerElementName(innerElement->Name());
 
 		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement));
+			settings.push_back(Setting(*innerElement, true));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
@@ -101,8 +97,7 @@ Server::Server(const tinyxml2::XMLElement& element) {
 }
 
 void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	// 	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
-	oStream << makeSpaces(spaces) << "<http-server id=\"" << id << "\" implementation=\"" << implementation << "\" port=\"" << port << "\" https=\"";
+	oStream << makeSpaces(spaces) << "<http-server id=\"" << id << "\" implementation=\"" << implementation << "\" https=\"";
 	oStream << (isHttps ? "true" : "false");
 	oStream << "\">\n";
 

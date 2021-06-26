@@ -28,7 +28,7 @@ namespace jerry {
 namespace config {
 
 struct Setting {
-	Setting(const tinyxml2::XMLElement& element);
+	Setting(const tinyxml2::XMLElement& element, bool isParameter);
 
 	void saveParameter(std::ostream& oStream, std::size_t spaces) const;
 	void saveLayout(std::ostream& oStream, std::size_t spaces) const;
@@ -36,6 +36,7 @@ struct Setting {
 
 	std::string key;
 	std::string value;
+	std::string language;
 };
 
 } /* namespace confing */

@@ -46,8 +46,8 @@
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
-#include <string>
 #include <vector>
+#include <cstdlib>
 
 
 namespace jerry {
@@ -74,25 +74,15 @@ void add(engine::http::server::Endpoint& engineEndpoint, const std::vector<Setti
 void add(engine::http::server::Endpoint& engineEndpoint, const Exceptions& exceptions);
 
 
-void addSettingsToEslObject(esl::object::Interface::Object& object, const std::string& implementation, const std::vector<Setting>& settings) {
-	if(settings.empty()) {
-		return;
-	}
-
-	esl::object::Settings* settingsObject = dynamic_cast<esl::object::Settings*>(&object);
-	if(settingsObject == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Cannot add settings to simple object implementation \"" + implementation + "\""));
-	}
-	for(const auto& setting : settings) {
-		settingsObject->addSetting(setting.key, setting.value);
-	}
-}
-
-
 
 void add(engine::BaseContext& engineBaseContext, const Object& object) {
-	esl::object::Interface::Object& eslObject = engineBaseContext.addObject(object.id, object.implementation);
-	addSettingsToEslObject(eslObject, object.implementation, object.settings);
+	std::vector<std::pair<std::string, std::string>> settings;
+
+	for(const auto& setting : object.settings) {
+		settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
+	}
+
+	engineBaseContext.addObject(object.id, object.implementation, settings);
 }
 
 
@@ -136,24 +126,25 @@ void add(engine::basic::server::Context& engineBasicContext, const basic::Contex
 	add(newEngineMessageContext, configBasicContext.entries);
 }
 
-void add(engine::basic::server::Context& engineBasicContext, const basic::RequestHandler& configBasicRequestHandler) {
-	if(configBasicRequestHandler.objectImplementation || configBasicRequestHandler.settings.size() > 0) {
-		engine::basic::server::Context& newEngineMessageContext = engineBasicContext.addContext(true);
+void add(engine::basic::server::Context& context, const basic::RequestHandler& configBasicRequestHandler) {
+	std::string objectImplementation =
+			configBasicRequestHandler.objectImplementation
+			? *configBasicRequestHandler.objectImplementation
+			: configBasicRequestHandler.implementation;
 
-		std::string objectImplementation;
-		if(configBasicRequestHandler.objectImplementation) {
-			objectImplementation = *configBasicRequestHandler.objectImplementation;
-		}
-		else {
-			objectImplementation = configBasicRequestHandler.implementation;
-		}
-		esl::object::Interface::Object& engineObject = newEngineMessageContext.addObject("", objectImplementation);
-		addSettingsToEslObject(engineObject, objectImplementation, configBasicRequestHandler.settings);
+	if(configBasicRequestHandler.settings.size() > 0 || engine::BaseContext::hasObjectImplementation(objectImplementation) || configBasicRequestHandler.objectImplementation) {
+		engine::basic::server::Context& newContext = context.addContext(true);
 
-		newEngineMessageContext.addRequestHandler(configBasicRequestHandler.implementation);
+		std::vector<std::pair<std::string, std::string>> settings;
+		for(const auto& setting : configBasicRequestHandler.settings) {
+			settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
+		}
+
+		newContext.addObject("", objectImplementation, settings);
+		newContext.addRequestHandler(configBasicRequestHandler.implementation);
 	}
 	else {
-		engineBasicContext.addRequestHandler(configBasicRequestHandler.implementation);
+		context.addRequestHandler(configBasicRequestHandler.implementation);
 	}
 }
 
@@ -210,24 +201,25 @@ void add(engine::http::server::Context& engineHttpContext, const http::Context& 
 	add(newEngineHttpContext, configHttpContext.entries);
 }
 
-void add(engine::http::server::Context& engineHttpContext, const http::RequestHandler& configHttpRequestHandler) {
-	if(configHttpRequestHandler.objectImplementation.empty() == false || configHttpRequestHandler.settings.size() > 0) {
-		engine::http::server::Context& newEngineContext = engineHttpContext.addContext(true);
+void add(engine::http::server::Context& context, const http::RequestHandler& configHttpRequestHandler) {
+	std::string objectImplementation =
+			configHttpRequestHandler.objectImplementation.empty() == false
+			? configHttpRequestHandler.objectImplementation
+			: configHttpRequestHandler.implementation;
 
-		std::string objectImplementation;
-		if(configHttpRequestHandler.objectImplementation.empty()) {
-			objectImplementation = configHttpRequestHandler.implementation;
-		}
-		else {
-			objectImplementation = configHttpRequestHandler.objectImplementation;
-		}
-		esl::object::Interface::Object& engineObject = newEngineContext.addObject("", objectImplementation);
-		addSettingsToEslObject(engineObject, objectImplementation, configHttpRequestHandler.settings);
+	if(configHttpRequestHandler.settings.size() > 0 || engine::BaseContext::hasObjectImplementation(objectImplementation) || configHttpRequestHandler.objectImplementation.empty() == false) {
+		engine::http::server::Context& newContext = context.addContext(true);
 
-		newEngineContext.addRequestHandler(configHttpRequestHandler.implementation);
+		std::vector<std::pair<std::string, std::string>> settings;
+		for(const auto& setting : configHttpRequestHandler.settings) {
+			settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
+		}
+
+		newContext.addObject("", objectImplementation, settings);
+		newContext.addRequestHandler(configHttpRequestHandler.implementation);
 	}
 	else {
-		engineHttpContext.addRequestHandler(configHttpRequestHandler.implementation);
+		context.addRequestHandler(configHttpRequestHandler.implementation);
 	}
 }
 
@@ -281,10 +273,10 @@ void Engine::install(const Config& config) {
 		std::vector<std::pair<std::string, std::string>> settings;
 
 		for(const auto& setting : basicBroker.settings) {
-			settings.push_back(std::make_pair(setting.key, setting.value));
+			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 		}
 
-		engine.addBasicBroker(basicBroker.id, basicBroker.brokers, settings, basicBroker.implementation);
+		engine.addBasicBroker(basicBroker.id, settings, basicBroker.implementation);
 	}
 
 
@@ -292,10 +284,10 @@ void Engine::install(const Config& config) {
 		std::vector<std::pair<std::string, std::string>> settings;
 
 		for(const auto& setting : basicServer.settings) {
-			settings.push_back(std::make_pair(setting.key, setting.value));
+			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 		}
 
-		engine.addBasicServer(basicServer.id, basicServer.port, settings, basicServer.implementation);
+		engine.addBasicServer(basicServer.id, settings, basicServer.implementation);
 	}
 
 
@@ -303,10 +295,10 @@ void Engine::install(const Config& config) {
 		std::vector<std::pair<std::string, std::string>> settings;
 
 		for(const auto& setting : httpServer.settings) {
-			settings.push_back(std::make_pair(setting.key, setting.value));
+			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 		}
 
-		engine.addHttpServer(httpServer.id, httpServer.port, httpServer.isHttps, settings, httpServer.implementation);
+		engine.addHttpServer(httpServer.id, httpServer.isHttps, settings, httpServer.implementation);
 	}
 
 	for(const auto& basicListener : config.basicListeners) {
@@ -316,6 +308,55 @@ void Engine::install(const Config& config) {
 	for(const auto& httpListener : config.httpListeners) {
 		add(engine, httpListener);
 	}
+}
+
+std::string Engine::evaluate(const std::string& expression, const std::string& language) {
+	if(language == "plain") {
+		return expression;
+	}
+
+	std::string value;
+	std::string var;
+	enum {
+		intro,
+		begin,
+		end
+	} state = end;
+
+	for(std::size_t i=0; i<expression.size(); ++i) {
+		if(state == begin) {
+			if(expression.at(i) == '}') {
+				char* val = getenv(var.c_str());
+				if(val == nullptr) {
+					throw esl::addStacktrace(std::runtime_error("No value available for variable \"" + var + "\" in expression: \"" + expression + "\""));
+				}
+				value += val;
+				state = end;
+				var.clear();
+			}
+			else {
+				var += expression.at(i);
+			}
+		}
+		else if(state == intro) {
+			if(expression.at(i) == '{') {
+				state = begin;
+			}
+			else {
+				throw esl::addStacktrace(std::runtime_error("Syntax error in expression: \"" + expression + "\""));
+			}
+		}
+		else {
+			if(expression.at(i) == '$') {
+				state = intro;
+			}
+			else {
+				value += expression.at(i);
+			}
+		}
+	}
+
+	return value;
 }
 
 } /* namespace config */

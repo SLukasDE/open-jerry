@@ -29,14 +29,18 @@ namespace {
 Logger logger("jerry::engine::BaseContext");
 } /* anonymous namespace */
 
-esl::object::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation) {
+bool BaseContext::hasObjectImplementation(const std::string& implementation) {
+	return jerry::getModule().findInterface<esl::object::Interface>(implementation) != nullptr;
+}
+
+esl::object::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) {
 	logger.trace << "Adding object with id=\"" << id << "\" and implementation=\"" << implementation << "\"\n";
 
 	if(objectsById.find(id) != std::end(objectsById)) {
         throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because there exists already a local object with same id.");
 	}
 
-	std::unique_ptr<esl::object::Interface::Object> object = jerry::getModule().getInterface<esl::object::Interface>(implementation).createObject();
+	std::unique_ptr<esl::object::Interface::Object> object = jerry::getModule().getInterface<esl::object::Interface>(implementation).createObject(settings);
 	if(!object) {
 		throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because interface method createObject() returns nullptr.");
 	}

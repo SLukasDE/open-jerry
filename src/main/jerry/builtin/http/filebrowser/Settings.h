@@ -19,7 +19,7 @@
 #ifndef JERRY_BUILTIN_HTTP_FILEBROWSER_SETTINGS_H_
 #define JERRY_BUILTIN_HTTP_FILEBROWSER_SETTINGS_H_
 
-#include <jerry/builtin/Settings.h>
+#include <esl/object/Interface.h>
 
 #include <string>
 #include <set>
@@ -29,22 +29,13 @@ namespace builtin {
 namespace http {
 namespace filebrowser {
 
-class Settings : public builtin::Settings {
+class Settings : public esl::object::Interface::Object {
 public:
-	static std::unique_ptr<esl::object::Interface::Object> create();
+	Settings(const esl::object::Interface::Settings& settings);
 
-	void addSetting(const std::string& key, const std::string& value) override;
-
-	void setBrowsable(bool browsable);
 	bool isBrowsable() const;
-
-	void setPath(const std::string& path);
 	const std::string& getPath() const;
-
-	void addDefault(const std::string& file);
 	const std::set<std::string>& getDefaults() const;
-
-	void setHttpStatus(int httpStatus);
 	const int getHttpStatus() const;
 
 private:

@@ -21,6 +21,7 @@
 
 #include <jerry/engine/basic/server/Socket.h>
 
+#include <esl/object/Interface.h>
 #include <esl/com/basic/broker/Client.h>
 #include <esl/com/basic/broker/Interface.h>
 #include <esl/com/basic/client/Interface.h>
@@ -38,10 +39,10 @@ namespace broker {
 
 class Client : public esl::com::basic::broker::Interface::Client {
 public:
-	Client(esl::object::ObjectContext& engineContext, const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	Client(esl::object::ObjectContext& engineContext, const std::string& id, const esl::object::Interface::Settings& settings, const std::string& implementation);
 
 	esl::com::basic::server::Interface::Socket& getSocket() override;
-	std::unique_ptr<esl::com::basic::client::Interface::Connection> createConnection(std::vector<std::pair<std::string, std::string>> parameters) override;
+	std::unique_ptr<esl::com::basic::client::Interface::Connection> createConnection(const esl::object::Interface::Settings& parameters) override;
 
 	server::Socket& getServer() noexcept;
 	esl::com::basic::broker::Interface::Client& getClient() noexcept;
@@ -50,16 +51,15 @@ public:
 
 private:
 	const std::string& getId() const noexcept;
-	const std::string& getBrokers() const noexcept;
 	const std::string& getImplementation() const noexcept;
 
 	esl::com::basic::broker::Client client;
 	server::Socket socket;
 
 	esl::object::ObjectContext& engineContext;
-	std::string id;
-	std::string brokers;
-	std::string implementation;
+	const std::string id;
+	const std::string implementation;
+	const esl::object::Interface::Settings settings;
 };
 
 } /* namespace broker */

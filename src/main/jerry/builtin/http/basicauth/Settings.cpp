@@ -27,43 +27,29 @@ namespace builtin {
 namespace http {
 namespace basicauth {
 
-std::unique_ptr<esl::object::Interface::Object> Settings::create() {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
-}
-
-void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "username") {
-		setUsername(value);
+Settings::Settings(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "username") {
+			username = setting.second;
+		}
+		else if(setting.first == "password") {
+			password = setting.second;
+		}
+		else if(setting.first == "realmId") {
+			realmId = setting.second;
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
-	else if(key == "password") {
-		setPassword(value);
-	}
-	else if(key == "realmId") {
-		setRealmId(value);
-	}
-	else {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
-	}
-}
-
-void Settings::setUsername(std::string aUsername) {
-	username = std::move(aUsername);
 }
 
 const std::string& Settings::getUsername() const {
 	return username;
 }
 
-void Settings::setPassword(std::string aPassword) {
-	password = std::move(aPassword);
-}
-
 const std::string& Settings::getPassword() const {
 	return password;
-}
-
-void Settings::setRealmId(std::string aRealmId) {
-	realmId = std::move(aRealmId);
 }
 
 const std::string& Settings::getRealmId() const {

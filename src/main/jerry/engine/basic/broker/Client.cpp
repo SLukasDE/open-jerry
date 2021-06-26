@@ -20,7 +20,6 @@
 #include <jerry/engine/basic/server/RequestContext.h>
 #include <jerry/Logger.h>
 
-#include <esl/object/Properties.h>
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
@@ -34,13 +33,13 @@ namespace {
 Logger logger("jerry::engine::messaging::broker::Client");
 } /* anonymous namespace */
 
-Client::Client(esl::object::ObjectContext& aEngineContext, const std::string& aId, const std::string& aBrokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& aImplementation)
-: client(aBrokers, esl::object::Properties(settings), aImplementation),
+Client::Client(esl::object::ObjectContext& aEngineContext, const std::string& aId, const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
+: client(aSettings, aImplementation),
   socket(aEngineContext, aId, client.getSocket()),
   engineContext(aEngineContext),
   id(aId),
-  brokers(aBrokers),
-  implementation(aImplementation)
+  implementation(aImplementation),
+  settings(aSettings)
 {
 	getClient().getSocket().addObjectFactory("", [this](const esl::com::basic::server::RequestContext&){ return this; });
 }
@@ -49,10 +48,10 @@ esl::com::basic::server::Interface::Socket& Client::getSocket() {
 	return socket;
 }
 
-std::unique_ptr<esl::com::basic::client::Interface::Connection> Client::createConnection(std::vector<std::pair<std::string, std::string>> parameters) {
+std::unique_ptr<esl::com::basic::client::Interface::Connection> Client::createConnection(const esl::object::Interface::Settings& parameters) {
 	//throw esl::addStacktrace(std::runtime_error("Calling 'createConnection' is not allowed."));
 	//return nullptr;
-	return client.createConnection(std::move(parameters));
+	return client.createConnection(parameters);
 }
 
 void Client::dumpTree(std::size_t depth) const {
@@ -70,7 +69,15 @@ void Client::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "Brokers: \"" << getBrokers() << "\"\n";
+	logger.info << "+-> Parameters:\n";
+	++depth;
+
+	for(const auto& setting : settings) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
+	}
 }
 
 server::Socket& Client::getServer() noexcept {
@@ -83,10 +90,6 @@ esl::com::basic::broker::Interface::Client& Client::getClient() noexcept {
 
 const std::string& Client::getId() const noexcept {
 	return id;
-}
-
-const std::string& Client::getBrokers() const noexcept {
-	return brokers;
 }
 
 const std::string& Client::getImplementation() const noexcept {

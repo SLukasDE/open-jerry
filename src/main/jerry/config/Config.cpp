@@ -21,7 +21,6 @@
 #include <jerry/Logger.h>
 #include <jerry/utility/URL.h>
 
-#include <esl/object/Settings.h>
 #include <esl/object/Properties.h>
 #include <esl/Module.h>
 #include <esl/Stacktrace.h>
@@ -89,7 +88,7 @@ std::string space(unsigned int i) {
 	}
 	return s;
 }
-
+/*
 void addSettingsToEslObject(esl::object::Interface::Object& object, const std::string& implementation, const std::vector<Setting>& settings) {
 	if(settings.empty()) {
 		return;
@@ -103,19 +102,29 @@ void addSettingsToEslObject(esl::object::Interface::Object& object, const std::s
 		settingsObject->addSetting(setting.key, setting.value);
 	}
 }
-
+*/
 } /* anonymous namespace */
 
-void Config::loadFile(const std::string& fileName) {
+void Config::loadFile(const std::string& fileName, const tinyxml2::XMLElement* element) {
 	if(filesLoaded.find(fileName) != std::end(filesLoaded)) {
 		return;
 	}
 	filesLoaded.insert(fileName);
 
 	tinyxml2::XMLDocument doc;
-	throwXmlError(doc.LoadFile(fileName.c_str()));
+	try {
+		throwXmlError(doc.LoadFile(fileName.c_str()));
+	}
+	catch(...) {
+		if(element) {
+			logger.error << "loading include file \"" << fileName << "\" failed, defined at line " << std::to_string(element->GetLineNum()) << ".\n";
+		}
+		else {
+			logger.error << "loading include file \"" << fileName << "\" failed.\n";
+		}
+		throw;
+	}
 
-	tinyxml2::XMLElement* element = doc.RootElement();
 	if(element == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("XML document without root element"));
 	}
@@ -231,10 +240,10 @@ void Config::loadLibraries() {
 }
 
 std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
-	esl::object::Properties settings;
+	esl::object::Interface::Settings settings;
 
 	for(auto const setting : loggerConfig.layoutSettings) {
-		settings.addSetting(setting.key, setting.value);
+		settings.push_back(std::make_pair(setting.key, setting.value));
 	}
 
 	return std::unique_ptr<esl::logging::Layout>(new esl::logging::Layout(settings, loggerConfig.layout));
@@ -367,7 +376,7 @@ void Config::parseInclude(const tinyxml2::XMLElement& element) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"file\" at line ") + std::to_string(element.GetLineNum())));
 	}
 
-	loadFile(fileName);
+	loadFile(fileName, &element);
 	includes.push_back(fileName);
 }
 

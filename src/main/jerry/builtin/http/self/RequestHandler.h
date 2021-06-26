@@ -21,6 +21,7 @@
 
 #include <esl/io/Consumer.h>
 #include <esl/io/Input.h>
+#include <esl/io/Reader.h>
 #include <esl/com/http/server/RequestContext.h>
 
 #include <string>
@@ -32,7 +33,11 @@ namespace self {
 
 class RequestHandler : public esl::io::Consumer {
 public:
-	static esl::io::Input create(esl::com::http::server::RequestContext& requestContext);
+	static esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& requestContext);
+
+	static inline const char* getImplementation() {
+		return "jerry/builtin/http/self";
+	}
 
 	RequestHandler(esl::com::http::server::RequestContext& requestContext);
 

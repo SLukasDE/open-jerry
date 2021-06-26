@@ -22,6 +22,8 @@
 #include <jerry/engine/Engine.h>
 #include <jerry/config/Config.h>
 
+#include <string>
+
 namespace jerry {
 namespace config {
 
@@ -30,6 +32,7 @@ public:
 	Engine(engine::Engine& engine);
 
 	void install(const Config& config);
+	static std::string evaluate(const std::string& expression, const std::string& language);
 
 private:
 	engine::Engine& engine;

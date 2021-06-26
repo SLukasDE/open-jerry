@@ -27,67 +27,54 @@ namespace builtin {
 namespace http {
 namespace filebrowser {
 
-std::unique_ptr<esl::object::Interface::Object> Settings::create() {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings);
-}
-
-void Settings::addSetting(const std::string& key, const std::string& value) {
-	if(key == "browsable") {
-		if(value == "true") {
-			setBrowsable(true);
+Settings::Settings(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "browsable") {
+			if(setting.second == "true") {
+				browsable = true;
+			}
+			else if(setting.second == "false") {
+				browsable = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
 		}
-		else if(value == "false") {
-			setBrowsable(false);
+		else if(setting.first == "path") {
+			path = setting.second;
 		}
+		else if(setting.first == "http-status") {
+			try {
+				httpStatus = std::stoi(setting.second);
+			}
+			catch(...) {
+				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+			}
+		}
+		else if(setting.first == "default") {
+			defaults.insert(setting.second);
+		}
+		/*
+		else if(setting.first == "accept-all") {
+			setAcceptAll(key, value, &Settings::setShowException);
+		}
+		*/
 		else {
-			throw std::runtime_error("Unknown value \"" + value + "\" for parameter key=\"" + key + "\". Possible values are \"true\" or \"false\".");
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
-	else if(key == "path") {
-		setPath(value);
-	}
-	else if(key == "http-status") {
-		setHttpStatus(toInteger(value));
-	}
-	else if(key == "default") {
-		addDefault(value);
-	}
-	/*
-	else if(key == "accept-all") {
-		setAcceptAll(key, value, &Settings::setShowException);
-	}
-	*/
-	else {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + key + "\" with value=\"" + value + "\""));
-	}
-}
-
-void Settings::setBrowsable(bool aBrowsable) {
-	browsable = aBrowsable;
 }
 
 bool Settings::isBrowsable() const {
 	return browsable;
 }
 
-void Settings::setPath(const std::string& aPath) {
-	path = aPath;
-}
-
 const std::string& Settings::getPath() const {
 	return path;
 }
 
-void Settings::addDefault(const std::string& file) {
-	defaults.insert(file);
-}
-
 const std::set<std::string>& Settings::getDefaults() const {
 	return defaults;
-}
-
-void Settings::setHttpStatus(int aHttpStatus) {
-	httpStatus = aHttpStatus;
 }
 
 const int Settings::getHttpStatus() const {

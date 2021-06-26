@@ -46,15 +46,13 @@ Socket::Socket(esl::object::ObjectContext& aEngineContext, const std::string& aI
 }
 
 Socket::Socket(esl::object::ObjectContext& aEngineContext, const std::string& aId,
-		std::uint16_t aPort,
-		const std::vector<std::pair<std::string, std::string>>& settings,
-		const std::string& aImplementation)
+		const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
 : engineContext(aEngineContext),
-  socketPtr(new esl::com::basic::server::Socket(aPort, esl::object::Properties(settings), aImplementation)),
+  socketPtr(new esl::com::basic::server::Socket(aSettings, aImplementation)),
   socket(*socketPtr),
   id(aId),
   implementation(aImplementation),
-  port(aPort)
+  settings(aSettings)
 {
 	getSocket().addObjectFactory("", [this](const esl::com::basic::server::RequestContext&) {
 		esl::object::Interface::Object* object = this;
@@ -100,10 +98,14 @@ void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "Port: \"" << getPort() << "\"\n";
+	logger.info << "+-> Parameters:\n";
+	++depth;
 
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
+	for(const auto& setting : settings) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
 	}
 }
 
@@ -135,13 +137,6 @@ const std::string& Socket::getImplementation() const noexcept {
 		throw esl::addStacktrace(std::runtime_error("Calling 'Socket::getImplementation' is not allowed."));
 	}
 	return implementation;
-}
-
-std::uint16_t Socket::getPort() const noexcept {
-	if(!socketPtr) {
-		throw esl::addStacktrace(std::runtime_error("Calling 'Socket::getPort' is not allowed."));
-	}
-	return port;
 }
 
 std::set<std::string> Socket::getNotifier() const {

@@ -38,7 +38,6 @@ struct Broker {
 
 	std::string id;
 	std::string implementation;
-	std::string brokers;
 	std::vector<Setting> settings;
 };
 

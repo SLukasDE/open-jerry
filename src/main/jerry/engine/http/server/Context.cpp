@@ -75,13 +75,13 @@ void Context::addReference(const std::string& id, const std::string& refId) {
 	localObjectsById[id] = objectPtr;
 }
 
-esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation) {
+esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) {
 	esl::object::Interface::Object* objectPtr = findLocalObject(id);
 	if(objectPtr != nullptr) {
         throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same id.");
 	}
 
-	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation);
+	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation, settings);
 
 	localObjectsById[id] = &object;
 

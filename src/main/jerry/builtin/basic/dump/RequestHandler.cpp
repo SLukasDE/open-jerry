@@ -54,6 +54,10 @@ const std::set<std::string>& RequestHandler::getNotifiers(const esl::object::Obj
 	return settings->getNotifiers();
 }
 
+std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
+}
+
 RequestHandler::RequestHandler(const Settings& aSettings)
 : settings(aSettings)
 { }

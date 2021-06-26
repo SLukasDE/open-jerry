@@ -70,7 +70,7 @@ RequestHandler::RequestHandler(const tinyxml2::XMLElement& element) {
 		std::string innerElementName(innerElement->Name());
 
 		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement));
+			settings.push_back(Setting(*innerElement, true));
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));

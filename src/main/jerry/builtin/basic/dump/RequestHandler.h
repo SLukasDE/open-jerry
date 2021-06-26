@@ -22,12 +22,14 @@
 #include <jerry/builtin/basic/dump/Settings.h>
 
 #include <esl/com/basic/server/RequestContext.h>
-#include <esl/object/ObjectContext.h>
 #include <esl/io/Input.h>
 #include <esl/io/Consumer.h>
 #include <esl/io/Reader.h>
+#include <esl/object/ObjectContext.h>
+#include <esl/object/Interface.h>
 
 #include <string>
+#include <memory>
 
 namespace jerry {
 namespace builtin {
@@ -38,6 +40,11 @@ class RequestHandler : public esl::io::Consumer {
 public:
 	static esl::io::Input createInput(esl::com::basic::server::RequestContext& requestContext);
 	static const std::set<std::string>& getNotifiers(const esl::object::ObjectContext&);
+	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
+
+	static inline const char* getImplementation() {
+		return "jerry/builtin/basic/dump";
+	}
 
 	RequestHandler(const Settings& settings);
 

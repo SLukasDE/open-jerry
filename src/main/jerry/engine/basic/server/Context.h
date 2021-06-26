@@ -30,6 +30,8 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <utility>
+
 
 namespace jerry {
 namespace engine {
@@ -41,7 +43,7 @@ class Listener;
 class Context : public BaseContext {
 public:
 	void addReference(const std::string& id, const std::string& refId);
-	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation) override;
+	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const std::vector<std::pair<std::string, std::string>>& settings) override;
 
 	Context& addContext(bool inheritObjects);
 	void addRequestHandler(const std::string& implementation);

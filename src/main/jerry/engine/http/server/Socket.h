@@ -24,7 +24,7 @@
 #include <esl/com/http/server/Interface.h>
 #include <esl/com/http/server/Socket.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
-#include <esl/object/Values.h>
+#include <esl/object/Interface.h>
 
 #include <cstdint>
 #include <vector>
@@ -47,10 +47,8 @@ namespace server {
 
 class Socket final : public esl::com::http::server::Interface::Socket {
 public:
-	Socket(Engine& engine, const std::string& id, std::uint16_t port, bool https,
-			const std::vector<std::pair<std::string, std::string>>& settings,
-			const std::string& implementation);
-	//~Socket();
+	Socket(Engine& engine, const std::string& id, bool https,
+			const esl::object::Interface::Settings& settings, const std::string& implementation);
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
@@ -69,7 +67,6 @@ public:
 	esl::com::http::server::Interface::Socket& getSocket() noexcept;
 	const std::string& getId() const noexcept;
 	const std::string& getImplementation() const noexcept;
-	std::uint16_t getPort() const noexcept;
 	bool isHttps() const noexcept;
 
 	std::set<std::string> getHostnames() const;
@@ -82,10 +79,10 @@ private:
 	esl::com::http::server::Socket socket;
 
 	Engine& engine;
-	std::string id;
-	std::uint16_t port;
-	bool https;
-	std::string implementation;
+	const std::string id;
+	const bool https;
+	const std::string implementation;
+	const esl::object::Interface::Settings settings;
 
 	//std::map<std::string, std::unique_ptr<Listener>> listenerByHostname;
 	std::map<std::string, Listener*> listenerByHostname;

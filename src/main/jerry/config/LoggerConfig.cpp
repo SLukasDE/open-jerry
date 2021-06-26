@@ -69,7 +69,7 @@ LoggerConfig::LoggerConfig(const tinyxml2::XMLElement& element) {
 		std::string innerElementName(innerElement->Name());
 
 		if(innerElementName == "layout") {
-			layoutSettings.push_back(Setting(*innerElement));
+			layoutSettings.push_back(Setting(*innerElement, false));
 		}
 		else if(innerElementName == "setting") {
 			levelSettings.push_back(LevelSetting(*innerElement));

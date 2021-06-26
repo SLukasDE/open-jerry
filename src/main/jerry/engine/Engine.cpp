@@ -251,8 +251,8 @@ void Engine::addCertificate(const std::string& hostname, const std::string& keyF
     addCertificate(hostname, std::move(key), std::move(certificate));
 }
 
-void Engine::addBasicBroker(const std::string& id, const std::string& brokers, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding basic broker (implementation=\"" << implementation << "\") with id=\"" << id << "\" for broker " << brokers << "\"\n";
+void Engine::addBasicBroker(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding basic broker (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 
 	if(basicBrokerById.count(id) != 0) {
         throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
@@ -272,19 +272,15 @@ void Engine::addBasicBroker(const std::string& id, const std::string& brokers, c
         throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
 	}
 
-	basic::broker::Client* basicBrokerPtr = new basic::broker::Client(*this, id, brokers, settings, implementation);
+	basic::broker::Client* basicBrokerPtr = new basic::broker::Client(*this, id, settings, implementation);
 	std::unique_ptr<esl::object::Interface::Object> object(basicBrokerPtr);
 	addObject(id, std::move(object));
 
 	basicBrokerById.insert(std::make_pair(id, std::ref(*basicBrokerPtr)));
 }
 
-void Engine::addBasicServer(const std::string& id, std::uint16_t port, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding basic server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
-
-	if(listeningPorts.count(port) > 0) {
-        throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
-	}
+void Engine::addBasicServer(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding basic server (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 
 	if(basicBrokerById.count(id) != 0) {
         throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
@@ -304,24 +300,19 @@ void Engine::addBasicServer(const std::string& id, std::uint16_t port, const std
         throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
 	}
 
-	basic::server::Socket* basicSocketPtr = new basic::server::Socket(*this, id, port, settings, implementation);
+	basic::server::Socket* basicSocketPtr = new basic::server::Socket(*this, id, settings, implementation);
 	std::unique_ptr<esl::object::Interface::Object> object(basicSocketPtr);
 	addObject(id, std::move(object));
 
-	listeningPorts.insert(port);
 	basicServerById.insert(std::make_pair(id, std::ref(*basicSocketPtr)));
 }
 
-void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+void Engine::addHttpServer(const std::string& id, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	if(isHttps) {
-		logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
+		logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	}
 	else {
-		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\") with id=\"" << id << "\" at port " << port << "\"\n";
-	}
-
-	if(listeningPorts.count(port) > 0) {
-        throw std::runtime_error("There are multiple servers listening for port " + std::to_string(port) + ".");
+		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	}
 
 	if(basicBrokerById.count(id) != 0) {
@@ -342,11 +333,10 @@ void Engine::addHttpServer(const std::string& id, std::uint16_t port, bool isHtt
         throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
 	}
 
-	http::server::Socket* httpSocketPtr = new http::server::Socket(*this, id, port, isHttps, settings, implementation);
+	http::server::Socket* httpSocketPtr = new http::server::Socket(*this, id, isHttps, settings, implementation);
 	std::unique_ptr<esl::object::Interface::Object> object(httpSocketPtr);
 	addObject(id, std::move(object));
 
-	listeningPorts.insert(port);
 	httpServerById.insert(std::make_pair(id, std::ref(*httpSocketPtr)));
 }
 
