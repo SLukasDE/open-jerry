@@ -33,6 +33,8 @@
 #include <jerry/config/http/RequestHandler.h>
 #include <jerry/config/OptionalBool.h>
 
+#include <jerry/builtin/Properties.h>
+
 #include <jerry/engine/BaseContext.h>
 #include <jerry/engine/basic/server/Listener.h>
 #include <jerry/engine/basic/server/Context.h>
@@ -127,12 +129,25 @@ void add(engine::basic::server::Context& engineBasicContext, const basic::Contex
 }
 
 void add(engine::basic::server::Context& context, const basic::RequestHandler& configBasicRequestHandler) {
-	std::string objectImplementation =
-			configBasicRequestHandler.objectImplementation
-			? *configBasicRequestHandler.objectImplementation
-			: configBasicRequestHandler.implementation;
+	std::string objectImplementation;
+	if(configBasicRequestHandler.objectImplementation) {
+		objectImplementation = *configBasicRequestHandler.objectImplementation;
+	}
+	else if(engine::BaseContext::hasObjectImplementation(configBasicRequestHandler.implementation)) {
+		objectImplementation = configBasicRequestHandler.implementation;
+	}
+	else if(configBasicRequestHandler.settings.size() > 0) {
+		objectImplementation = jerry::builtin::Properties::getImplementation();
+	}
 
-	if(configBasicRequestHandler.settings.size() > 0 || engine::BaseContext::hasObjectImplementation(objectImplementation) || configBasicRequestHandler.objectImplementation) {
+	if(objectImplementation.empty()) {
+		if(configBasicRequestHandler.settings.size() > 0) {
+			logger.warn << "empty object implementation for request handler \"" << configBasicRequestHandler.implementation << "\" but parameters have been specified.\n";
+			logger.warn << "-> ignoring parameters.\n";
+		}
+		context.addRequestHandler(configBasicRequestHandler.implementation);
+	}
+	else {
 		engine::basic::server::Context& newContext = context.addContext(true);
 
 		std::vector<std::pair<std::string, std::string>> settings;
@@ -142,9 +157,6 @@ void add(engine::basic::server::Context& context, const basic::RequestHandler& c
 
 		newContext.addObject("", objectImplementation, settings);
 		newContext.addRequestHandler(configBasicRequestHandler.implementation);
-	}
-	else {
-		context.addRequestHandler(configBasicRequestHandler.implementation);
 	}
 }
 
@@ -202,12 +214,21 @@ void add(engine::http::server::Context& engineHttpContext, const http::Context& 
 }
 
 void add(engine::http::server::Context& context, const http::RequestHandler& configHttpRequestHandler) {
-	std::string objectImplementation =
-			configHttpRequestHandler.objectImplementation.empty() == false
-			? configHttpRequestHandler.objectImplementation
-			: configHttpRequestHandler.implementation;
+	std::string objectImplementation;
+	if(configHttpRequestHandler.objectImplementation.empty() == false) {
+		objectImplementation = configHttpRequestHandler.objectImplementation;
+	}
+	else if(engine::BaseContext::hasObjectImplementation(configHttpRequestHandler.implementation)) {
+		objectImplementation = configHttpRequestHandler.implementation;
+	}
+	else if(configHttpRequestHandler.settings.size() > 0) {
+		objectImplementation = jerry::builtin::Properties::getImplementation();
+	}
 
-	if(configHttpRequestHandler.settings.size() > 0 || engine::BaseContext::hasObjectImplementation(objectImplementation) || configHttpRequestHandler.objectImplementation.empty() == false) {
+	if(objectImplementation.empty()) {
+		context.addRequestHandler(configHttpRequestHandler.implementation);
+	}
+	else {
 		engine::http::server::Context& newContext = context.addContext(true);
 
 		std::vector<std::pair<std::string, std::string>> settings;
@@ -217,9 +238,6 @@ void add(engine::http::server::Context& context, const http::RequestHandler& con
 
 		newContext.addObject("", objectImplementation, settings);
 		newContext.addRequestHandler(configHttpRequestHandler.implementation);
-	}
-	else {
-		context.addRequestHandler(configHttpRequestHandler.implementation);
 	}
 }
 

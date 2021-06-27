@@ -17,6 +17,7 @@
  */
 
 #include <jerry/Module.h>
+#include <jerry/builtin/Properties.h>
 #include <jerry/builtin/basic/dump/RequestHandler.h>
 #include <jerry/builtin/basic/dump/Settings.h>
 #include <jerry/builtin/basic/echo/RequestHandler.h>
@@ -54,6 +55,11 @@ Module::Module()
 : esl::module::Module()
 {
 	esl::module::Module::initialize(*this);
+
+	addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::Properties::getImplementation(),
+			&jerry::builtin::Properties::createSettings));
+
 /*
 	addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
 			getId(), "jerry/builtin/messaging/producer-factory", &jerry::builtin::messaging::ProducerFactory::create)));
