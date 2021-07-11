@@ -17,6 +17,7 @@
  */
 
 #include <jerry/builtin/Properties.h>
+
 #include <esl/object/Properties.h>
 
 namespace jerry {

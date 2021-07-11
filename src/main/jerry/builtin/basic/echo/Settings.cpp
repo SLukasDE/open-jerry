@@ -62,8 +62,6 @@ void Settings::initializeContext(esl::object::ObjectContext& objectContext) {
 	if(client == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Cannot find basic-broker with id \"" + outputRefId + "\""));
 	}
-
-	logger.info << "Echo::Setting initialized for refId \"" << outputRefId << "\"\n";
 }
 
 

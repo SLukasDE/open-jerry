@@ -20,13 +20,13 @@
 #define JERRY_MODULE_H_
 
 #include <esl/module/Module.h>
-#include <esl/module/Interface.h>
-#include <string>
-#include <map>
 
 namespace jerry {
 
-esl::module::Module& getModule();
+struct Module final {
+	Module() = delete;
+	static void install(esl::module::Module& module);
+};
 
 } /* namespace jerry */
 

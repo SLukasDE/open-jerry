@@ -20,7 +20,6 @@
 #include <jerry/engine/http/server/Writer.h>
 #include <jerry/engine/http/server/ExceptionHandler.h>
 #include <jerry/engine/Engine.h>
-#include <jerry/Module.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Connection.h>

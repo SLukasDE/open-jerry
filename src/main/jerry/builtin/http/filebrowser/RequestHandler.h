@@ -19,13 +19,8 @@
 #ifndef JERRY_BUILTIN_HTTP_FILEBROWSER_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_HTTP_FILEBROWSER_REQUESTHANDLER_H_
 
-#include <jerry/builtin/http/filebrowser/Settings.h>
-
-#include <esl/io/Consumer.h>
 #include <esl/io/Input.h>
-#include <esl/io/Reader.h>
 #include <esl/com/http/server/RequestContext.h>
-#include <esl/com/http/server/Request.h>
 #include <esl/object/Interface.h>
 
 #include <memory>
@@ -35,31 +30,15 @@ namespace builtin {
 namespace http {
 namespace filebrowser {
 
-class RequestHandler : public esl::io::Consumer {
-public:
+struct RequestHandler final {
+	RequestHandler() = delete;
+
 	static esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& requestContext);
 	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
 
 	static inline const char* getImplementation() {
 		return "jerry/builtin/http/filebrowser";
 	}
-
-	RequestHandler(esl::com::http::server::RequestContext& requestContext, const Settings& settings, bool isDirectory);
-
-	/* return: true for every kind of success and get called again for more content data
-	 *         false for failure or to get not called again
-	 */
-	bool consume(esl::io::Reader& reader) override;
-
-private:
-	esl::com::http::server::RequestContext& requestContext;
-	const Settings& settings;
-/*
-	std::string outputContent;
-	std::size_t outputPos = 0;
-
-	int getData(char* buffer, std::size_t count);
-*/
 };
 
 } /* namespace filebrowser */

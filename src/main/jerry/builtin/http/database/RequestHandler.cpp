@@ -16,14 +16,15 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/http/basicauth/RequestHandler.h>
-#include <jerry/builtin/http/basicauth/Settings.h>
+#include <jerry/builtin/http/database/RequestHandler.h>
+#include <jerry/builtin/http/database/Settings.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-#include <esl/io/output/Memory.h>
+//#include <esl/io/output/Memory.h>
+#include <esl/io/output/String.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
 
@@ -32,19 +33,30 @@
 namespace jerry {
 namespace builtin {
 namespace http {
-namespace basicauth {
+namespace database {
 
 namespace {
-Logger logger("jerry::builtin::basicauth::RequestHandler");
+Logger logger("jerry::builtin::database::RequestHandler");
 
-const std::string PAGE_401(
+const std::string PAGE_200(
 		"<!DOCTYPE html>\n"
 		"<html>\n"
 		"<head>\n"
-		"<title>401 - Unauthorized</title>\n"
+		"<title>Database connection test</title>\n"
 		"</head>\n"
 		"<body>\n"
-		"<h1>401 - Unauthorized</h1>\n"
+		"<h1>OK</h1>\n"
+		"</body>\n"
+		"</html>\n");
+
+const std::string PAGE_500(
+		"<!DOCTYPE html>\n"
+		"<html>\n"
+		"<head>\n"
+		"<title>Database connection test</title>\n"
+		"</head>\n"
+		"<body>\n"
+		"<h1>Failure</h1>\n"
 		"</body>\n"
 		"</html>\n");
 } /* anonymous namespace */
@@ -57,14 +69,21 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		throw esl::com::http::server::exception::StatusCode(500);
 	}
 
-	if(requestContext.getRequest().getUsername() == settings->getUsername() &&
-			requestContext.getRequest().getPassword() == settings->getPassword()) {
-		return esl::io::Input();
+	if(settings->check()) {
+		esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::textHtml));
+		//esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
+		esl::io::Output output = esl::io::output::String::create(PAGE_200);
+		requestContext.getConnection().send(response, std::move(output));
+		logger.debug << "OK\n";
+	}
+	else {
+		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
+		//esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
+		esl::io::Output output = esl::io::output::String::create(PAGE_500);
+		requestContext.getConnection().send(response, std::move(output));
+		logger.debug << "Failure\n";
 	}
 
-	esl::com::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), settings->getRealmId());
-	esl::io::Output output = esl::io::output::Memory::create(PAGE_401.data(), PAGE_401.size());
-	requestContext.getConnection().send(response, std::move(output));
 	return esl::io::input::Closed::create();
 }
 
@@ -72,7 +91,7 @@ std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(c
 	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
-} /* namespace basicauth */
+} /* namespace database */
 } /* namespace http */
 } /* namespace builtin */
 } /* namespace jerry */

@@ -17,7 +17,6 @@
  */
 
 #include <jerry/config/Config.h>
-#include <jerry/Module.h>
 #include <jerry/Logger.h>
 #include <jerry/utility/URL.h>
 
@@ -125,21 +124,22 @@ void Config::loadFile(const std::string& fileName, const tinyxml2::XMLElement* e
 		throw;
 	}
 
+	element = doc.RootElement();
 	if(element == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("XML document without root element"));
+		throw esl::addStacktrace(std::runtime_error("XML document without root element in file \"" + fileName + "\""));
 	}
 	if(element->Name() == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Name of XML root element is empty"));
+		throw esl::addStacktrace(std::runtime_error("Name of XML root element is empty in file \"" + fileName + "\""));
 	}
 	if(std::string(element->Name()) != "jerry") {
-		throw esl::addStacktrace(std::runtime_error("Name of XML root element is \"" + std::string(element->Name()) + "\" but should be \"jerry\""));
+		throw esl::addStacktrace(std::runtime_error("Name of XML root element is \"" + std::string(element->Name()) + "\" but should be \"jerry\" in file \"" + fileName + "\""));
 	}
 	if(element->GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Node has user data but it should be empty (line " + std::to_string(element->GetLineNum()) + ")"));
+		throw esl::addStacktrace(std::runtime_error("Node has user data but it should be empty (file \"" + fileName + "\", line " + std::to_string(element->GetLineNum()) + ")"));
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element->FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element->GetLineNum())));
+		throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element->GetLineNum()) + " in file \"" + fileName + "\""));
 	}
 
 	for(const tinyxml2::XMLNode* node = element->FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -150,7 +150,7 @@ void Config::loadFile(const std::string& fileName, const tinyxml2::XMLElement* e
 		}
 
 		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
+			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum()) + " in file \"" + fileName + "\""));
 		}
 
 		std::string innerElementName(innerElement->Name());
@@ -192,32 +192,26 @@ void Config::loadFile(const std::string& fileName, const tinyxml2::XMLElement* e
 			basicListeners.push_back(basic::Listener(*innerElement));
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
+			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum()) + " in file \"" + fileName + "\""));
 		}
 	}
 }
 
 void Config::loadLibraries() {
 	/* load and add libraries */
-	for(auto& eslLibrary : eslLibraries) {
-		if(eslLibrary.second) {
-			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" loaded already."));
+	for(auto& library : libraries) {
+		/*
+		if(library.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
 		}
-		eslLibrary.second = new esl::module::Library(eslLibrary.first);
-		esl::module::Module& aLibModule = eslLibrary.second->getModule("");
-		esl::getModule().addInterfaces(aLibModule);
-	}
-	for(auto& jerryLibrary : libraries) {
-		if(jerryLibrary.second) {
-			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + jerryLibrary.first + "\" loaded already."));
-		}
-		jerryLibrary.second = new esl::module::Library(jerryLibrary.first);
-		esl::module::Module& aLibModule = jerryLibrary.second->getModule("");
-		jerry::getModule().addInterfaces(aLibModule);
+		*/
+		library.second = &esl::module::Library::load(library.first);
+		library.second->install(esl::getModule());
 	}
 
 
 	/* add and replace esl interfaces to loaded libraries by own esl libraries */
+	/*
 	for(auto& eslLibrary : eslLibraries) {
 		if(!eslLibrary.second) {
 			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + eslLibrary.first + "\" not loaded."));
@@ -237,6 +231,7 @@ void Config::loadLibraries() {
 			aLibEslModule->replaceInterfaces(esl::getModule());
 		}
 	}
+	*/
 }
 
 std::unique_ptr<esl::logging::Layout> Config::createLayout() const {
@@ -301,9 +296,6 @@ void Config::setEngine(engine::Engine& engine) const {
 */
 void Config::save(std::ostream& oStream) const {
 	oStream << "\n<jerry>\n";
-	for(const auto& entry : eslLibraries) {
-		oStream << "  <library module=\"esl\" file=\"" << entry.first << "\"/>\n";
-	}
 	for(const auto& entry : libraries) {
 		oStream << "  <library file=\"" << entry.first << "\"/>\n";
 	}
@@ -383,7 +375,6 @@ void Config::parseInclude(const tinyxml2::XMLElement& element) {
 void Config::parseLibrary(const tinyxml2::XMLElement& element) {
 	bool hasFile = false;
 	std::string file;
-	std::string module;
 
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
@@ -394,8 +385,8 @@ void Config::parseLibrary(const tinyxml2::XMLElement& element) {
 			hasFile = true;
 			file = attribute->Value();
 		}
+		// deprecated
 		else if(std::string(attribute->Name()) == "module") {
-			module = attribute->Value();
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
@@ -406,15 +397,7 @@ void Config::parseLibrary(const tinyxml2::XMLElement& element) {
 		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"file\" at line ") + std::to_string(element.GetLineNum())));
 	}
 
-	if(module.empty() || module == "jerry") {
-		libraries.push_back(std::make_pair(file, nullptr));
-	}
-	else if(module == "esl") {
-		eslLibraries.push_back(std::make_pair(file, nullptr));
-	}
-	else {
-		throw esl::addStacktrace(std::runtime_error(std::string("Unknown module \"") + module + "\" at line " + std::to_string(element.GetLineNum())));
-	}
+	libraries.push_back(std::make_pair(file, nullptr));
 }
 
 } /* namespace config */

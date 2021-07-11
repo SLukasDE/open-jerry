@@ -38,8 +38,6 @@ std::string makeSpaces(std::size_t spaces) {
 }
 
 Server::Server(const tinyxml2::XMLElement& element) {
-	bool hasPort = false;
-
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
 	}
@@ -67,10 +65,6 @@ Server::Server(const tinyxml2::XMLElement& element) {
 		else {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
 		}
-	}
-
-	if(hasPort == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"port\" at line ") + std::to_string(element.GetLineNum())));
 	}
 
 

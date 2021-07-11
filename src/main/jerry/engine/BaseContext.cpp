@@ -17,9 +17,9 @@
  */
 
 #include <jerry/engine/BaseContext.h>
-#include <jerry/Module.h>
 #include <jerry/Logger.h>
 
+#include <esl/Module.h>
 #include <esl/object/InitializeContext.h>
 
 namespace jerry {
@@ -30,7 +30,7 @@ Logger logger("jerry::engine::BaseContext");
 } /* anonymous namespace */
 
 bool BaseContext::hasObjectImplementation(const std::string& implementation) {
-	return jerry::getModule().findInterface<esl::object::Interface>(implementation) != nullptr;
+	return esl::getModule().findInterface<esl::object::Interface>(implementation) != nullptr;
 }
 
 esl::object::Interface::Object& BaseContext::addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) {
@@ -40,7 +40,7 @@ esl::object::Interface::Object& BaseContext::addObject(const std::string& id, co
         throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because there exists already a local object with same id.");
 	}
 
-	std::unique_ptr<esl::object::Interface::Object> object = jerry::getModule().getInterface<esl::object::Interface>(implementation).createObject(settings);
+	std::unique_ptr<esl::object::Interface::Object> object = esl::getModule().getInterface<esl::object::Interface>(implementation).createObject(settings);
 	if(!object) {
 		throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because interface method createObject() returns nullptr.");
 	}

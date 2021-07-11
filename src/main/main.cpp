@@ -20,15 +20,12 @@
 #include <esl/module/Library.h>
 #include <esl/Stacktrace.h>
 
-#include <jerry/Module.h>
+//#include <jerry/Module.h>
 #include <jerry/Logger.h>
-//#include <jerry/utility/URL.h>
 #include <jerry/config/Config.h>
 #include <jerry/config/Engine.h>
 #include <jerry/engine/Engine.h>
-//#include <jerry/engine/Listener.h>
-
-//#include <esl/object/parameter/Interface.h>
+#include <jerry/Module.h>
 
 #include <esl/logging/Logger.h>
 #include <esl/logging/appender/OStream.h>
@@ -36,6 +33,7 @@
 #include <esl/logging/Location.h>
 #include <esl/logging/Layout.h>
 #include <esl/database/exception/SqlError.h>
+#include <esl/Module.h>
 
 #include <iostream>
 #include <memory>
@@ -66,9 +64,11 @@ void printModules(std::ostream& oStream) {
 	for(const auto& interface : esl::getModule().getMetaInterfaces()) {
 		printInterface(oStream, "esl", &interface);
 	}
-	for(const auto& interface : jerry::getModule().getMetaInterfaces()) {
+	/*
+	 for(const auto& interface : jerry::getModule().getMetaInterfaces()) {
 		printInterface(oStream, "jerry", &interface);
 	}
+	*/
 	oStream << "\n";
 	oStream << "\n";
 }
@@ -153,6 +153,8 @@ int main(int argc, const char *argv[]) {
 
 	try {
 		try {
+			jerry::Module::install(esl::getModule());
+
 			jerry::config::Config config;
 			jerry::engine::Engine engine;
 

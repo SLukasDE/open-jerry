@@ -36,13 +36,13 @@ public:
 	bool isBrowsable() const;
 	const std::string& getPath() const;
 	const std::set<std::string>& getDefaults() const;
-	const int getHttpStatus() const;
+	bool getIgnoreError() const;
 
 private:
 	bool browsable = false;
 	std::string path = "/";
 	std::set<std::string> defaults;
-	int httpStatus = 200;
+	bool ignoreError = false;
 };
 
 } /* namespace filebrowser */

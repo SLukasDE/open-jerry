@@ -17,14 +17,14 @@
  */
 
 #include <jerry/builtin/http/file/RequestHandler.h>
+#include <jerry/builtin/http/file/Settings.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Connection.h>
-#include <esl/Stacktrace.h>
-#include <esl/logging/Level.h>
-
-#include <memory>
+#include <esl/com/http/server/Response.h>
+#include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/io/input/Closed.h>
 
 namespace jerry {
 namespace builtin {
@@ -33,30 +33,24 @@ namespace file {
 
 namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
-}
+} /* anonymous namespace */
 
 esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>("");
+	const Settings* settings = requestContext.findObject<Settings>();
+
 	if(settings == nullptr) {
-		return esl::io::Input();
+		logger.warn << "Settings object missing\n";
+		throw esl::com::http::server::exception::StatusCode(500);
 	}
 
-	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings)));
+	esl::utility::MIME mime = utility::MIME::byFilename(settings->getPath());
+	esl::com::http::server::Response response(settings->getHttpStatus(), mime);
+	requestContext.getConnection().send(response, settings->getPath());
+	return esl::io::input::Closed::create();
 }
 
 std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
 	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
-}
-
-RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestContext, const Settings& settings)
-{
-	esl::utility::MIME mime = utility::MIME::byFilename(settings.getPath());
-	esl::com::http::server::Response response(settings.getHttpStatus(), mime);
-	requestContext.getConnection().send(response, settings.getPath());
-}
-
-bool RequestHandler::consume(esl::io::Reader& reader) {
-	return false;
 }
 
 } /* namespace file */

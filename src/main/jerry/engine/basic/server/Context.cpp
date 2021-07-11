@@ -18,9 +18,9 @@
 
 #include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/basic/server/Listener.h>
-#include <jerry/Module.h>
 #include <jerry/Logger.h>
 
+#include <esl/Module.h>
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/object/InitializeContext.h>
 
@@ -77,7 +77,7 @@ Context& Context::addContext(bool inheritObjects) {
 }
 
 void Context::addRequestHandler(const std::string& implementation) {
-	auto& requestHandler = jerry::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation);
+	auto& requestHandler = esl::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation);
 
 	entries.push_back(Entry(requestHandler));
 }

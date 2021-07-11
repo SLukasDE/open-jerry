@@ -19,10 +19,11 @@
 #include <jerry/builtin/http/self/RequestHandler.h>
 #include <jerry/Logger.h>
 
+#include <esl/io/input/Closed.h>
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Request.h>
 
-#include <iostream>
+#include <string>
 
 namespace jerry {
 namespace builtin {
@@ -31,14 +32,9 @@ namespace self {
 
 namespace {
 Logger logger("jerry::builtin::http::self::RequestHandler");
-}
+} /* anonymous namespace */
 
 esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext)));
-}
-
-RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestContext)
-{
 	std::string content;
 	content += "<!DOCTYPE html>\n";
 	content += "<html>\n";
@@ -96,12 +92,9 @@ RequestHandler::RequestHandler(esl::com::http::server::RequestContext& requestCo
 	content += "</html>\n";
 
 	esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
-	std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(content)));
-	requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
-}
-
-bool RequestHandler::consume(esl::io::Reader& reader) {
-	return false;
+	esl::io::Output output = esl::io::output::String::create(std::move(content));
+	requestContext.getConnection().send(response, std::move(output));
+	return esl::io::input::Closed::create();
 }
 
 } /* namespace self */

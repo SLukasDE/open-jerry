@@ -16,8 +16,8 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
-#define JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
+#ifndef JERRY_BUILTIN_HTTP_DATABASE_REQUESTHANDLER_H_
+#define JERRY_BUILTIN_HTTP_DATABASE_REQUESTHANDLER_H_
 
 #include <esl/io/Input.h>
 #include <esl/com/http/server/RequestContext.h>
@@ -28,7 +28,7 @@
 namespace jerry {
 namespace builtin {
 namespace http {
-namespace basicauth {
+namespace database {
 
 struct RequestHandler final {
 	RequestHandler() = delete;
@@ -37,13 +37,13 @@ struct RequestHandler final {
 	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
 
 	static inline const char* getImplementation() {
-		return "jerry/builtin/http/basicauth";
+		return "jerry/builtin/http/database";
 	}
 };
 
-} /* namespace basicauth */
+} /* namespace database */
 } /* namespace http */
 } /* namespace builtin */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_ */
+#endif /* JERRY_BUILTIN_HTTP_DATABASE_REQUESTHANDLER_H_ */

@@ -58,7 +58,6 @@ public:
 
 	void save(std::ostream& oStream) const;
 
-	std::vector<std::pair<std::string, esl::module::Library*>> eslLibraries;
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<std::string> includes;
 	std::vector<Certificate> certificates;

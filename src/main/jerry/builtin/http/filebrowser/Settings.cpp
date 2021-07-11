@@ -17,6 +17,7 @@
  */
 
 #include <jerry/builtin/http/filebrowser/Settings.h>
+#include <jerry/Logger.h>
 
 #include <esl/Stacktrace.h>
 
@@ -26,6 +27,10 @@ namespace jerry {
 namespace builtin {
 namespace http {
 namespace filebrowser {
+
+namespace {
+Logger logger("jerry::builtin::http::filebrowser::Settings");
+}
 
 Settings::Settings(const esl::object::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
@@ -43,16 +48,19 @@ Settings::Settings(const esl::object::Interface::Settings& settings) {
 		else if(setting.first == "path") {
 			path = setting.second;
 		}
-		else if(setting.first == "http-status") {
-			try {
-				httpStatus = std::stoi(setting.second);
-			}
-			catch(...) {
-				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
-			}
-		}
 		else if(setting.first == "default") {
 			defaults.insert(setting.second);
+		}
+		else if(setting.first == "ignoreError") {
+			if(setting.second == "true") {
+				ignoreError = true;
+			}
+			else if(setting.second == "false") {
+				ignoreError = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
 		}
 		/*
 		else if(setting.first == "accept-all") {
@@ -77,8 +85,8 @@ const std::set<std::string>& Settings::getDefaults() const {
 	return defaults;
 }
 
-const int Settings::getHttpStatus() const {
-	return httpStatus;
+bool Settings::getIgnoreError() const {
+	return ignoreError;
 }
 
 } /* namespace filebrowser */

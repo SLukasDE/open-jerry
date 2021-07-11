@@ -16,34 +16,45 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
-#define JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_
-
-#include <esl/io/Input.h>
-#include <esl/com/http/server/RequestContext.h>
 #include <esl/object/Interface.h>
+#include <esl/object/InitializeContext.h>
+#include <esl/object/ObjectContext.h>
+#include <esl/database/Interface.h>
+#include <esl/database/Connection.h>
 
+#include <string>
 #include <memory>
+
+#ifndef JERRY_BUILTIN_HTTP_DATABASE_SETTINGS_H_
+#define JERRY_BUILTIN_HTTP_DATABASE_SETTINGS_H_
 
 namespace jerry {
 namespace builtin {
 namespace http {
-namespace basicauth {
+namespace database {
 
-struct RequestHandler final {
-	RequestHandler() = delete;
+class Settings : public virtual esl::object::Interface::Object, public esl::object::InitializeContext {
+public:
+	Settings(const esl::object::Interface::Settings& settings);
 
-	static esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& requestContext);
-	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
+	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
-	static inline const char* getImplementation() {
-		return "jerry/builtin/http/basicauth";
-	}
+	bool check() const;
+
+	const std::string& getConnectionId() const;
+	const std::string& getSQL() const;
+
+private:
+	std::unique_ptr<esl::database::Connection> createConnection() const;
+
+	std::string connectionId;
+	std::string sql;
+	esl::database::Interface::ConnectionFactory* connectionFactory = nullptr;
 };
 
-} /* namespace basicauth */
+} /* namespace database */
 } /* namespace http */
 } /* namespace builtin */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_HTTP_BASICAUTH_REQUESTHANDLER_H_ */
+#endif /* JERRY_BUILTIN_HTTP_DATABASE_SETTINGS_H_ */

@@ -21,15 +21,15 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <eslx/utility/Directory.h>
-
+#include <esl/io/input/Closed.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-#include <esl/logging/Logger.h>
-#include <esl/logging/Level.h>
 #include <esl/Stacktrace.h>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include <string>
 #include <cstring>
@@ -46,7 +46,6 @@ namespace filebrowser {
 namespace {
 Logger logger("jerry::builtin::http::filebrowser::RequestHandler");
 
-
 const std::string PAGE_301(
 		"<!DOCTYPE html>\n"
 		"<html>\n"
@@ -57,140 +56,106 @@ const std::string PAGE_301(
 		"<h1>301</h1>\n"
 		"</body>\n"
 		"</html>\n");
-}
+} /* anonymous namespace */
 
 esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	if(requestContext.getRequest().getMethod() != "GET") {
-		logger.warn << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
-		return esl::io::Input();
-	}
-	const Settings* settings = requestContext.findObject<Settings>("");
+	const Settings* settings = requestContext.findObject<Settings>();
+
 	if(settings == nullptr) {
 		logger.warn << "Settings object missing\n";
-		return esl::io::Input();
+		throw esl::com::http::server::exception::StatusCode(500);
 	}
 
-	std::string path = settings->getPath() + requestContext.getPath();
-	eslx::utility::Directory directory(path);
-	bool isDirectory;
+	if(requestContext.getRequest().getMethod() != "GET") {
+		if(settings->getIgnoreError()) {
+			return esl::io::Input();
+		}
 
-	try {
-		isDirectory = directory.getEntry().isDirectory;
-	}
-	catch(...) {
-		throw esl::com::http::server::exception::StatusCode(404);
+		logger.warn << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
+		throw esl::com::http::server::exception::StatusCode(405);
 	}
 
-	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings, isDirectory)));
-}
+	boost::filesystem::path path = settings->getPath() + requestContext.getPath();
+	if(!boost::filesystem::exists(path)) {
+		if(settings->getIgnoreError()) {
+			return esl::io::Input();
+		}
+		else {
+			throw esl::com::http::server::exception::StatusCode(404);
+		}
+	}
 
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
-}
-
-RequestHandler::RequestHandler(esl::com::http::server::RequestContext& aRequestContext, const Settings& aSettings, bool isDirectory)
-: requestContext(aRequestContext),
-  settings(aSettings)
-{
-	std::string path = settings.getPath() + requestContext.getPath();
-	std::vector<eslx::utility::Directory::Entry> entries;
-
-    if(isDirectory) {
-    	eslx::utility::Directory directory(path);
-
+	if(boost::filesystem::is_directory(path)) {
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
     		esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
     		response.addHeader("Location", requestContext.getRequest().getPath() + "/");
-    		std::unique_ptr<esl::io::Producer> producer(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size()));
-    		requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
+    		esl::io::Output output = esl::io::output::Memory::create(PAGE_301.data(), PAGE_301.size());
+    		requestContext.getConnection().send(response, std::move(output));
 
-    		return;
+    		return esl::io::input::Closed::create();
     	}
 
-		entries = directory.scan(false);
-
-		const std::set<std::string>& defaults = settings.getDefaults();
-		for(const auto& entry : entries) {
-			if(defaults.find(entry.name) != defaults.end()) {
-				path += "/" + entry.name;
-				isDirectory = false;
+		for(const auto& defaultFile : settings->getDefaults()) {
+			boost::filesystem::path file = path / defaultFile;
+			if(boost::filesystem::exists(file) && boost::filesystem::is_regular_file(file)) {
+				path = file;
 				break;
 			}
 		}
-    }
+	}
 
-    if(isDirectory) {
-    	if(settings.isBrowsable()) {
+
+	if(boost::filesystem::is_directory(path)) {
+    	if(settings->isBrowsable()) {
     		std::string outputContent;
 
     		outputContent += "<html><head><title>Directory of " + requestContext.getPath() + "</title></head><body><h2>Directory of " + requestContext.getPath() + "</h2><br/>";
     		outputContent += "<a href=\"..\">..</a><br/>\n";
 
-    		for(const auto& entry : entries) {
-    			if(entry.isDirectory) {
-    				outputContent += "<a href=\"" + entry.name + "/\">" + entry.name + "/</a><br/>\n";
+    		for (boost::filesystem::directory_iterator itr(path); itr!=boost::filesystem::directory_iterator(); ++itr) {
+    			if(boost::filesystem::is_directory(itr->path())) {
+    				outputContent += "<a href=\"" + itr->path().filename().generic_string() + "/\">" + itr->path().filename().generic_string() + "/</a><br/>\n";
+    			}
+    			else if(boost::filesystem::is_regular_file(itr->path())) {
+    				outputContent += "<a href=\"" + itr->path().filename().generic_string() + "\">" + itr->path().filename().generic_string() + "</a><br/>\n";
     			}
     			else {
-    				outputContent += "<a href=\"" + entry.name + "\">" + entry.name + "</a><br/>\n";
+    				outputContent += itr->path().filename().generic_string() + "<br/>\n";
     			}
     		}
     		outputContent += "</body></html>";
 
     		esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
-    		std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(outputContent)));
-    		requestContext.getConnection().send(response, esl::io::Output(std::move(producer)));
+    		esl::io::Output output = esl::io::output::String::create(std::move(outputContent));
+    		requestContext.getConnection().send(response, std::move(output));
+    		return esl::io::input::Closed::create();
     	}
-    	else {
-    		throw esl::com::http::server::exception::StatusCode(403);
+
+    	if(settings->getIgnoreError()) {
+    		return esl::io::Input();
     	}
+
+		throw esl::com::http::server::exception::StatusCode(403);
 	}
-    else {
-    	esl::utility::MIME mime = utility::MIME::byFilename(path);
-		esl::com::http::server::Response response(settings.getHttpStatus(), mime);
+
+	if(boost::filesystem::is_regular_file(path)) {
+    	esl::utility::MIME mime = utility::MIME::byFilename(path.generic_string());
+		esl::com::http::server::Response response(200, mime);
 		requestContext.getConnection().send(response, path);
+		return esl::io::input::Closed::create();
+	}
 
-#if 0
-        std::ifstream fileStream(path, std::ios::binary);
-        if(! fileStream.good()) {
-        	throw esl::addStacktrace(std::runtime_error("cannot open file"));
-        }
+	if(settings->getIgnoreError()) {
+		return esl::io::Input();
+	}
 
-        std::vector<char> fileBuffer;
-        fileBuffer = std::vector<char>(std::istreambuf_iterator<char>(fileStream), {});
-		outputContent.clear();
-		outputContent.append(&fileBuffer[0], fileBuffer.size());
-
-		std::unique_ptr<esl::com::http::server::ResponseDynamic> response;
-		auto lambda = [this](char* buffer, std::size_t count) { return getData(buffer, count); };
-		response.reset(new esl::com::http::server::ResponseDynamic(settings.getHttpStatus(), utility::MIME::byFilename(path).getContentType(), lambda ));
-		requestContext.getConnection().sendResponse(std::move(response));
-#endif
-    }
+	throw esl::com::http::server::exception::StatusCode(422);
 }
 
-bool RequestHandler::consume(esl::io::Reader& reader) {
-	return false;
+std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
-
-#if 0
-int RequestHandler::getData(char* buffer, std::size_t bufferSize) {
-    std::size_t remainingSize = outputContent.size() - outputPos;
-
-    if(bufferSize > remainingSize) {
-        bufferSize = remainingSize;
-    }
-    std::memcpy(buffer, &outputContent.data()[outputPos], bufferSize);
-    outputPos += bufferSize;
-
-    /* Hier wissen wir, dass keine Daten mehr zu senden sind, wenn bufferSize == 0 ist */
-    /* Daher geben wir dann auch -1 zurueck - was dem Aufrufer signalisiert, dass keine Daten mehr zu senden sind */
-    if(bufferSize == 0) {
-        return -1;
-    }
-    return bufferSize;
-}
-#endif
 
 } /* namespace filebrowser */
 } /* namespace http */
