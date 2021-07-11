@@ -23,8 +23,7 @@
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-//#include <esl/io/output/Memory.h>
-#include <esl/io/output/String.h>
+#include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
 
@@ -71,15 +70,13 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 
 	if(settings->check()) {
 		esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::textHtml));
-		//esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
-		esl::io::Output output = esl::io::output::String::create(PAGE_200);
+		esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
 		requestContext.getConnection().send(response, std::move(output));
 		logger.debug << "OK\n";
 	}
 	else {
 		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
-		//esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
-		esl::io::Output output = esl::io::output::String::create(PAGE_500);
+		esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
 		requestContext.getConnection().send(response, std::move(output));
 		logger.debug << "Failure\n";
 	}
