@@ -38,8 +38,6 @@ std::string makeSpaces(std::size_t spaces) {
 }
 
 Broker::Broker(const tinyxml2::XMLElement& element) {
-	bool hasBrokers = false;
-
 	if(element.GetUserData() != nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
 	}
@@ -62,11 +60,6 @@ Broker::Broker(const tinyxml2::XMLElement& element) {
 			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
 		}
 	}
-
-	if(hasBrokers == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"brokers\" at line ") + std::to_string(element.GetLineNum())));
-	}
-
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
 		const tinyxml2::XMLElement* innerElement = node->ToElement();
