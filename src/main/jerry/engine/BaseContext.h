@@ -22,7 +22,6 @@
 #include <esl/object/ObjectContext.h>
 #include <esl/object/Interface.h>
 #include <esl/object/ObjectContext.h>
-//#include <esl/object/InitializeContext.h>
 
 #include <string>
 #include <map>
@@ -34,14 +33,12 @@ namespace jerry {
 namespace engine {
 
 class BaseContext : public esl::object::ObjectContext {
-//class BaseContext : public esl::object::ObjectContext, public esl::object::InitializeContext {
 public:
 	static bool hasObjectImplementation(const std::string& implementation);
 	virtual esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings);
 	esl::object::Interface::Object& addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object);
 
 	virtual void initializeContext();
-	//virtual void initializeContext(ObjectContext& objectContext) = 0;
 
 	virtual void dumpTree(std::size_t depth) const;
 
