@@ -122,11 +122,12 @@ esl::object::Interface::Object* Context::findObject(const std::string& id) const
 }
 
 Context& Context::addContext(bool inheritObjects) {
-	Context* contextPtr = new Context(listener, endpoint, this, inheritObjects);
+	std::unique_ptr<Context> context(new Context(listener, endpoint, this, inheritObjects));
+	Context& contextRef = *context;
 
-	entries.push_back(Entry(std::unique_ptr<Context>(contextPtr)));
+	entries.push_back(Entry(std::move(context)));
 
-	return *contextPtr;
+	return contextRef;
 }
 
 Endpoint& Context::addEndpoint(std::string path, bool inheritObjects) {
