@@ -20,19 +20,19 @@
 #define JERRY_UTILITY_MIME_H_
 
 #include <esl/utility/MIME.h>
+
 #include <string>
 
 namespace jerry {
 namespace utility {
 
-class MIME {
-public:
+struct MIME final {
+	MIME() = delete;
+
+	static void loadDefinition(const std::string& filename);
+
 	static esl::utility::MIME byFilename(const std::string& filename);
 	static esl::utility::MIME byFileExtension(std::string fileExtension);
-
-private:
-	MIME() = default;
-	~MIME() = default;
 };
 
 } /* namespace utility */
