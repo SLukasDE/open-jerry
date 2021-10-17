@@ -26,6 +26,9 @@
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/io/input/Closed.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
 namespace jerry {
 namespace builtin {
 namespace http {
@@ -43,10 +46,16 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		throw esl::com::http::server::exception::StatusCode(500);
 	}
 
-	esl::utility::MIME mime = utility::MIME::byFilename(settings->getPath());
-	esl::com::http::server::Response response(settings->getHttpStatus(), mime);
-	requestContext.getConnection().send(response, settings->getPath());
-	return esl::io::input::Closed::create();
+	boost::filesystem::path path = settings->getPath();
+	if(boost::filesystem::is_regular_file(path)) {
+		esl::utility::MIME mime = utility::MIME::byFilename(settings->getPath());
+		esl::com::http::server::Response response(settings->getHttpStatus(), mime);
+		requestContext.getConnection().send(response, path);
+		return esl::io::input::Closed::create();
+	}
+
+	logger.warn << "Path " << path << " is not a regular file\n";
+	throw esl::com::http::server::exception::StatusCode(404);
 }
 
 std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
