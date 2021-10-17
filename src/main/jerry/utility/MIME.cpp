@@ -23,10 +23,6 @@
 #include <map>
 #include <fstream>
 
-/* needed by split */
-#include <set>
-#include <vector>
-
 namespace jerry {
 namespace utility {
 namespace {
@@ -63,31 +59,6 @@ std::map<std::string, std::string>& getExtensionToMimeType() {
 	return extensionToMimeType;
 }
 
-std::vector<std::string> split(const std::string& str, std::set<const char> separators, bool dropEmptyContent = false) {
-    std::vector<std::string> rv;
-    std::string::const_iterator currentIt = str.begin();
-    std::string::const_iterator lastIt = currentIt;
-
-    for(;currentIt != str.end(); ++currentIt) {
-        if(separators.count(*currentIt) > 0) {
-        	std::string content(lastIt, currentIt);
-        	if(dropEmptyContent == false || content.empty() == false) {
-                rv.push_back(content);
-        	}
-
-            lastIt = currentIt;
-            ++lastIt;
-        }
-    }
-
-    std::string content(lastIt, currentIt);
-	if(dropEmptyContent == false || content.empty() == false) {
-        rv.push_back(content);
-	}
-
-    return rv;
-}
-
 } /* anonymous namespace */
 
 void MIME::loadDefinition(const std::string& filename) {
@@ -96,7 +67,7 @@ void MIME::loadDefinition(const std::string& filename) {
 
 	std::string line;
 	while (std::getline(infile, line)) {
-		auto columns = split(line, {{' '}, {'\t'}}, true);
+		auto columns = esl::utility::String::split(line, {{' '}, {'\t'}}, true);
 		for(auto iter = columns.begin(); iter != columns.end(); ++iter) {
 			if(iter->empty() || iter->at(0) == '#') {
 				columns.erase(iter, columns.end());
@@ -111,12 +82,12 @@ void MIME::loadDefinition(const std::string& filename) {
 		std::map<std::string, std::string>& extensionToMimeType = getExtensionToMimeType();
 
 		if(columns[0] == "-") {
-			for(const std::size_t index = 1; index < columns.size(); ++index) {
+			for(std::size_t index = 1; index < columns.size(); ++index) {
 				extensionToMimeType.erase(columns[index]);
 			}
 		}
 		else {
-			for(const std::size_t index = 1; index < columns.size(); ++index) {
+			for(std::size_t index = 1; index < columns.size(); ++index) {
 				extensionToMimeType[columns[index]] = columns[0];
 			}
 		}
