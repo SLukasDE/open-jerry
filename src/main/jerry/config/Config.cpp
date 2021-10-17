@@ -19,6 +19,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/Logger.h>
 #include <jerry/utility/URL.h>
+#include <jerry/utility/MIME.h>
 
 #include <esl/object/Properties.h>
 #include <esl/Module.h>
@@ -157,6 +158,30 @@ void Config::loadFile(const std::string& fileName, const tinyxml2::XMLElement* e
 
 		if(innerElementName == "include") {
 			parseInclude(*innerElement);
+		}
+		else if(innerElementName == "mime-types") {
+			bool hasFile = false;
+			std::string file;
+
+			if(innerElement->GetUserData() != nullptr) {
+				throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(innerElement->GetLineNum()) + ")"));
+			}
+
+			for(const tinyxml2::XMLAttribute* attribute = innerElement->FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+				if(std::string(attribute->Name()) == "file") {
+					hasFile = true;
+					file = attribute->Value();
+				}
+				else {
+					throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(innerElement->GetLineNum())));
+				}
+			}
+
+			if(hasFile == false) {
+				throw esl::addStacktrace(std::runtime_error("Missing attribute \"file\" at line " + std::to_string(innerElement->GetLineNum())));
+			}
+
+			utility::MIME::loadDefinition(file);
 		}
 		else if(innerElementName == "library") {
 			parseLibrary(*innerElement);
