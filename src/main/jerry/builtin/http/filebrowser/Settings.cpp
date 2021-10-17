@@ -47,6 +47,9 @@ Settings::Settings(const esl::object::Interface::Settings& settings) {
 		}
 		else if(setting.first == "path") {
 			path = setting.second;
+			while(!path.empty() && path.at(path.size()-1) == '/') {
+				path = path.substr(0, path.size()-1);
+			}
 		}
 		else if(setting.first == "default") {
 			defaults.insert(setting.second);

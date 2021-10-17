@@ -71,12 +71,13 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 			return esl::io::Input();
 		}
 
-		logger.warn << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
+		logger.trace << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
 		throw esl::com::http::server::exception::StatusCode(405);
 	}
 
-	boost::filesystem::path path = settings->getPath() + requestContext.getPath();
+	boost::filesystem::path path = settings->getPath() + "/" + requestContext.getPath();
 	if(!boost::filesystem::exists(path)) {
+		logger.trace << "Original path " << path << " not exists.\n";
 		if(settings->getIgnoreError()) {
 			return esl::io::Input();
 		}
@@ -86,6 +87,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 	}
 
 	if(boost::filesystem::is_directory(path)) {
+		logger.trace << "Original path " << path << " is a directory\n";
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
     		esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
@@ -107,6 +109,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 
 
 	if(boost::filesystem::is_directory(path)) {
+		logger.trace << "Path " << path << " is a directory\n";
     	if(settings->isBrowsable()) {
     		std::string outputContent;
 
@@ -132,6 +135,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
     		return esl::io::input::Closed::create();
     	}
 
+		logger.trace << "Directory " << path << " not browsable.\n";
     	if(settings->getIgnoreError()) {
     		return esl::io::Input();
     	}
@@ -139,6 +143,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		throw esl::com::http::server::exception::StatusCode(403);
 	}
 
+	logger.trace << "Path " << path << " is a file\n";
 	if(boost::filesystem::is_regular_file(path)) {
     	esl::utility::MIME mime = utility::MIME::byFilename(path.generic_string());
 		esl::com::http::server::Response response(200, mime);
@@ -146,6 +151,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		return esl::io::input::Closed::create();
 	}
 
+	logger.warn << "Path " << path << " is not a regular file\n";
 	if(settings->getIgnoreError()) {
 		return esl::io::Input();
 	}
