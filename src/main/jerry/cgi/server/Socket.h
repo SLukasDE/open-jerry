@@ -23,6 +23,7 @@
 #include <esl/com/http/server/Interface.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/object/Values.h>
+#include <esl/object/Interface.h>
 
 #include <cstdint>
 #include <string>
@@ -44,15 +45,13 @@ public:
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
-	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
-
-	void listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) override;
+	void listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 
 private:
 	uint16_t port;
-	std::map<std::string, ObjectFactory> objectFactories;
+	//std::map<std::string, ObjectFactory> objectFactories;
 };
 
 } /* namespace server */

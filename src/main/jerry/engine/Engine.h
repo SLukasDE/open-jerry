@@ -19,12 +19,12 @@
 #ifndef JERRY_ENGINE_ENGINE_H_
 #define JERRY_ENGINE_ENGINE_H_
 
-#include <jerry/engine/BaseContext.h>
-#include <jerry/engine/basic/broker/Client.h>
+#include <jerry/engine/Entry.h>
 #include <jerry/engine/basic/server/Socket.h>
 #include <jerry/engine/basic/server/Listener.h>
 #include <jerry/engine/http/server/Socket.h>
 #include <jerry/engine/http/server/Listener.h>
+#include <jerry/engine/ObjectContext.h>
 
 #include <esl/object/Interface.h>
 #include <esl/utility/MessageTimer.h>
@@ -42,7 +42,7 @@
 namespace jerry {
 namespace engine {
 
-class Engine : public BaseContext {
+class Engine : public ObjectContext {
 public:
 	struct Message {
 		int i;
@@ -58,7 +58,6 @@ public:
 	void addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate);
 	void addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile);
 
-	void addBasicBroker(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	void addBasicServer(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	void addHttpServer(const std::string& id, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
@@ -68,9 +67,7 @@ public:
 	void dumpTree(std::size_t depth) const override;
 
 private:
-	void dumpTreeBasicBrokers(std::size_t depth) const;
-	void dumpTreeBasicServers(std::size_t depth) const;
-	void dumpTreeHttpServers(std::size_t depth) const;
+	void dumpTreeEntries(std::size_t depth) const;
 	void dumpTreeBasicListener(std::size_t depth) const;
 	void dumpTreeHttpListener(std::size_t depth) const;
 
@@ -78,25 +75,6 @@ private:
 
     esl::utility::MessageTimer<std::string, Message> messageTimer;
 	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
-
-
-	/* ***************** *
-	 * Messaging Brokers *
-	 * ***************** */
-	std::map<std::string, std::reference_wrapper<basic::broker::Client>> basicBrokerById;
-
-
-	/* ***************** *
-	 * Messaging Servers *
-	 * ***************** */
-	std::map<std::string, std::reference_wrapper<basic::server::Socket>> basicServerById;
-
-
-	/* ************ *
-	 * HTTP Servers *
-	 * ************ */
-	std::map<std::string, std::reference_wrapper<http::server::Socket>> httpServerById;
-
 	std::vector<std::unique_ptr<basic::server::Listener>> basicListeners;
 	std::vector<std::unique_ptr<http::server::Listener>> httpListeners;
 };

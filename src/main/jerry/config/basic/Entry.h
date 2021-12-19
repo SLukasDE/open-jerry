@@ -19,59 +19,33 @@
 #ifndef JERRY_CONFIG_BASIC_ENTRY_H_
 #define JERRY_CONFIG_BASIC_ENTRY_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/Reference.h>
+#include <jerry/config/basic/Context.h>
+#include <jerry/config/basic/RequestHandler.h>
+#include <jerry/engine/basic/server/Context.h>
+
+#include <tinyxml2/tinyxml2.h>
 
 #include <memory>
 #include <ostream>
-
-#include <tinyxml2/tinyxml2.h>
 
 namespace jerry {
 namespace config {
 namespace basic {
 
-class Context;
-class RequestHandler;
-
-class Entry {
+class Entry : public Config {
 public:
-	enum Type {
-		etNone,
-		etObject,
-		etReference,
-		etContext,
-		etRequestHandler
-	};
-
-	Entry() = delete;
-	Entry(const Entry&) = delete;
-	Entry(Entry&& other);
-	Entry(const tinyxml2::XMLElement& element);
-	~Entry();
-
-	Entry& operator=(const Entry&) = delete;
-	Entry& operator=(Entry&& other);
+	Entry(const Entry&);
+	Entry(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	Type getType() const;
-
-	Object& getObject() const;
-	Reference& getReference() const;
-	Context& getContext() const;
-	RequestHandler& getRequestHandler() const;
+	void install(engine::basic::server::Context& engineBasicContext) const;
 
 private:
-	void doDelete();
-
-	Type type = etNone;
 	std::unique_ptr<config::Object> object;
-	std::unique_ptr<config::Reference> reference;
-	Context* context = nullptr;
-	RequestHandler* requestHandler = nullptr;
-
-	bool hasQueue = false;
+	std::unique_ptr<Context> context;
+	std::unique_ptr<RequestHandler> requestHandler;
 };
 
 } /* namespace basic */

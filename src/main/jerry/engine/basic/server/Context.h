@@ -19,18 +19,17 @@
 #ifndef JERRY_ENGINE_BASIC_SERVER_CONTEXT_H_
 #define JERRY_ENGINE_BASIC_SERVER_CONTEXT_H_
 
-#include <jerry/engine/BaseContext.h>
+#include <jerry/engine/ObjectContext.h>
 #include <jerry/engine/basic/server/Entry.h>
-#include <jerry/engine/basic/server/Writer.h>
 
-#include <esl/object/Interface.h>
 #include <esl/io/Input.h>
+#include <esl/object/Interface.h>
+#include <esl/module/Interface.h>
 
 #include <string>
-#include <map>
+#include <set>
 #include <vector>
 #include <memory>
-#include <utility>
 
 
 namespace jerry {
@@ -38,46 +37,26 @@ namespace engine {
 namespace basic {
 namespace server {
 
-class Listener;
+class RequestContext;
 
-class Context : public BaseContext {
+class Context : public ObjectContext {
 public:
-	void addReference(const std::string& id, const std::string& refId);
-	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const std::vector<std::pair<std::string, std::string>>& settings) override;
+	//void setParent(Context* context);
 
-	Context& addContext(bool inheritObjects);
-	void addRequestHandler(const std::string& implementation);
+	Context& addContext(const std::string& id, bool inheritObjects);
+	void addContext(const std::string& refId);
+
+	void addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings);
 
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
-	std::set<std::string> getNotifier() const;
 
-	/* lookup for object only in this context */
-	virtual esl::object::Interface::Object* findLocalObject(const std::string& id) const;
+	std::set<std::string> getNotifiers() const;
 
-	/* lookup for object up to it's parent context */
-	virtual esl::object::Interface::Object* findHiddenObject(const std::string& id) const;
-
-protected:
-	Context(Listener& listener, const Context* parentContext, bool inheritObjects);
-
-	esl::object::Interface::Object* findObject(const std::string& id) const override;
-
-	esl::io::Input createRequestHandler(std::unique_ptr<server::Writer>& writer) const;
+	virtual esl::io::Input accept(RequestContext& requestContext) const;
 
 private:
-	Listener& listener;
-	const Context* parentContext = nullptr;
-
-	/* If true:
-	 *   findObject(...) calls findHiddenObject(...)
-	 * If false:
-	 *   findObject(...) calls findLocalObject(...)
-	 */
-	bool inheritObjects = true;
-
-	std::map<std::string, esl::object::Interface::Object*> localObjectsById;
-
+	Context* parent = nullptr;
 	std::vector<Entry> entries;
 };
 

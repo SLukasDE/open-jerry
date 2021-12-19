@@ -16,29 +16,23 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_EXCEPTIONDOCUMENT_H_
-#define JERRY_CONFIG_EXCEPTIONDOCUMENT_H_
-
-#include <tinyxml2/tinyxml2.h>
-
-#include <string>
-#include <ostream>
+#include <jerry/engine/Entry.h>
 
 namespace jerry {
-namespace config {
+namespace engine {
 
-struct ExceptionDocument {
-	ExceptionDocument(const tinyxml2::XMLElement& element);
+Entry::Entry(std::unique_ptr<basic::server::Socket> aBasicServer)
+: basicServer(std::move(aBasicServer))
+{ }
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
+Entry::Entry(std::unique_ptr<http::server::Socket> aHttpServer)
+: httpServer(std::move(aHttpServer))
+{ }
 
-	unsigned short statusCode = 0;
-	std::string path;
-	bool parser = false;
+Entry::Entry(std::unique_ptr<esl::object::Interface::Object> aObject)
+: object(std::move(aObject))
+{ }
 
-};
 
-} /* namespace config */
+} /* namespace engine */
 } /* namespace jerry */
-
-#endif /* JERRY_CONFIG_EXCEPTIONDOCUMENT_H_ */

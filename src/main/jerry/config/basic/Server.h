@@ -19,11 +19,12 @@
 #ifndef JERRY_CONFIG_BASIC_SERVER_H_
 #define JERRY_CONFIG_BASIC_SERVER_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/engine/Engine.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <cstdint>
 #include <string>
 #include <vector>
 #include <ostream>
@@ -32,15 +33,19 @@ namespace jerry {
 namespace config {
 namespace basic {
 
-struct Server {
-	Server(const tinyxml2::XMLElement& element);
+class Server : public Config {
+public:
+	Server(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Engine& engine) const;
 
+private:
 	std::string id;
 	std::string implementation;
-	//std::uint16_t port = 0;
 	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace basic */

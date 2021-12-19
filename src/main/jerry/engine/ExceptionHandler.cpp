@@ -22,8 +22,9 @@
 
 #include <esl/Stacktrace.h>
 
+#include <memory>
+#include <ostream>
 #include <sstream>
-#include <vector>
 
 namespace jerry {
 namespace engine {
@@ -31,130 +32,130 @@ namespace engine {
 namespace {
 Logger logger("jerry::engine::ExceptionHandler");
 
-std::unique_ptr<esl::Stacktrace> createStackstrace(const esl::Stacktrace* stacktracePtr) {
-	if(stacktracePtr) {
-		return std::unique_ptr<esl::Stacktrace>(new esl::Stacktrace(*stacktracePtr));
+std::string createStackstrace(const esl::Stacktrace* stacktrace) {
+	std::stringstream sstream;
+	if(stacktrace) {
+		stacktrace->dump(sstream);
 	}
-	return nullptr;
+	return sstream.str();
 }
 } /* anonymous namespace */
 
-void ExceptionHandler::setShowException(bool aShowException) {
-	showException = aShowException;
-}
-
-bool ExceptionHandler::getShowException() const noexcept {
-	return showException;
-}
-
-void ExceptionHandler::setShowStacktrace(bool aShowStacktrace) {
-	showStacktrace = aShowStacktrace;
-}
-
-bool ExceptionHandler::getShowStacktrace() const noexcept {
-	return showStacktrace;
-}
-
-bool ExceptionHandler::call(std::function<void()> callFunction) {
-    try {
-    	callFunction();
-    	return false;
-    }
-	catch(const esl::com::http::server::exception::StatusCode& e) {
-    	setMessage(e);
-	}
-	catch(const esl::database::exception::SqlError& e) {
-		setMessage(e);
-	}
-    catch(const std::runtime_error& e) {
-    	setMessage(e);
-    }
-    catch(const std::exception& e) {
-    	setMessage(e);
-    }
-    catch (...) {
-    	setMessage();
-    }
-#if 0
-	/* **************** *
-	 * Output on logger *
-	 * **************** */
-    dump(logger.warn);
-#endif
-
-	return true;
-}
+ExceptionHandler::ExceptionHandler(std::exception_ptr aExceptionPointer)
+: exceptionPointer(aExceptionPointer)
+{ }
 
 void ExceptionHandler::dump(std::ostream& stream) const {
-	stream << plainMessage.title << "\n";
-	stream << plainMessage.message << "\n";
+	initialize();
 
-	if(plainMessage.stacktrace) {
-		stream << "Stacktrace:\n";
-		plainMessage.stacktrace->dump(logger.warn);
+	stream << "Exception : " << plainException << "\n";
+	stream << "What      : " << plainWhat << "\n";
+	if(plainDetails.empty() == false) {
+		stream << "Details   : " << plainDetails << "\n";
+	}
+
+	if(stacktrace.empty()) {
+		stream << "Stacktrace: not available\n";
 	}
 	else {
-		stream << "Stacktrace: not available\n";
+		stream << "Stacktrace: " << stacktrace << "\n";
 	}
 }
 
 void ExceptionHandler::dump(esl::logging::StreamReal& stream, esl::logging::Location location) const {
-	stream(location.object, location.function, location.file, location.line) << plainMessage.title << "\n";
-	stream(location.object, location.function, location.file, location.line) << plainMessage.message << "\n";
+	initialize();
 
-	if(plainMessage.stacktrace) {
-		stream(location.object, location.function, location.file, location.line) << "Stacktrace:\n";
-		plainMessage.stacktrace->dump(stream, location);
+	stream(location.object, location.function, location.file, location.line) << "Exception : " << plainException << "\n";
+	stream(location.object, location.function, location.file, location.line) << "What      : " << plainWhat << "\n";
+	if(plainDetails.empty() == false) {
+		stream(location.object, location.function, location.file, location.line) << "Details   : " << plainDetails << "\n";
 	}
-	else {
+
+	if(stacktrace.empty()) {
 		stream(location.object, location.function, location.file, location.line) << "Stacktrace: not available\n";
 	}
+	else {
+		stream(location.object, location.function, location.file, location.line) << "Stacktrace:" << stacktrace << "\n";
+	}
 }
 
-const ExceptionMessage& ExceptionHandler::getMessage() const {
-	return plainMessage;
+void ExceptionHandler::initialize() const {
+	if(isInitialized) {
+		return;
+	}
+	isInitialized = true;
+
+	try {
+		std::rethrow_exception(exceptionPointer);
+    }
+	catch(const esl::com::http::server::exception::StatusCode& e) {
+		initializeMessage(e);
+	}
+	catch(const esl::database::exception::SqlError& e) {
+		initializeMessage(e);
+	}
+    catch(const std::runtime_error& e) {
+    	initializeMessage(e);
+    }
+    catch(const std::exception& e) {
+    	initializeMessage(e);
+    }
+    catch (...) {
+    	initializeMessage();
+    }
 }
 
-void ExceptionHandler::setMessage() {
-	plainMessage.title = "Unknown Exception Error";
-	plainMessage.message = "unknown exception";
-	plainMessage.stacktrace.reset();
+void ExceptionHandler::initializeMessage() const {
+	plainException = "unknown exception";
 }
 
-void ExceptionHandler::setMessage(const esl::com::http::server::exception::StatusCode& e) {
-	plainMessage.title = "HTTP status code " + std::to_string(e.getStatusCode());
+void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
+	stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	plainException = "esl::com::http::server::exception::StatusCode " + std::to_string(e.getStatusCode());
 	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
-		plainMessage.message = e.what();
+		plainWhat = e.what();
 	}
 	else {
-		plainMessage.message = jerry::http::StatusCode::getMessage(e.getStatusCode());
+		plainWhat = jerry::http::StatusCode::getMessage(e.getStatusCode());
 	}
-	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
 }
 
-void ExceptionHandler::setMessage(const esl::database::exception::SqlError& e) {
+void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
+	stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	plainException = "esl::database::exception::SqlError";
+	plainWhat = e.what();
+
 	std::stringstream s;
 	s << "SQL Return Code:" << e.getSqlReturnCode() << "\n";
 	const esl::database::Diagnostics& diagnostics = e.getDiagnostics();
 	diagnostics.dump(s);
+	plainDetails += s.str();
 
-	plainMessage.title = "SQL Error";
-	plainMessage.message = e.what();
-	plainMessage.message += "\n\n";
-	plainMessage.message += s.str();
-	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::getStacktrace(e));
 }
 
-void ExceptionHandler::setMessage(const std::runtime_error& e) {
-	plainMessage.title = "std::runtime_error";
-	plainMessage.message = e.what();
-	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
+	stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	plainException = "std::runtime_error";
+	plainWhat = e.what();
 }
 
-void ExceptionHandler::setMessage(const std::exception& e) {
-	plainMessage.title = "std::exception";
-	plainMessage.message = e.what();
-	plainMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+void ExceptionHandler::initializeMessage(const std::exception& e) const {
+	stacktrace = createStackstrace(esl::getStacktrace(e));
+
+	plainException = "std::exception";
+	plainWhat = e.what();
+}
+
+const std::string& ExceptionHandler::getStacktrace() const {
+	return stacktrace;
+}
+
+const std::string& ExceptionHandler::getDetails() const {
+	return plainDetails;
 }
 
 } /* namespace engine */

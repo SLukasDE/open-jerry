@@ -28,45 +28,42 @@
 #include <esl/logging/Location.h>
 
 #include <string>
+#include <exception>
 #include <stdexcept>
-#include <functional>
-#include <ostream>
 
 namespace jerry {
 namespace engine {
 
 class ExceptionHandler {
 public:
+	ExceptionHandler(std::exception_ptr exceptionPointer);
 	virtual ~ExceptionHandler() = default;
-
-	void setShowException(bool showException);
-	bool getShowException() const noexcept;
-
-	void setShowStacktrace(bool showStacktrace);
-	bool getShowStacktrace() const noexcept;
-
-	/* return true if exception occurred */
-	bool call(std::function<void()> callFunction);
-	//bool call(std::function<void()> callFunction, esl::http::server::Connection& connection);
 
 	void dump(std::ostream& stream) const;
 	void dump(esl::logging::StreamReal& stream, esl::logging::Location location = esl::logging::Location{}) const;
 	inline void dump(esl::logging::StreamEmpty& stream, esl::logging::Location location = esl::logging::Location{}) const { };
 
 protected:
-	const ExceptionMessage& getMessage() const;
+	void initialize() const;
 
-	virtual void setMessage();
-	virtual void setMessage(const esl::com::http::server::exception::StatusCode& e);
-	virtual void setMessage(const esl::database::exception::SqlError& e);
-	virtual void setMessage(const std::runtime_error& e);
-	virtual void setMessage(const std::exception& e);
+	virtual void initializeMessage() const;
+	virtual void initializeMessage(const esl::com::http::server::exception::StatusCode& e) const;
+	virtual void initializeMessage(const esl::database::exception::SqlError& e) const;
+	virtual void initializeMessage(const std::runtime_error& e) const;
+	virtual void initializeMessage(const std::exception& e) const;
+
+	const std::string& getStacktrace() const;
+	const std::string& getDetails() const;
 
 private:
-	bool showException = false;
-	bool showStacktrace = false;
+	std::exception_ptr exceptionPointer;
+	mutable bool isInitialized = false;
 
-	ExceptionMessage plainMessage;
+	mutable std::string stacktrace;
+
+	mutable std::string plainException;
+	mutable std::string plainWhat;
+	mutable std::string plainDetails;
 };
 
 } /* namespace engine */

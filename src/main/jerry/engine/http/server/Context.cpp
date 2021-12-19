@@ -18,15 +18,13 @@
 
 #include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/http/server/Endpoint.h>
-#include <jerry/engine/http/server/Listener.h>
-#include <jerry/engine/http/server/Writer.h>
 #include <jerry/engine/http/server/RequestContext.h>
+#include <jerry/engine/http/server/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/utility/String.h>
 
 #include <stdexcept>
 
@@ -37,269 +35,372 @@ namespace server {
 
 namespace {
 Logger logger("jerry::engine::http::server::Context");
+} /* anonymous namespace */
 
-bool isPathMatching(const std::vector<std::string>& requestPathList, const std::vector<std::string>& endpointPathList, std::size_t startIndex) {
-	if(endpointPathList.size() > requestPathList.size() - startIndex) {
-		return false;
+Context::Context(bool aFollowParentOnFind)
+: followParentOnFind(aFollowParentOnFind)
+{ }
+
+void Context::setParent(Context* context) {
+	parent = context;
+	if(followParentOnFind) {
+		ObjectContext::setParent(context);
+	}
+}
+
+const Context* Context::getParent() const {
+	return parent;
+}
+
+Context& Context::addContext(const std::string& id, bool inheritObjects) {
+	std::unique_ptr<Context> context(new Context);
+	Context& contextRef = *context;
+
+	if(inheritObjects) {
+		contextRef.setParent(this);
 	}
 
-	for(std::size_t index = 0; index < endpointPathList.size(); ++index) {
-		if(requestPathList[startIndex + index] != endpointPathList[index]) {
-			return false;
-		}
+	if(id == "") {
+		entries.push_back(Entry(std::move(context)));
+	}
+	else {
+		addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	}
+
+	return contextRef;
+}
+
+void Context::addContext(const std::string& refId) {
+	Context* context = findObject<Context>(refId);
+
+	if(context == nullptr) {
+	    throw std::runtime_error("No context found with ref-id=\"" + refId + "\".");
+	}
+
+	entries.push_back(Entry(*context));
+}
+
+Endpoint& Context::addEndpoint(const std::string& path, bool inheritObjects) {
+	std::unique_ptr<Endpoint> endpoint(new Endpoint(path));
+	Endpoint& endpointRef = *endpoint;
+
+	if(inheritObjects) {
+		endpointRef.setParent(this);
+	}
+	entries.push_back(Entry(std::move(endpoint)));
+
+	return endpointRef;
+}
+
+void Context::addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings) {
+	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
+	requestHandler = esl::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createRequestHandler(settings);
+	entries.push_back(Entry(std::move(requestHandler)));
+}
+
+void Context::setShowException(Context::OptionalBool aShowException) {
+	showException = aShowException;
+}
+
+bool Context::getShowException() const {
+	switch(showException) {
+	case obTrue:
+		return true;
+	case obFalse:
+		return false;
+	default:
+		break;
+	}
+
+	if(getParent()) {
+		return getParent()->getShowException();
 	}
 
 	return true;
 }
 
-} /* anonymous namespace */
-
-Context::Context(Listener& aListener, const Endpoint& aEndpoint, const Context* aParentContext, bool aInheritObjects)
-: listener(aListener),
-  endpoint(aEndpoint),
-  parentContext(aParentContext),
-  inheritObjects(aInheritObjects)
-{ }
-
-void Context::addReference(const std::string& id, const std::string& refId) {
-	esl::object::Interface::Object* objectPtr = findLocalObject(id);
-	if(objectPtr != nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because there exists already an object with same id.");
-	}
-
-	objectPtr = findHiddenObject(refId);
-	if(objectPtr == nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because it's reference id '" + refId + "' does not exists.");
-	}
-
-	localObjectsById[id] = objectPtr;
+void Context::setShowStacktrace(Context::OptionalBool aShowStacktrace) {
+	showStacktrace = aShowStacktrace;
 }
 
-esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) {
-	esl::object::Interface::Object* objectPtr = findLocalObject(id);
-	if(objectPtr != nullptr) {
-        throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same id.");
+bool Context::getShowStacktrace() const {
+	switch(showStacktrace) {
+	case obTrue:
+		return true;
+	case obFalse:
+		return false;
+	default:
+		break;
 	}
 
-	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation, settings);
+	if(getParent()) {
+		return getParent()->getShowStacktrace();
+	}
 
-	localObjectsById[id] = &object;
-
-	return object;
+	return false;
 }
 
-esl::object::Interface::Object* Context::findLocalObject(const std::string& id) const {
-	auto localObjectsByIdIter = localObjectsById.find(id);
-	if(localObjectsByIdIter == std::end(localObjectsById)) {
+void Context::setInheritErrorDocuments(bool aInheritErrorDocuments) {
+	inheritErrorDocuments = aInheritErrorDocuments;
+}
+
+bool Context::getInheritErrorDocuments() const {
+	return inheritErrorDocuments;
+}
+
+void Context::addErrorDocument(unsigned short statusCode, const std::string& path, bool parse) {
+	if(errorDocuments.count(statusCode) > 0) {
+        throw std::runtime_error("There are multiple error documents defined for http status code \"" + std::to_string(statusCode) + "\".");
+	}
+
+	Document document(path);
+	document.setLanguage(parse ? Document::builtinScript : Document::none);
+	errorDocuments.insert(std::make_pair(statusCode, document));
+}
+
+const Document* Context::findErrorDocument(unsigned short statusCode) const {
+	const auto iter = errorDocuments.find(statusCode);
+
+	if(iter == std::end(errorDocuments)) {
+		if(getInheritErrorDocuments() && getParent()) {
+			return getParent()->findErrorDocument(statusCode);
+		}
 		return nullptr;
 	}
 
-    return localObjectsByIdIter->second;
+	return &iter->second;
 }
 
-esl::object::Interface::Object* Context::findHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = findLocalObject(id);
-	if(object) {
-		return object;
-	}
-
-	/* check if this is NOT an instance of Listener
-	 * check could also be "if(&listener != this) { ... }" */
-	if(parentContext) {
-		return parentContext->findHiddenObject(id);
-	}
-
-	return nullptr;
+void Context::addHeader(std::string key, std::string value) {
+	headers.insert(std::make_pair(key, value));
 }
 
-esl::object::Interface::Object* Context::findObject(const std::string& id) const {
-	if(inheritObjects) {
-		return findHiddenObject(id);
-	}
-	else {
-		return findLocalObject(id);
-	}
+const std::map<std::string, std::string>& Context::getHeaders() const {
+	return headers;
 }
 
-Context& Context::addContext(bool inheritObjects) {
-	std::unique_ptr<Context> context(new Context(listener, endpoint, this, inheritObjects));
-	Context& contextRef = *context;
-
-	entries.push_back(Entry(std::move(context)));
-
-	return contextRef;
-}
-
-Endpoint& Context::addEndpoint(std::string path, bool inheritObjects) {
-	std::vector<std::string> pathList(esl::utility::String::split(esl::utility::String::trim(std::move(path), '/'), '/'));
-
-	Endpoint* endpointPtr = new Endpoint(listener, endpoint, *this, std::move(pathList), inheritObjects);
-	entries.push_back(Entry(std::unique_ptr<Endpoint>(endpointPtr)));
-
-	return *endpointPtr;
-}
-
-void Context::addRequestHandler(const std::string& implementation) {
-	entries.push_back(Entry(esl::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createInput));
-}
-
-const Endpoint& Context::getEndpoint() const {
-	return endpoint;
+const std::map<std::string, std::string>& Context::getEffectiveHeaders() const {
+	return headersEffective;
 }
 
 void Context::initializeContext() {
 	// initialize objects of this context
+	ObjectContext::initializeContext();
 
-#if 1
-	// Initialize owned objects only, not references
-	BaseContext::initializeContext();
-#else
-	// Don't initialize references
-	for(auto& objectEntry : localObjectsById) {
-		esl::http::server::InitializeContext* initializeContext = dynamic_cast<esl::http::server::InitializeContext*>(objectEntry.second);
-		if(initializeContext) {
-			initializeContext->initializeContext(*this);
+	// build effective headers
+	if(getParent()) {
+		headersEffective = getParent()->getEffectiveHeaders();
+		for(const auto& header : headers) {
+			headersEffective[header.first] = header.second;
 		}
 	}
-#endif
+	else {
+		headersEffective = headers;
+	}
 
 	// call initializeContext() of sub-context's
 	for(auto& entry : entries) {
 		if(entry.context) {
 			/* ************** *
-			 * handle Context *
+			 * handle context *
 			 * ************** */
 			entry.context->initializeContext();
 		}
 
 		if(entry.endpoint) {
 			/* *************** *
-			 * handle Endpoint *
+			 * handle endpoint *
 			 * *************** */
 			entry.endpoint->initializeContext();
+		}
+
+		if(entry.requestHandler) {
+			/* ********************* *
+			 * handle requestHandler *
+			 * ********************* */
+			esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(entry.requestHandler.get());
+			if(initializeContext) {
+				initializeContext->initializeContext(*this);
+			}
 		}
 	}
 }
 
 void Context::dumpTree(std::size_t depth) const {
-	for(auto objectEntry : localObjectsById) {
+	if(showException != obEmpty) {
 		for(std::size_t i=0; i<depth; ++i) {
 			logger.info << "|   ";
 		}
-		if(BaseContext::findObject(objectEntry.first)) {
-			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << "\n";
-		}
-		else {
-			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << " (reference)\n";
+		logger.info << "showException: ";
+		switch(showException) {
+		case obTrue:
+			logger.info << "true\n";
+			break;
+		case obFalse:
+			logger.info << "false\n";
+			break;
+		default:
+			logger.info << "\n";
+			break;
 		}
 	}
+
+	if(showStacktrace != obEmpty) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "showStacktrace: ";
+		switch(showStacktrace) {
+		case obTrue:
+			logger.info << "true\n";
+			break;
+		case obFalse:
+			logger.info << "false\n";
+			break;
+		default:
+			logger.info << "\n";
+			break;
+		}
+	}
+
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
+	}
+	logger.info << "inheritErrorDocuments: ";
+	if(inheritErrorDocuments) {
+		logger.info << "true\n";
+	}
+	else {
+		logger.info << "false\n";
+	}
+
+	if(errorDocuments.empty() == false) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "Documents for Status-Code:\n";
+		for(const auto& statusCodeDocument : errorDocuments) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "  " << statusCodeDocument.first << "\n";
+		}
+	}
+
+	if(headers.empty() == false) {
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "Additional response headers:\n";
+		for(const auto& header : headers) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "  \"" << header.first << "\"=\"" << header.second << "\"\n";
+		}
+	}
+
+	ObjectContext::dumpTree(depth);
 
 	// call dumpTree() of sub-context's
 	for(auto& entry : entries) {
 		if(entry.context) {
 			/* ************** *
-			 * handle Context *
+			 * handle context *
 			 * ************** */
 			for(std::size_t i=0; i<depth; ++i) {
 				logger.info << "|   ";
 			}
-			logger.info << "+-> Context:\n";
+			logger.info << "+-> Context: -> " << entry.context.get() << "\n";
 			entry.context->dumpTree(depth + 1);
+		}
+
+		if(entry.refContext) {
+			/* ************************* *
+			 * handle referenced context *
+			 * ************************* */
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> Context: -> " << entry.refContext << " (reference)\n";
 		}
 
 		if(entry.endpoint) {
 			/* *************** *
-			 * handle Endpoint *
+			 * handle endpoint *
 			 * *************** */
 			for(std::size_t i=0; i<depth; ++i) {
 				logger.info << "|   ";
 			}
-			logger.info << "+-> Endpoint:\n";
+			logger.info << "+-> Endpoint: -> " << entry.endpoint.get() << "\n";
 			entry.endpoint->dumpTree(depth + 1);
 		}
 
-		if(entry.createRequestHandler) {
+		if(entry.requestHandler) {
 			/* ********************* *
-			 * handle RequestHandler *
+			 * handle requestHandler *
 			 * ********************* */
 			for(std::size_t i=0; i<depth; ++i) {
 				logger.info << "|   ";
 			}
-			logger.info << "+-> RequestHandler\n";
+			logger.info << "+-> RequestHandler: -> " << entry.requestHandler.get() << "\n";
 		}
 	}
 }
 
-esl::io::Input Context::createRequestHandler(std::unique_ptr<Writer>& writer) const {
+esl::io::Input Context::accept(RequestContext& requestContext) {
 	esl::io::Input input;
 
+	requestContext.setParent(this);
 	for(auto& entry : entries) {
 		if(entry.context) {
-			/* ************** *
-			 * handle Context *
-			 * ************** */
-			writer->getRequestContext().setContext(*entry.context);
-			writer->getRequestContext().setEndpoint(getEndpoint());
-
-			input = entry.context->createRequestHandler(writer);
+			/* *************** *
+			 * handle context *
+			 * *************** */
+			input = entry.context->accept(requestContext);
 			if(input) {
-				return input;
+				break;
 			}
-			/*
-			if(entry.context->tryRequestHandler(writer)) {
-				return true;
+			requestContext.setParent(this);
+		}
+
+		if(entry.refContext) {
+			/* ************************* *
+			 * handle referenced context *
+			 * ************************* */
+			input = entry.refContext->accept(requestContext);
+			if(input) {
+				break;
 			}
-			*/
+			requestContext.setParent(this);
 		}
 
 		if(entry.endpoint) {
 			/* *************** *
-			 * handle Endpoint *
+			 * handle endpoint *
 			 * *************** */
-			Endpoint* subEndpoint = entry.endpoint.get();
-
-			if(isPathMatching(writer->getRequestContext().getPathList(), subEndpoint->getPathList(), subEndpoint->getDepth())) {
-				Context* context = subEndpoint;
-
-				writer->getRequestContext().setContext(*subEndpoint);
-				writer->getRequestContext().setEndpoint(*subEndpoint);
-
-				input = context->createRequestHandler(writer);
+			if(requestContext.getPath().rfind(entry.endpoint->getPath()) == 0 &&
+					(requestContext.getPath().size() == entry.endpoint->getPath().size() || requestContext.getPath().at(entry.endpoint->getPath().size()) == '/')) {
+				std::string path = requestContext.getPath();
+				requestContext.setPath(path.substr(entry.endpoint->getPath().size()));
+				input = entry.endpoint->accept(requestContext);
 				if(input) {
-					return input;
+					break;
 				}
-				/*
-				if(context->tryRequestHandler(writer)) {
-					return true;
-				}
-				*/
+				requestContext.setParent(this);
+				requestContext.setPath(path);
 			}
 		}
 
-		if(entry.createRequestHandler) {
-			/* **************************** *
-			 * handle RequestHandlerFactory *
-			 * **************************** */
-			writer->getRequestContext().setContext(*this);
-			writer->getRequestContext().setEndpoint(getEndpoint());
-
-			/* set requestHandlerFactory and call it */
-			//requestHandler.setRequestHandler(entry.createRequestHandler);
-
-			/* check if calling requestHandlerFactory got a valid requestHandler */
-			/*
-			if(requestHandler.hasRequestHandler()) {
-				return true;
-			}
-			*/
-
-			input = writer->getRequestContext().createRequestHandler(writer, entry.createRequestHandler);
+		if(entry.requestHandler) {
+			/* ********************** *
+			 * handle request handler *
+			 * ********************** */
+			input = entry.requestHandler->accept(requestContext, requestContext.getContext());
 			if(input) {
-				return input;
+				break;
 			}
-			//if(writer->getRequestContext().tryRequestHandler(entry.createRequestHandler)) {
-			//	return esl::io::Input(std::unique_ptr<esl::io::Writer>(writer.release()));
-			//}
+			requestContext.setParent(this);
 		}
 	}
 

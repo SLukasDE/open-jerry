@@ -16,36 +16,33 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_BASIC_DUMP_SETTINGS_H_
-#define JERRY_BUILTIN_BASIC_DUMP_SETTINGS_H_
+#ifndef JERRY_CONFIG_XMLEXCEPTION_H_
+#define JERRY_CONFIG_XMLEXCEPTION_H_
 
-#include <esl/object/Interface.h>
+#include <jerry/config/Config.h>
+
+#include <tinyxml2/tinyxml2.h>
 
 #include <string>
-#include <set>
+#include <exception>
 
 namespace jerry {
-namespace builtin {
-namespace basic {
-namespace dump {
+namespace config {
 
-class Settings : public esl::object::Interface::Object {
+class XMLException : public std::exception {
 public:
-	Settings(const esl::object::Interface::Settings& settings);
+	explicit XMLException(const std::string& fileName, int lineNo, tinyxml2::XMLError xmlError);
+	explicit XMLException(const std::string& fileName, int lineNo, const std::string& message);
+	explicit XMLException(const Config& config, tinyxml2::XMLError xmlError);
+	explicit XMLException(const Config& config, const std::string& message);
 
-	bool getShowContext() const noexcept;
-	bool getShowContent() const noexcept;
-	const std::set<std::string>& getNotifiers() const noexcept;
+	const char* what() const noexcept override;
 
 private:
-	bool showContext = true;
-	bool showContent = false;
-	std::set<std::string> notifiers;
+	const std::string fullMessage;
 };
 
-} /* namespace dump */
-} /* namespace basic */
-} /* namespace builtin */
+} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_BASIC_DUMP_SETTINGS_H_ */
+#endif /* JERRY_CONFIG_XMLEXCEPTION_H_ */

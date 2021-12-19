@@ -19,44 +19,43 @@
 #ifndef JERRY_BUILTIN_BASIC_ECHO_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_BASIC_ECHO_REQUESTHANDLER_H_
 
-#include <jerry/builtin/basic/echo/Settings.h>
-
+#include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/basic/server/RequestContext.h>
+#include <esl/com/basic/client/Interface.h>
 #include <esl/io/Input.h>
-#include <esl/io/Consumer.h>
-#include <esl/io/Reader.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/InitializeContext.h>
 #include <esl/object/Interface.h>
 
 #include <string>
 #include <memory>
+#include <set>
+#include <vector>
+#include <utility>
 
 namespace jerry {
 namespace builtin {
 namespace basic {
 namespace echo {
 
-class RequestHandler : public esl::io::Consumer {
+class RequestHandler final : public virtual esl::com::basic::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
 public:
-	static esl::io::Input createInput(esl::com::basic::server::RequestContext& requestContext);
-	static const std::set<std::string>& getNotifiers(const esl::object::ObjectContext&);
-	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
-
 	static inline const char* getImplementation() {
 		return "jerry/builtin/basic/echo";
 	}
 
-	RequestHandler(esl::com::basic::server::RequestContext& requestContext, Settings& settings);
+	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
 
-	/* return: true for every kind of success and get called again for more content data
-	 *         false for failure or to get not called again
-	 */
-	bool consume(esl::io::Reader& reader) override;
+	RequestHandler(const esl::module::Interface::Settings& settings);
+
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
+	std::set<std::string> getNotifiers() const override;
+	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
 
 private:
-	esl::com::basic::server::RequestContext& requestContext;
-	Settings& settings;
-	std::string message;
+	std::set<std::string> notifiers;
+	unsigned long msDelay = 0;
+	std::string connectionFactoryId;
+	esl::com::basic::client::Interface::ConnectionFactory* connectionFactory = nullptr;
 };
 
 } /* namespace echo */

@@ -101,14 +101,5 @@ std::string StatusCode::getMessage(short int statusCode) {
 	return "";
 }
 
-StatusCode::StatusCode() {
-	// TODO Auto-generated constructor stub
-
-}
-
-StatusCode::~StatusCode() {
-	// TODO Auto-generated destructor stub
-}
-
 } /* namespace http */
 } /* namespace jerry */

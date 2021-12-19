@@ -17,42 +17,28 @@
  */
 
 #include <jerry/config/LoggerConfig.h>
-
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
+LoggerConfig::LoggerConfig()
+: Config("")
+{ }
 
-LoggerConfig::LoggerConfig(const tinyxml2::XMLElement& element) {
-	bool hasLayout = false;
-
+LoggerConfig::LoggerConfig(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "layout") {
-			hasLayout = true;
 			layout = attribute->Value();
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
-	}
-
-	if(hasLayout == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"layout\" at line ") + std::to_string(element.GetLineNum())));
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -62,21 +48,9 @@ LoggerConfig::LoggerConfig(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		if(innerElementName == "layout") {
-			layoutSettings.push_back(Setting(*innerElement, false));
-		}
-		else if(innerElementName == "setting") {
-			levelSettings.push_back(LevelSetting(*innerElement));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
-		}
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
@@ -89,6 +63,24 @@ void LoggerConfig::save(std::ostream& oStream, std::size_t spaces) const {
 		entry.saveLayout(oStream, spaces+2);
 	}
 	oStream << makeSpaces(spaces) << "</logger/>\n";
+}
+
+void LoggerConfig::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string elementName(element.Name());
+
+	if(elementName == "layout") {
+		layoutSettings.push_back(Setting(getFileName(), element, false));
+	}
+	else if(elementName == "setting") {
+		levelSettings.push_back(LevelSetting(getFileName(), element));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+	}
 }
 
 } /* namespace config */

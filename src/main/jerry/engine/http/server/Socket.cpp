@@ -17,13 +17,13 @@
  */
 
 #include <jerry/engine/http/server/Socket.h>
-#include <jerry/engine/http/server/ExceptionHandler.h>
+#include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/server/RequestContext.h>
 #include <jerry/Logger.h>
 
-#include <esl/object/Properties.h>
-#include <esl/object/Interface.h>
 #include <esl/Stacktrace.h>
 
+#include <memory>
 #include <stdexcept>
 
 namespace jerry {
@@ -35,112 +35,34 @@ namespace {
 Logger logger("jerry::engine::http::server::Socket");
 }
 
-Socket::Socket(Engine& aEngine, const std::string& aId, bool aHttps,
+Socket::Socket(const std::string& aId, bool aHttps,
 		const esl::object::Interface::Settings& aSettings,
 		const std::string& aImplementation)
 : socket(aSettings, aImplementation),
-  engine(aEngine),
-  id(aId),
+  requestHandler(*this),
   https(aHttps),
+  id(aId),
   implementation(aImplementation),
   settings(aSettings)
-{
-	getSocket().addObjectFactory("", [this](const esl::com::http::server::RequestContext&) {
-		esl::object::Interface::Object* object = this;
-		return object;
-	});
-}
+{ }
 
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
-	logger.warn << "Calling 'addTLSHost' is not allowed.\n";
+	socket.addTLSHost(hostname, std::move(certificate), std::move(key));
+	//logger.warn << "Calling 'addTLSHost' is not allowed.\n";
 	//throw esl::addStacktrace(std::runtime_error("Calling 'addTLSHost' is not allowed."));
 }
 
-void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory) {
-	logger.warn << "Calling 'addObjectFactory' is not allowed.\n";
-	//throw esl::addStacktrace(std::runtime_error("Calling 'addObjectFactory' is not allowed."));
-}
-
-void Socket::listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) {
-	logger.warn << "Calling 'listen' is not allowed.\n";
-	//throw esl::addStacktrace(std::runtime_error("Calling 'listen' is not allowed."));
-}
-
-void Socket::release() {
-	logger.warn << "Calling 'release' is not allowed.\n";
-	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
-}
-
-bool Socket::wait(std::uint32_t ms) {
-	logger.warn << "Calling 'wait' is not allowed.\n";
-	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
-	return false;
-}
-
-void Socket::dumpTree(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> ID: \"" << getId() << "\"\n";
-	++depth;
-
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "Implementation: \"" << getImplementation() << "\"\n";
-
-	for(auto& entry : listenerByHostname) {
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "+-> Hostname: \"" << entry.first << "\"\n";
-
-		entry.second->dumpTree(depth + 1);
-	}
-
-    for(std::size_t i=0; i<depth; ++i) {
-            logger.info << "|   ";
-    }
-    if(isHttps()) {
-    	logger.info << "HTTPS: YES\n";
-    }
-    else {
-    	logger.info << "HTTPS: NO\n";
-    }
-
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> Parameters:\n";
-	++depth;
-
-	for(const auto& setting : settings) {
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
-	}
+void Socket::listen(std::function<void()> onReleasedHandler) {
+	socket.listen(requestHandler, onReleasedHandler);
 }
 
 void Socket::addListener(Listener& listener) {
 	if(listenerByHostname.count(listener.getHostname()) > 0) {
-		throw esl::addStacktrace(std::runtime_error("Cannot add listener for hostname \"" + listener.getHostname() + "\" to http-server \"" + getId() + "\" because there is already another listener added for same hostname."));
+		throw esl::addStacktrace(std::runtime_error("Cannot add http-listener for hostname \"" + listener.getHostname() + "\" because there is already another listener added for same hostname."));
 
 	}
 	listenerByHostname[listener.getHostname()] = &listener;
 	refListeners.push_back(std::ref(listener));
-}
-
-esl::com::http::server::Interface::Socket& Socket::getSocket() noexcept {
-	return socket;
-}
-
-const std::string& Socket::getId() const noexcept {
-	return id;
-}
-
-const std::string& Socket::getImplementation() const noexcept {
-	return implementation;
 }
 
 bool Socket::isHttps() const noexcept {
@@ -157,84 +79,98 @@ std::set<std::string> Socket::getHostnames() const {
 	return hostnames;
 }
 
-Listener* Socket::getListenerByHostname(const std::string& hostname) {
+Listener* Socket::getListenerByHostname(std::string hostname) const {
 	auto iter = listenerByHostname.find(hostname);
+	while(iter == std::end(listenerByHostname)) {
+		std::string::size_type pos = hostname.find_first_of('.');
+		if(pos == std::string::npos) {
+			logger.debug << "Lookup http-listerner by host name \"*\"\n";
+			iter = listenerByHostname.find("*");
+			break;
+		}
+		hostname = hostname.substr(pos+1);
+		logger.debug << "Lookup http-listerner by host name \"*." << hostname << "\"\n";
+		iter = listenerByHostname.find("*." + hostname);
+	}
+
 	if(iter == std::end(listenerByHostname)) {
 		return nullptr;
 	}
 	return iter->second;
 }
 
-esl::io::Input Socket::createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext) {
-	/* Access log */
-	logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
+void Socket::listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
+	logger.warn << "Calling 'listen' is not allowed.\n";
+	//throw esl::addStacktrace(std::runtime_error("Calling 'listen' is not allowed."));
+}
 
-	Socket* socket = baseRequestContext.findObject<Socket>("");
-	if(!socket) {
-		logger.info << "ERROR: No http-server available for request to " << baseRequestContext.getRequest().getHostName() << ":" << baseRequestContext.getRequest().getHostPort() << "\n";
+void Socket::release() {
+	socket.release();
+	//logger.warn << "Calling 'release' is not allowed.\n";
+	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
+}
 
-		ExceptionHandler exceptionHandler;
+bool Socket::wait(std::uint32_t ms) {
+	return socket.wait(ms);
+	//logger.warn << "Calling 'wait' is not allowed.\n";
+	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
+	//return false;
+}
 
-		exceptionHandler.setShowException(false);
-		exceptionHandler.setShowStacktrace(false);
-		//esl::http::server::exception::StatusCode e(500, "Engine object not found");
-		//exceptionHandler.setMessage(e);
-		exceptionHandler.call([]() {
-			throw esl::com::http::server::exception::StatusCode(500, "Engine object not found");
-		});
-
-		// TODO
-		// This cast is a workaround to avoid a compile time error.
-		// Why does the compiler not find the matching dump-method in the base class?
-		//exceptionHandler.dump(logger.error);
-    	engine::ExceptionHandler& e(exceptionHandler);
-    	e.dump(logger.error);
-
-		exceptionHandler.dump(baseRequestContext.getConnection());
-		return esl::io::Input();
+void Socket::dumpTree(std::size_t depth) const {
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
 	}
-	logger.debug << "Http-server found with id " << socket->getId() << "\"\n";
+	logger.info << "+-> ID: \"" << getId() << "\" -> " << this << "\n";
+	++depth;
 
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
+	}
+	logger.info << "Implementation: \"" << getImplementation() << "\"\n";
 
-	/* *************************************************** *
-	 * Lookup corresponding Listener matching the hostname *
-	 * *************************************************** */
-	logger.debug << "Lookup http-listerner by host name \"" << baseRequestContext.getRequest().getHostName() << "\"\n";
+    for(std::size_t i=0; i<depth; ++i) {
+            logger.info << "|   ";
+    }
+    if(isHttps()) {
+    	logger.info << "HTTPS: YES\n";
+    }
+    else {
+    	logger.info << "HTTPS: NO\n";
+    }
 
-	std::string hostname = baseRequestContext.getRequest().getHostName();
-	Listener* listener = socket->getListenerByHostname(hostname);
-	while(!listener) {
-		std::string::size_type pos = hostname.find_first_of('.');
-		if(pos == std::string::npos) {
-			logger.debug << "Lookup http-listerner by host name \"*\"\n";
-			listener = socket->getListenerByHostname("*");
-			break;
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
+	}
+	logger.info << "+-> Parameters:\n";
+
+	for(const auto& setting : settings) {
+		for(std::size_t i=0; i<depth+1; ++i) {
+			logger.info << "|   ";
 		}
-		hostname = hostname.substr(pos+1);
-		logger.debug << "Lookup http-listerner by host name \"*." << hostname << "\"\n";
-		listener = socket->getListenerByHostname("*." + hostname);
+		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
 	}
 
-	if(listener == nullptr) {
-		/* Error log */
-		logger.info << "ERROR: No listener available for invalid request " << baseRequestContext.getRequest().getHostName() << ":" << baseRequestContext.getRequest().getHostPort() << "\n";
+	std::set<std::string> hostnames = getHostnames();
+	for(const auto& hostname : hostnames) {
+		http::server::Listener* listener = getListenerByHostname(hostname);
+		if(listener == nullptr) {
+			continue;
+		}
 
-		//esl::http::server::exception::StatusCode e(404);
-		ExceptionHandler exceptionHandler;
-
-		exceptionHandler.setShowException(false);
-		exceptionHandler.setShowStacktrace(false);
-		//exceptionHandler.setMessage(esl::http::server::exception::StatusCode(500));
-		exceptionHandler.call([]() {
-			throw esl::com::http::server::exception::StatusCode(500);
-		});
-		exceptionHandler.dump(baseRequestContext.getConnection());
-
-		return esl::io::Input();
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Hostname: \"" << hostname << "\" -> " << listener << "\n";
 	}
+}
 
-	logger.debug << "Http-listener found\n";
-	return listener->createRequestHandler(baseRequestContext);
+const std::string& Socket::getId() const noexcept {
+	return id;
+}
+
+const std::string& Socket::getImplementation() const noexcept {
+	return implementation;
 }
 
 } /* namespace server */

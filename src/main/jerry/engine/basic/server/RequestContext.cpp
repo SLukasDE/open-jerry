@@ -18,7 +18,6 @@
 
 #include <jerry/engine/basic/server/RequestContext.h>
 #include <jerry/engine/basic/server/Context.h>
-#include <jerry/engine/basic/server/Writer.h>
 #include <jerry/engine/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
@@ -31,72 +30,29 @@ namespace {
 Logger logger("jerry::engine::messaging::server::RequestContext");
 }
 
-RequestContext::RequestContext(esl::com::basic::server::RequestContext& aBaseRequestContext, Writer& aWriter, const Context& aContext)
-: baseRequestContext(aBaseRequestContext),
-  writer(aWriter),
-  context(aContext)
+RequestContext::RequestContext(esl::com::basic::server::RequestContext& aRequestContext)
+: requestContext(aRequestContext)
 { }
 
-esl::io::Input RequestContext::createInput(std::unique_ptr<Writer>& writer, esl::com::basic::server::requesthandler::Interface::CreateInput createInput) {
-	ExceptionHandler exceptionHandler;
-
-    /* setting 'exceptionOccured' is important to make hasRequestHandler() return true */
-    bool exceptionOccured = exceptionHandler.call(
-			[this, createInput]() { input = createInput(*this); });
-
-	esl::io::Input rvInput;
-
-    if(exceptionOccured) {
-		/* **************** *
-		 * Output on logger *
-		 * **************** */
-    	exceptionHandler.setShowException(true);
-    	exceptionHandler.setShowStacktrace(true);
-
-    	exceptionHandler.dump(logger.warn);
-
-		rvInput = esl::io::Input(std::unique_ptr<esl::io::Writer>(writer.release()));
-    }
-    else if(input) {
-		rvInput = esl::io::Input(std::unique_ptr<esl::io::Writer>(writer.release()));
-    }
-
-	return rvInput;
-}
-
-esl::io::Input& RequestContext::getInput() {
-	return input;
-}
-
-const esl::io::Input& RequestContext::getInput() const {
-	return input;
-}
-
 esl::com::basic::server::Connection& RequestContext::getConnection() const {
-	return baseRequestContext.getConnection();
+	return requestContext.getConnection();
 }
 
 const esl::com::basic::server::Request& RequestContext::getRequest() const {
-	return baseRequestContext.getRequest();
+	return requestContext.getRequest();
 }
 
-void RequestContext::setContext(const Context& aContext) {
-	context = std::cref(aContext);
+void RequestContext::setParent(Context* aContext) {
+	baseContext = aContext;
+	context.setParent(aContext);
 }
 
-const Context& RequestContext::getContext() const noexcept {
-	return context.get();
+Context& RequestContext::getContext() {
+	return context;
 }
 
-esl::object::Interface::Object* RequestContext::findObject(const std::string& id) const {
-	//esl::object::Interface::Object* object = context.get().findObject<esl::object::Interface::Object>(id);
-	const esl::object::ObjectContext& objectContext = context.get();
-	esl::object::Interface::Object* object = objectContext.findObject<esl::object::Interface::Object>(id);
-
-	if(object == nullptr) {
-		object = baseRequestContext.findObject<esl::object::Interface::Object>(id);
-	}
-	return object;
+const Context& RequestContext::getContext() const {
+	return context;
 }
 
 } /* namespace server */

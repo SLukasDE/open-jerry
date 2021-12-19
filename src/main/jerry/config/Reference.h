@@ -19,6 +19,9 @@
 #ifndef JERRY_CONFIG_REFERENCE_H_
 #define JERRY_CONFIG_REFERENCE_H_
 
+#include <jerry/config/Config.h>
+#include <jerry/engine/ObjectContext.h>
+
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
@@ -27,10 +30,12 @@
 namespace jerry {
 namespace config {
 
-struct Reference {
-	Reference(const tinyxml2::XMLElement& element);
+class Reference : public Config {
+public:
+	Reference(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::ObjectContext& engineObjectContext) const;
 
 	std::string id;
 	std::string refId;

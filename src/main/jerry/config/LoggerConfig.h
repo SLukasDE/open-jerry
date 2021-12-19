@@ -19,6 +19,7 @@
 #ifndef JERRY_CONFIG_LOGGERCONFIG_H_
 #define JERRY_CONFIG_LOGGERCONFIG_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/LevelSetting.h>
 #include <jerry/config/Setting.h>
 
@@ -31,16 +32,20 @@
 namespace jerry {
 namespace config {
 
-struct LoggerConfig {
-	LoggerConfig() = default;
-	LoggerConfig(const tinyxml2::XMLElement& element);
+class LoggerConfig : public Config {
+public:
+	LoggerConfig();
+	LoggerConfig(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
+//private:
 	std::string layout;
 
 	std::vector<LevelSetting> levelSettings;
 	std::vector<Setting> layoutSettings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace config */

@@ -16,7 +16,8 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/ExceptionDocument.h>
+#include <jerry/config/http/ExceptionDocument.h>
+#include <jerry/config/XMLException.h>
 #include <jerry/utility/URL.h>
 
 #include <esl/Stacktrace.h>
@@ -25,68 +26,50 @@
 
 namespace jerry {
 namespace config {
+namespace http {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-
-bool stringToBool(bool& b, std::string str) {
-	if(str == "true") {
-		b = true;
-	}
-	else if(str == "false") {
-		b = false;
-	}
-	else {
-		return false;
-	}
-	return true;
-}
-}
-
-ExceptionDocument::ExceptionDocument(const tinyxml2::XMLElement& element) {
+ExceptionDocument::ExceptionDocument(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	bool hasStatusCode = false;
 	bool hasPath = false;
 
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		if(std::string(attribute->Name()) == "statusCode") {
+		std::string attributeName(attribute->Name());
+
+		if(attributeName == "statusCode") {
 			hasStatusCode = true;
 			statusCode= std::atoi(attribute->Value());
 		}
-		else if(std::string(attribute->Name()) == "path") {
+		else if(attributeName == "path") {
 			hasPath = true;
 			path = attribute->Value();
 		}
-		else if(std::string(attribute->Name()) == "parser") {
+		else if(attributeName == "parser") {
 			if(stringToBool(parser, attribute->Value()) == false) {
-				throw esl::addStacktrace(std::runtime_error(std::string("Unknown value \"") + attribute->Value() + "\" for attribute \"" + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+				throw XMLException(*this, "Unknown value \"" + std::string(attribute->Value()) + "\" for attribute '" + attributeName + "'");
 			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + attributeName + "'");
 		}
 	}
 
 	if(hasStatusCode == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"statusCode\" at line ") + std::to_string(element.GetLineNum())));
+		throw XMLException(*this, "Missing attribute 'statusCode'");
 	}
 	if(hasPath == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"path\" at line ") + std::to_string(element.GetLineNum())));
+		throw XMLException(*this, "Missing attribute 'path'");
 	}
 
 	if(parser) {
 		utility::URL url(path);
 		if(!url.getScheme().empty() && url.getScheme() != "file") {
-			throw esl::addStacktrace(std::runtime_error(std::string("Attribute parse=\"true\" at line ") + std::to_string(element.GetLineNum()) + " is only allowed with file protocol specified for attribute \"path\"."));
+			throw XMLException(*this, "Attribute parse=\"true\" is only allowed with file protocol specified for attribute 'path'.");
 		}
 	}
 }
@@ -102,5 +85,6 @@ void ExceptionDocument::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << "\"/>\n";
 }
 
+} /* namespace http */
 } /* namespace config */
 } /* namespace jerry */

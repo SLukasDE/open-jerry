@@ -20,12 +20,11 @@
 #define JERRY_ENGINE_BASIC_SERVER_LISTENER_H_
 
 #include <jerry/engine/basic/server/Context.h>
-
+#if 0
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/object/Interface.h>
-#include <esl/object/ObjectContext.h>
-
+#endif
 #include <string>
 #include <vector>
 
@@ -36,18 +35,16 @@ namespace server {
 
 class Listener : public Context {
 public:
-	Listener(esl::object::ObjectContext& engineContext, bool inheritObjects, std::vector<std::string> refIds);
+	Listener(std::vector<std::string> serverRefIds);
 
-	esl::object::Interface::Object* findHiddenObject(const std::string& id) const override;
 	void dumpTree(std::size_t depth) const override;
 
 	const std::vector<std::string>& getRefIds() const;
 
-	esl::io::Input createRequestHandler(esl::com::basic::server::RequestContext& baseRequestContext);
+	//esl::io::Input createRequestHandler(esl::com::basic::server::RequestContext& requestContext);
 
 private:
-	esl::object::ObjectContext& engineContext;
-	std::vector<std::string> refIds;
+	std::vector<std::string> serverRefIds;
 };
 
 } /* namespace server */

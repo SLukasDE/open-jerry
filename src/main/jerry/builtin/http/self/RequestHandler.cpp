@@ -22,7 +22,9 @@
 #include <esl/io/input/Closed.h>
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Request.h>
+#include <esl/Stacktrace.h>
 
+#include <stdexcept>
 #include <string>
 
 namespace jerry {
@@ -34,7 +36,14 @@ namespace {
 Logger logger("jerry::builtin::http::self::RequestHandler");
 } /* anonymous namespace */
 
-esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+	}
+	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler());
+}
+
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
 	std::string content;
 	content += "<!DOCTYPE html>\n";
 	content += "<html>\n";

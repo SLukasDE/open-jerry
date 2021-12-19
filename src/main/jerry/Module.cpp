@@ -18,17 +18,11 @@
 #include <jerry/Module.h>
 #include <jerry/builtin/Properties.h>
 #include <jerry/builtin/basic/dump/RequestHandler.h>
-#include <jerry/builtin/basic/dump/Settings.h>
 #include <jerry/builtin/basic/echo/RequestHandler.h>
-#include <jerry/builtin/basic/echo/Settings.h>
 #include <jerry/builtin/http/basicauth/RequestHandler.h>
-#include <jerry/builtin/http/basicauth/Settings.h>
 #include <jerry/builtin/http/database/RequestHandler.h>
-#include <jerry/builtin/http/database/Settings.h>
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
-#include <jerry/builtin/http/filebrowser/Settings.h>
 #include <jerry/builtin/http/file/RequestHandler.h>
-#include <jerry/builtin/http/file/Settings.h>
 #include <jerry/builtin/http/self/RequestHandler.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
@@ -45,53 +39,29 @@ void Module::install(esl::module::Module& module) {
 			jerry::builtin::Properties::getImplementation(),
 			&jerry::builtin::Properties::createSettings));
 
-/*
-	module.addInterface(std::unique_ptr<const esl::module::Interface>(new esl::object::Interface(
-			getId(), "jerry/builtin/messaging/producer-factory", &jerry::builtin::messaging::ProducerFactory::create)));
-*/
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
 			jerry::builtin::basic::dump::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::dump::RequestHandler::createInput,
-			&jerry::builtin::basic::dump::RequestHandler::getNotifiers));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::basic::dump::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::dump::RequestHandler::createSettings));
+			&jerry::builtin::basic::dump::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
 			jerry::builtin::basic::echo::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::echo::RequestHandler::createInput,
-			&jerry::builtin::basic::echo::RequestHandler::getNotifiers));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::basic::echo::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::echo::RequestHandler::createSettings));
+			&jerry::builtin::basic::echo::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::basicauth::RequestHandler::getImplementation(),
 			&jerry::builtin::http::basicauth::RequestHandler::createRequestHandler));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::http::basicauth::RequestHandler::getImplementation(),
-			&jerry::builtin::http::basicauth::RequestHandler::createSettings));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::database::RequestHandler::getImplementation(),
 			&jerry::builtin::http::database::RequestHandler::createRequestHandler));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::http::database::RequestHandler::getImplementation(),
-			&jerry::builtin::http::database::RequestHandler::createSettings));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::filebrowser::RequestHandler::getImplementation(),
 			&jerry::builtin::http::filebrowser::RequestHandler::createRequestHandler));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::http::filebrowser::RequestHandler::getImplementation(),
-			&jerry::builtin::http::filebrowser::RequestHandler::createSettings));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::file::RequestHandler::getImplementation(),
 			&jerry::builtin::http::file::RequestHandler::createRequestHandler));
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::http::file::RequestHandler::getImplementation(),
-			&jerry::builtin::http::file::RequestHandler::createSettings));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::self::RequestHandler::getImplementation(),

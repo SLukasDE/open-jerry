@@ -28,8 +28,12 @@ Entry::Entry(std::unique_ptr<Context> aContext)
 : context(std::move(aContext))
 { }
 
-Entry::Entry(const esl::com::basic::server::requesthandler::Interface& aRequesthandler)
-: requesthandler(&aRequesthandler)
+Entry::Entry(Context& aRefContext)
+: refContext(&aRefContext)
+{ }
+
+Entry::Entry(std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> aRequestHandler)
+: requestHandler(std::move(aRequestHandler))
 { }
 
 } /* namespace server */

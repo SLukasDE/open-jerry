@@ -16,34 +16,28 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_EXCEPTIONS_H_
-#define JERRY_CONFIG_EXCEPTIONS_H_
-
-#include <jerry/config/ExceptionDocument.h>
-#include <jerry/config/OptionalBool.h>
-
-#include <tinyxml2/tinyxml2.h>
-
-#include <string>
-#include <vector>
-#include <ostream>
+#if 0
+#include <jerry/engine/basic/server/Connection.h>
 
 namespace jerry {
-namespace config {
+namespace engine {
+namespace basic {
+namespace server {
 
-struct Exceptions {
-	Exceptions() = default;
-	Exceptions(const tinyxml2::XMLElement& element);
+Connection::Connection(esl::com::basic::server::Connection& aBaseConnection)
+: baseConnection(aBaseConnection)
+{ }
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
+bool Connection::send(esl::io::Output output, std::vector<std::pair<std::string, std::string>> parameters) {
+	return baseConnection.send(std::move(output), std::move(parameters));
+}
 
-	bool inheritDocuments = true;
-	OptionalBool showExceptions = OptionalBool::obEmpty;
-	OptionalBool showStacktrace = OptionalBool::obEmpty;
-	std::vector<ExceptionDocument> documents;
-};
+void Connection::setParent(const Context* aContext) {
+	context = aContext;
+}
 
-} /* namespace config */
+} /* namespace server */
+} /* namespace basic */
+} /* namespace engine */
 } /* namespace jerry */
-
-#endif /* JERRY_CONFIG_EXCEPTIONS_H_ */
+#endif

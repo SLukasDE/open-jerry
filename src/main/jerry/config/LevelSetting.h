@@ -19,6 +19,8 @@
 #ifndef JERRY_CONFIG_LEVELSETTING_H_
 #define JERRY_CONFIG_LEVELSETTING_H_
 
+#include <jerry/config/Config.h>
+
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
@@ -27,8 +29,9 @@
 namespace jerry {
 namespace config {
 
-struct LevelSetting {
-	LevelSetting(const tinyxml2::XMLElement& element);
+class LevelSetting : public Config {
+public:
+	LevelSetting(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 

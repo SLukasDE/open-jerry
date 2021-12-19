@@ -39,18 +39,12 @@ std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(uint16
 Socket::Socket(uint16_t aPort, const esl::object::Values<std::string>& values)
 : esl::com::http::server::Interface::Socket(),
   port(aPort)
-{
-
-}
+{ }
 
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
 }
 
-void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory) {
-	objectFactories[id] = objectFactory;
-}
-
-void Socket::listen(esl::com::http::server::requesthandler::Interface::CreateInput createInput) {
+void Socket::listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
 }
 
 void Socket::release() {

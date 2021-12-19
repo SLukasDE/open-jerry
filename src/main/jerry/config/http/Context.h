@@ -19,7 +19,11 @@
 #ifndef JERRY_CONFIG_HTTP_CONTEXT_H_
 #define JERRY_CONFIG_HTTP_CONTEXT_H_
 
-#include <jerry/config/http/Entry.h>
+#include <jerry/config/Config.h>
+#include <jerry/config/http/Exceptions.h>
+#include <jerry/config/Setting.h>
+#include <jerry/engine/Engine.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -30,22 +34,28 @@ namespace jerry {
 namespace config {
 namespace http {
 
-struct Context {
-	Context(const tinyxml2::XMLElement& element, bool isGlobal);
+class Entry;
+
+class Context : public Config {
+public:
+	Context(const std::string& fileName, const tinyxml2::XMLElement& element, bool isGlobal);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Engine& engine) const;
+	void install(engine::http::server::Context& engineHttpContext) const;
 
+private:
 	const bool isGlobal;
 
-	bool hasId = false;
 	std::string id;
-
-	bool hasRefId = false;
 	std::string refId;
 
 	bool inherit = true;
-
 	std::vector<Entry> entries;
+	std::vector<Setting> responseHeaders;
+	Exceptions exceptions;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace http */

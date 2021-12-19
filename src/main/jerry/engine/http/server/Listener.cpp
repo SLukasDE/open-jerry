@@ -17,15 +17,7 @@
  */
 
 #include <jerry/engine/http/server/Listener.h>
-#include <jerry/engine/http/server/Writer.h>
-#include <jerry/engine/http/server/ExceptionHandler.h>
-#include <jerry/engine/Engine.h>
 #include <jerry/Logger.h>
-
-#include <esl/com/http/server/Connection.h>
-#include <esl/utility/String.h>
-
-#include <stdexcept>
 
 namespace jerry {
 namespace engine {
@@ -36,27 +28,10 @@ namespace {
 Logger logger("jerry::engine::http::server::Listener");
 }
 
-Listener::EndpointEntry::EndpointEntry(const Endpoint* aEndpoint)
-: endpoint(aEndpoint)
+Listener::Listener(const std::string& aHostname, std::vector<std::string> aRefIds)
+: hostname(aHostname),
+  refIds(std::move(aRefIds))
 { }
-
-Listener::Listener(esl::object::ObjectContext& aEngineContext, bool inheritObjects, const std::string& aHostname, std::vector<std::string> aRefIds)
-: Endpoint(*this, inheritObjects),
-  engineContext(aEngineContext),
-  hostname(aHostname),
-  refIds(std::move(aRefIds)),
-  rootEndpointEntry(this)
-{ }
-
-esl::object::Interface::Object* Listener::findHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = Context::findLocalObject(id);
-
-	if(object) {
-		return object;
-	}
-
-	return engineContext.findObject<esl::object::Interface::Object>(id);
-}
 
 void Listener::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
@@ -71,7 +46,8 @@ void Listener::dumpTree(std::size_t depth) const {
 		logger.info << "Added to: \"" + refId + "\"\n";
 	}
 
-	Endpoint::dumpTree(depth);
+	//Endpoint::dumpTree(depth);
+	Context::dumpTree(depth);
 }
 
 const std::vector<std::string>& Listener::getRefIds() const {
@@ -80,64 +56,6 @@ const std::vector<std::string>& Listener::getRefIds() const {
 
 const std::string& Listener::getHostname() const {
 	return hostname;
-}
-
-esl::io::Input Listener::createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext) {
-	std::unique_ptr<Writer> writer(new Writer(*this, baseRequestContext));
-
-	/* *************************************************************************** *
-	 * Delegate to Context::createRequestHandler(Writer& writer) -> esl::io::Input *
-	 * Returns a valid input object if a request handler has been found.           *
-	 * *************************************************************************** */
-	esl::io::Input input = Context::createRequestHandler(writer);
-
-	if(!input) {
-		/* *********************************************************************** *
-		 * Throw a StatusCode(404) exception if no request handers has been found. *
-		 * *********************************************************************** */
-
-		ExceptionHandler exceptionHandler;
-
-		exceptionHandler.setShowException(true);
-		exceptionHandler.setShowStacktrace(false);
-
-		//exceptionHandler.setMessage(esl::http::server::exception::StatusCode(404));
-		exceptionHandler.call([]() {
-			throw esl::com::http::server::exception::StatusCode(404);
-		});
-
-		/* send exception message on HTTP connection */
-		exceptionHandler.dump(baseRequestContext.getConnection());
-	}
-
-	return input;
-}
-
-void Listener::registerEndpoint(const Endpoint& endpoint) {
-	EndpointEntry* endpointEntry = &rootEndpointEntry;
-
-	std::vector<std::string> fullPathList = endpoint.getFullPathList();
-
-	for(const auto& pathEntry : fullPathList) {
-		EndpointEntry* tmpEndpointEntry = endpointEntry->entries[pathEntry].get();
-		if(tmpEndpointEntry == nullptr) {
-			tmpEndpointEntry = new EndpointEntry;
-			//tmpEndpointEntry->depth = endpointEntry->depth + 1;
-			endpointEntry->entries[pathEntry].reset(tmpEndpointEntry);
-		}
-		endpointEntry = tmpEndpointEntry;
-	}
-
-	if(endpointEntry->endpoint != nullptr) {
-		std::string message = "ambiguous definition of endpoint \"";
-		for(const auto& pathEntry : fullPathList) {
-			message += "/" + pathEntry;
-		}
-		message += "\"";
-		throw std::runtime_error(message);
-	}
-
-	endpointEntry->endpoint = &endpoint;
 }
 
 } /* namespace server */

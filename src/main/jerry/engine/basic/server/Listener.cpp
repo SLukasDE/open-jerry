@@ -17,10 +17,10 @@
  */
 
 #include <jerry/engine/basic/server/Listener.h>
-#include <jerry/engine/basic/server/Writer.h>
+//#include <jerry/engine/basic/server/Writer.h>
 #include <jerry/Logger.h>
 
-#include <stdexcept>
+//#include <stdexcept>
 
 namespace jerry {
 namespace engine {
@@ -31,39 +31,27 @@ namespace {
 Logger logger("jerry::engine::messaging::server::Listener");
 }
 
-Listener::Listener(esl::object::ObjectContext& aEngineContext, bool inheritObjects, std::vector<std::string> aRefIds)
-: Context(*this, nullptr, inheritObjects),
-  engineContext(aEngineContext),
-  refIds(std::move(aRefIds))
+Listener::Listener(std::vector<std::string> aServerRefIds)
+: serverRefIds(std::move(aServerRefIds))
 { }
 
-esl::object::Interface::Object* Listener::findHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = Context::findLocalObject(id);
-
-	if(object) {
-		return object;
-	}
-
-	return engineContext.findObject<esl::object::Interface::Object>(id);
-}
-
 void Listener::dumpTree(std::size_t depth) const {
-	for(const auto& refId : refIds) {
+	for(const auto& serverRefId : serverRefIds) {
 		for(std::size_t i=0; i<depth; ++i) {
 			logger.info << "|   ";
 		}
-		logger.info << "Added to: \"" + refId + "\"\n";
+		logger.info << "Added to: \"" + serverRefId + "\"\n";
 	}
 
 	Context::dumpTree(depth);
 }
 
 const std::vector<std::string>& Listener::getRefIds() const {
-	return refIds;
+	return serverRefIds;
 }
-
-esl::io::Input Listener::createRequestHandler(esl::com::basic::server::RequestContext& baseRequestContext) {
-	std::unique_ptr<Writer> writer(new Writer(*this, baseRequestContext));
+#if 0
+esl::io::Input Listener::createRequestHandler(esl::com::basic::server::RequestContext& requestContext) {
+	std::unique_ptr<Writer> writer(new Writer(*this, requestContext));
 
 	/* *************************************************************************** *
 	 * Delegate to Context::createRequestHandler(Writer& writer) -> esl::io::Input *
@@ -71,7 +59,7 @@ esl::io::Input Listener::createRequestHandler(esl::com::basic::server::RequestCo
 	 * *************************************************************************** */
 	return Context::createRequestHandler(writer);
 }
-
+#endif
 
 } /* namespace server */
 } /* namespace basic */

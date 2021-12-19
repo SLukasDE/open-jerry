@@ -16,33 +16,38 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_BASIC_BROKER_H_
-#define JERRY_CONFIG_BASIC_BROKER_H_
+#ifndef JERRY_ENGINE_BASIC_SERVER_REQUESTHANDLER_H_
+#define JERRY_ENGINE_BASIC_SERVER_REQUESTHANDLER_H_
 
-#include <jerry/config/Setting.h>
+#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/com/basic/server/RequestContext.h>
+#include <esl/io/Input.h>
+#include <esl/object/Interface.h>
 
-#include <tinyxml2/tinyxml2.h>
-
+#include <set>
 #include <string>
-#include <vector>
-#include <ostream>
 
 namespace jerry {
-namespace config {
+namespace engine {
 namespace basic {
+namespace server {
 
-struct Broker {
-	Broker(const tinyxml2::XMLElement& element);
+class Socket;
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
+class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
+public:
+	RequestHandler(Socket& socket);
 
-	std::string id;
-	std::string implementation;
-	std::vector<Setting> settings;
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
+	std::set<std::string> getNotifiers() const override;
+
+private:
+	Socket& socket;
 };
 
+} /* namespace server */
 } /* namespace basic */
-} /* namespace config */
+} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_BASIC_BROKER_H_ */
+#endif /* JERRY_ENGINE_BASIC_SERVER_REQUESTHANDLER_H_ */

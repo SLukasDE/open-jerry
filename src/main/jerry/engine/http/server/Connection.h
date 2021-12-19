@@ -19,6 +19,8 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_CONNECTION_H_
 #define JERRY_ENGINE_HTTP_SERVER_CONNECTION_H_
 
+#include <jerry/engine/http/server/Context.h>
+
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/Response.h>
 
@@ -29,18 +31,16 @@ namespace engine {
 namespace http {
 namespace server {
 
-class RequestContext;
-
 class Connection : public esl::com::http::server::Connection {
 public:
-	Connection(RequestContext& requestContext, esl::com::http::server::Connection& baseConnection);
+	Connection(esl::com::http::server::Connection& baseConnection, const Context& context);
 
 	bool send(const esl::com::http::server::Response& response, esl::io::Output output) override;
 	bool send(const esl::com::http::server::Response& response, boost::filesystem::path path) override;
 
 private:
-	RequestContext& requestContext;
 	esl::com::http::server::Connection& baseConnection;
+	const Context& context;
 
 	void addHeaders(esl::com::http::server::Response& response);
 };

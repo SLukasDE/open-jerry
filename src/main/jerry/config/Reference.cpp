@@ -17,51 +17,41 @@
  */
 
 #include <jerry/config/Reference.h>
-
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Reference::Reference(const tinyxml2::XMLElement& element) {
-	bool hasId = false;
-	bool hasRefId = false;
-
+Reference::Reference(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
-			hasId = true;
 			id = attribute->Value();
+			if(id == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
-			hasRefId = true;
 			refId = attribute->Value();
+			if(id == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'ref-id' is invalid.");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasId == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"id\" at line ") + std::to_string(element.GetLineNum())));
+	if(id == "") {
+		throw XMLException(*this, "Missing attribute 'id'");
 	}
-	if(hasRefId == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"ref-id\" at line ") + std::to_string(element.GetLineNum())));
+	if(refId == "") {
+		throw XMLException(*this, "Missing attribute 'ref-id'");
 	}
 }
 
@@ -69,5 +59,10 @@ void Reference::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<reference id=\"" << id << "\" ref-id=\"" << refId << "\"/>\n";
 }
 
+void Reference::install(engine::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addReference(id, refId);
+}
+
 } /* namespace config */
 } /* namespace jerry */
+

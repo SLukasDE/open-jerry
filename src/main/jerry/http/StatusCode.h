@@ -24,12 +24,11 @@
 namespace jerry {
 namespace http {
 
-class StatusCode {
+class StatusCode final {
 public:
-	static std::string getMessage(short int statusCode);
+	StatusCode() = delete;
 
-	StatusCode();
-	virtual ~StatusCode();
+	static std::string getMessage(short int statusCode);
 };
 
 } /* namespace http */

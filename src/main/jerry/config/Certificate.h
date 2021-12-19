@@ -19,6 +19,8 @@
 #ifndef JERRY_CONFIG_CERTIFICATE_H_
 #define JERRY_CONFIG_CERTIFICATE_H_
 
+#include <jerry/config/Config.h>
+
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
@@ -27,8 +29,9 @@
 namespace jerry {
 namespace config {
 
-struct Certificate {
-	Certificate(const tinyxml2::XMLElement& element);
+class Certificate : public Config {
+public:
+	Certificate(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 

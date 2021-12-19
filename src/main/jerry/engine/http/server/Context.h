@@ -19,12 +19,12 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_CONTEXT_H_
 #define JERRY_ENGINE_HTTP_SERVER_CONTEXT_H_
 
-#include <jerry/engine/http/server/Writer.h>
 #include <jerry/engine/http/server/Entry.h>
-#include <jerry/engine/BaseContext.h>
+#include <jerry/engine/http/server/Document.h>
+#include <jerry/engine/ObjectContext.h>
 
-#include <esl/object/Interface.h>
 #include <esl/io/Input.h>
+#include <esl/module/Interface.h>
 
 #include <string>
 #include <map>
@@ -36,52 +36,64 @@ namespace engine {
 namespace http {
 namespace server {
 
-class Listener;
-class Endpoint;
+class RequestContext;
 
-class Context : public BaseContext {
+class Context : public ObjectContext {
 public:
-	void addReference(const std::string& id, const std::string& refId);
-	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) override;
+	enum OptionalBool {
+		obEmpty,
+		obTrue,
+		obFalse
+	};
 
-	/* lookup for object only in this context */
-	virtual esl::object::Interface::Object* findLocalObject(const std::string& id) const;
+	Context(bool followParentOnFind = true);
 
-	/* lookup for object up to it's parent context */
-	virtual esl::object::Interface::Object* findHiddenObject(const std::string& id) const;
+	void setParent(Context* context);
+	const Context* getParent() const;
 
-	Context& addContext(bool inheritObjects);
-	Endpoint& addEndpoint(std::string path, bool inheritObjects);
-	void addRequestHandler(const std::string& implementation);
+	Context& addContext(const std::string& id, bool inheritObjects);
+	void addContext(const std::string& refId);
 
-	const Endpoint& getEndpoint() const;
+	Endpoint& addEndpoint(const std::string& path, bool inheritObjects);
+
+	void addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings);
+
+	void setShowException(OptionalBool showException);
+	bool getShowException() const;
+
+	void setShowStacktrace(OptionalBool showStacktrace);
+	bool getShowStacktrace() const;
+
+	void setInheritErrorDocuments(bool inheritErrorDocuments);
+	bool getInheritErrorDocuments() const;
+
+	void addErrorDocument(unsigned short statusCode, const std::string& path, bool parse);
+	const Document* findErrorDocument(unsigned short statusCode) const;
+
+	void addHeader(std::string key, std::string value);
+	const std::map<std::string, std::string>& getHeaders() const;
+	const std::map<std::string, std::string>& getEffectiveHeaders() const;
 
 	void initializeContext() override;
-
 	void dumpTree(std::size_t depth) const override;
 
-protected:
-	Context(Listener& listener, const Endpoint& endpoint, const Context* parentContext, bool inheritObjects);
-
-	esl::object::Interface::Object* findObject(const std::string& id) const override;
-
-	esl::io::Input createRequestHandler(std::unique_ptr<Writer>& writer) const;
+	virtual esl::io::Input accept(RequestContext& requestContext);
 
 private:
-	Listener& listener;
-	const Endpoint& endpoint;
-	const Context* parentContext = nullptr;
-
-	/* If true:
-	 *   findObject(...) calls findHiddenObject(...)
-	 * If false:
-	 *   findObject(...) calls findLocalObject(...)
-	 */
-	bool inheritObjects = true;
-
-	std::map<std::string, esl::object::Interface::Object*> localObjectsById;
-
 	std::vector<Entry> entries;
+
+	Context* parent = nullptr;
+	bool followParentOnFind = true;
+
+	OptionalBool showException = obEmpty;
+	OptionalBool showStacktrace = obEmpty;
+	bool inheritErrorDocuments = true;
+
+	/* maps Status Code to Error-Doc-Path and Flag, if content has to be parsed */
+	std::map<unsigned short, Document> errorDocuments;
+
+	std::map<std::string, std::string> headers;
+	std::map<std::string, std::string> headersEffective;
 };
 
 } /* namespace server */
@@ -90,3 +102,5 @@ private:
 } /* namespace jerry */
 
 #endif /* JERRY_ENGINE_HTTP_SERVER_CONTEXT_H_ */
+
+#include <jerry/engine/http/server/Endpoint.h> // important for compiler to know size of Context (see Entry.h)

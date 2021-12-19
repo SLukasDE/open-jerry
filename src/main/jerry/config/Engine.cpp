@@ -17,364 +17,358 @@
  */
 
 #include <jerry/config/Engine.h>
-#include <jerry/config/Object.h>
-#include <jerry/config/Reference.h>
-#include <jerry/config/Setting.h>
-#include <jerry/config/Exceptions.h>
-#include <jerry/config/ExceptionDocument.h>
-#include <jerry/config/basic/Listener.h>
-#include <jerry/config/basic/Context.h>
-#include <jerry/config/basic/Entry.h>
-#include <jerry/config/basic/RequestHandler.h>
-#include <jerry/config/http/Listener.h>
-#include <jerry/config/http/Endpoint.h>
-#include <jerry/config/http/Context.h>
-#include <jerry/config/http/Entry.h>
-#include <jerry/config/http/RequestHandler.h>
-#include <jerry/config/OptionalBool.h>
-
-#include <jerry/builtin/Properties.h>
-
-#include <jerry/engine/BaseContext.h>
-#include <jerry/engine/basic/server/Listener.h>
-#include <jerry/engine/basic/server/Context.h>
-#include <jerry/engine/http/server/Listener.h>
-#include <jerry/engine/http/server/Endpoint.h>
-#include <jerry/engine/http/server/Context.h>
-
+#include <jerry/config/Config.h>
+#include <jerry/config/XMLException.h>
+#include <jerry/utility/URL.h>
+#include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <esl/object/Interface.h>
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
-#include <vector>
-#include <cstdlib>
-
+#include <esl/Module.h>
 
 namespace jerry {
 namespace config {
 
 namespace {
 Logger logger("jerry::config::Engine");
-
-void add(engine::BaseContext& engineBaseContext, const Object& objects);
-
-void add(engine::Engine& engine, const basic::Listener& configBasicListener);
-void add(engine::basic::server::Context& engineBasicContext, const Reference& reference);
-void add(engine::basic::server::Context& engineBasicContext, const std::vector<basic::Entry>& configBasicEntries);
-void add(engine::basic::server::Context& engineBasicContext, const basic::Context& configBasicContext);
-void add(engine::basic::server::Context& engineBasicContext, const basic::RequestHandler& configBasicRequestHandler);
-
-void add(engine::Engine& engine, const http::Listener& configHttpListener);
-void add(engine::http::server::Context& engineHttpContext, const Reference& reference);
-void add(engine::http::server::Context& engineHttpContext, const std::vector<http::Entry>& configHttpEntries);
-void add(engine::http::server::Context& engineHttpContext, const http::Context& httpContext);
-void add(engine::http::server::Context& engineHttpContext, const http::Endpoint& httpEndpoint);
-void add(engine::http::server::Context& engineHttpContext, const http::RequestHandler& httpRequestHandler);
-void add(engine::http::server::Endpoint& engineEndpoint, const std::vector<Setting>& responseHeaders);
-void add(engine::http::server::Endpoint& engineEndpoint, const Exceptions& exceptions);
-
-
-
-void add(engine::BaseContext& engineBaseContext, const Object& object) {
-	std::vector<std::pair<std::string, std::string>> settings;
-
-	for(const auto& setting : object.settings) {
-		settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
-	}
-
-	engineBaseContext.addObject(object.id, object.implementation, settings);
-}
-
-
-
-void add(engine::Engine& engine, const basic::Listener& configBasicListener) {
-	// TODO: last parameter is still missing in configBasicListener. So it's temporary hard coded to "true".
-	engine::basic::server::Listener& engineBasicListener = engine.addBasicListener(configBasicListener.refId, true /*configMessageListener.inherit*/);
-
-	add(engineBasicListener, configBasicListener.entries);
-}
-
-void add(engine::basic::server::Context& engineBasicContext, const Reference& reference) {
-	engineBasicContext.addReference(reference.id, reference.refId);
-}
-
-void add(engine::basic::server::Context& engineBasicContext, const std::vector<basic::Entry>& entries) {
-	for(const auto& entry : entries) {
-		switch(entry.getType()) {
-		case basic::Entry::etObject:
-			add(engineBasicContext, entry.getObject());
-			break;
-		case basic::Entry::etReference:
-			add(engineBasicContext, entry.getReference());
-			break;
-		case basic::Entry::etContext:
-			add(engineBasicContext, entry.getContext());
-			break;
-		case basic::Entry::etRequestHandler:
-			add(engineBasicContext, entry.getRequestHandler());
-			break;
-		default:
-			logger.warn << "There is an entry with an unkown type\n";
-			break;
-		}
-	}
-}
-
-void add(engine::basic::server::Context& engineBasicContext, const basic::Context& configBasicContext) {
-	// TODO: last parameter is still missing in configMessageContext. So it's temporary hard coded to "true".
-	engine::basic::server::Context& newEngineMessageContext = engineBasicContext.addContext(true /*configMessageContext.inherit*/);
-	add(newEngineMessageContext, configBasicContext.entries);
-}
-
-void add(engine::basic::server::Context& context, const basic::RequestHandler& configBasicRequestHandler) {
-	std::string objectImplementation;
-	if(configBasicRequestHandler.objectImplementation) {
-		objectImplementation = *configBasicRequestHandler.objectImplementation;
-	}
-	else if(engine::BaseContext::hasObjectImplementation(configBasicRequestHandler.implementation)) {
-		objectImplementation = configBasicRequestHandler.implementation;
-	}
-	else if(configBasicRequestHandler.settings.size() > 0) {
-		objectImplementation = jerry::builtin::Properties::getImplementation();
-	}
-
-	if(objectImplementation.empty()) {
-		if(configBasicRequestHandler.settings.size() > 0) {
-			logger.warn << "empty object implementation for request handler \"" << configBasicRequestHandler.implementation << "\" but parameters have been specified.\n";
-			logger.warn << "-> ignoring parameters.\n";
-		}
-		context.addRequestHandler(configBasicRequestHandler.implementation);
-	}
-	else {
-		engine::basic::server::Context& newContext = context.addContext(true);
-
-		std::vector<std::pair<std::string, std::string>> settings;
-		for(const auto& setting : configBasicRequestHandler.settings) {
-			settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
-		}
-
-		newContext.addObject("", objectImplementation, settings);
-		newContext.addRequestHandler(configBasicRequestHandler.implementation);
-	}
-}
-
-
-
-void add(engine::Engine& engine, const http::Listener& configHttpListener) {
-	engine::http::server::Listener& engineHttpListener = engine.addHttpListener(configHttpListener.refId, configHttpListener.inherit, configHttpListener.hostname);
-
-	add(engineHttpListener, configHttpListener.entries);
-	add(engineHttpListener, configHttpListener.responseHeaders);
-	add(engineHttpListener, configHttpListener.exceptions);
-}
-
-void add(engine::http::server::Context& engineHttpContext, const Reference& reference) {
-	engineHttpContext.addReference(reference.id, reference.refId);
-}
-
-void add(engine::http::server::Context& engineHttpContext, const std::vector<http::Entry>& configHttpEntries) {
-	for(const auto& entry : configHttpEntries) {
-		switch(entry.getType()) {
-		case http::Entry::etObject:
-			add(engineHttpContext, entry.getObject());
-			break;
-		case http::Entry::etReference:
-			add(engineHttpContext, entry.getReference());
-			break;
-		case http::Entry::etEndpoint:
-			add(engineHttpContext, entry.getEndpoint());
-			break;
-		case http::Entry::etContext:
-			add(engineHttpContext, entry.getContext());
-			break;
-		case http::Entry::etRequestHandler:
-			add(engineHttpContext, entry.getRequestHandler());
-			break;
-		default:
-			logger.warn << "There is an entry with an unkown type\n";
-			break;
-		}
-	}
-}
-
-void add(engine::http::server::Context& engineHttpContext, const http::Endpoint& configHttpEndpoint) {
-	engine::http::server::Endpoint& newEngineHttpEndpoint = engineHttpContext.addEndpoint(configHttpEndpoint.path, configHttpEndpoint.inherit);
-
-	add(newEngineHttpEndpoint, configHttpEndpoint.entries);
-
-	add(newEngineHttpEndpoint, configHttpEndpoint.responseHeaders);
-	add(newEngineHttpEndpoint, configHttpEndpoint.exceptions);
-}
-
-void add(engine::http::server::Context& engineHttpContext, const http::Context& configHttpContext) {
-	engine::http::server::Context& newEngineHttpContext = engineHttpContext.addContext(configHttpContext.inherit);
-	add(newEngineHttpContext, configHttpContext.entries);
-}
-
-void add(engine::http::server::Context& context, const http::RequestHandler& configHttpRequestHandler) {
-	std::string objectImplementation;
-	if(configHttpRequestHandler.objectImplementation.empty() == false) {
-		objectImplementation = configHttpRequestHandler.objectImplementation;
-	}
-	else if(engine::BaseContext::hasObjectImplementation(configHttpRequestHandler.implementation)) {
-		objectImplementation = configHttpRequestHandler.implementation;
-	}
-	else if(configHttpRequestHandler.settings.size() > 0) {
-		objectImplementation = jerry::builtin::Properties::getImplementation();
-	}
-
-	if(objectImplementation.empty()) {
-		context.addRequestHandler(configHttpRequestHandler.implementation);
-	}
-	else {
-		engine::http::server::Context& newContext = context.addContext(true);
-
-		std::vector<std::pair<std::string, std::string>> settings;
-		for(const auto& setting : configHttpRequestHandler.settings) {
-			settings.push_back(std::make_pair(setting.key, Engine::evaluate(setting.value, setting.language)));
-		}
-
-		newContext.addObject("", objectImplementation, settings);
-		newContext.addRequestHandler(configHttpRequestHandler.implementation);
-	}
-}
-
-void add(engine::http::server::Endpoint& engineHttpEndpoint, const std::vector<Setting>& responseHeaders) {
-	for(const auto& responseHeader : responseHeaders) {
-		engineHttpEndpoint.addHeader(responseHeader.key, responseHeader.value);
-	}
-}
-
-void add(engine::http::server::Endpoint& engineHttpEndpoint, const Exceptions& exceptions) {
-	/* set showExceptions */
-	if(exceptions.showExceptions == OptionalBool::obTrue) {
-		engineHttpEndpoint.setShowException(true);
-	}
-	else if(exceptions.showExceptions == OptionalBool::obFalse) {
-		engineHttpEndpoint.setShowException(false);
-	}
-
-	/* set showStacktrace */
-	if(exceptions.showStacktrace == OptionalBool::obTrue) {
-		engineHttpEndpoint.setShowStacktrace(true);
-	}
-	else if(exceptions.showStacktrace == OptionalBool::obFalse) {
-		engineHttpEndpoint.setShowStacktrace(false);
-	}
-
-	engineHttpEndpoint.setInheritErrorDocuments(exceptions.inheritDocuments);
-
-	for(const auto& exceptionDocument : exceptions.documents) {
-		engineHttpEndpoint.addErrorDocument(exceptionDocument.statusCode, exceptionDocument.path, exceptionDocument.parser);
-	}
-}
-
 } /* anonymous namespace */
 
-Engine::Engine(engine::Engine& aEngine)
-: engine(aEngine)
-{ }
+Engine::Engine(const std::string& fileName)
+: Config(fileName)
+{
+	filesLoaded.insert(fileName);
 
-void Engine::install(const Config& config) {
-	for(const auto& configCertificate : config.certificates) {
+	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(fileName.c_str());
+	if(xmlError != tinyxml2::XML_SUCCESS) {
+		throw XMLException(*this, xmlError);
+	}
+
+	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
+	if(element == nullptr) {
+		throw XMLException(*this, "No root element");
+	}
+
+	setXMLFile(fileName, *element);
+	loadXML(*element);
+}
+
+void Engine::save(std::ostream& oStream) const {
+	oStream << "\n<jerry>\n";
+	for(const auto& entry : libraries) {
+		oStream << "  <library file=\"" << entry.first << "\"/>\n";
+	}
+	/*
+	for(const auto& entry : filesLoaded) {
+		oStream << "  <include file=\"" << entry << "\"/>\n";
+	}
+	*/
+	for(const auto& entry : certificates) {
+		entry.save(oStream, 2);
+	}
+
+	loggerConfig.save(oStream, 2);
+
+	for(const auto& entry : objects) {
+		entry.save(oStream, 2);
+	}
+
+
+	for(const basic::Context& basicContext : basicContextList) {
+		basicContext.save(oStream, 2);
+	}
+
+	for(const basic::Listener& basicListener : basicListeners) {
+		basicListener.save(oStream, 2);
+	}
+
+
+	for(const http::Server& httpServer : httpServers) {
+		httpServer.save(oStream, 2);
+	}
+
+	for(const http::Context& httpContext : httpContextList) {
+		httpContext.save(oStream, 2);
+	}
+
+	for(const http::Listener& httpListener : httpListeners) {
+		httpListener.save(oStream, 2);
+	}
+
+	oStream << "</jerry>\n";
+}
+
+std::unique_ptr<esl::logging::Layout> Engine::install(engine::Engine& engine, esl::logging::Appender& appenderCoutStream, esl::logging::Appender& appenderMemBuffer) {
+	/* ************************
+	 * load and add libraries *
+	 * ********************** */
+	for(auto& library : libraries) {
+		/*
+		if(library.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
+		}
+		*/
+		library.second = &esl::module::Library::load(library.first);
+		library.second->install(esl::getModule());
+	}
+
+
+	/* ************* *
+	 * create layout *
+	 * ************* */
+	esl::object::Interface::Settings settings;
+
+	for(auto const setting : loggerConfig.layoutSettings) {
+		settings.push_back(std::make_pair(setting.key, setting.value));
+	}
+
+	std::unique_ptr<esl::logging::Layout> layout(new esl::logging::Layout(settings, loggerConfig.layout));
+
+
+	/* *********************** *
+	 * set layout to appenders *
+	 * *********************** */
+
+    appenderCoutStream.setRecordLevel();
+    appenderCoutStream.setLayout(layout.get());
+    esl::logging::addAppender(appenderCoutStream);
+
+    /* MemBuffer appender just writes output to a buffer of a fixed number of lines.
+     * If number of columns is specified as well the whole memory is allocated at initialization time.
+     */
+    appenderMemBuffer.setRecordLevel(esl::logging::Appender::RecordLevel::ALL);
+    appenderMemBuffer.setLayout(layout.get());
+    esl::logging::addAppender(appenderMemBuffer);
+
+
+    /* ************** *
+     * set log levels *
+     * ************** */
+	for(auto const setting : loggerConfig.levelSettings) {
+		if(setting.level == "SILENT") {
+			esl::logging::setLevel(esl::logging::Level::SILENT, setting.className);
+		}
+		else if(setting.level == "ERROR") {
+			esl::logging::setLevel(esl::logging::Level::ERROR, setting.className);
+		}
+		else if(setting.level == "WARN") {
+			esl::logging::setLevel(esl::logging::Level::WARN, setting.className);
+		}
+		else if(setting.level == "INFO") {
+			esl::logging::setLevel(esl::logging::Level::INFO, setting.className);
+		}
+		else if(setting.level == "DEBUG") {
+			esl::logging::setLevel(esl::logging::Level::DEBUG, setting.className);
+		}
+		else if(setting.level == "TRACE") {
+			esl::logging::setLevel(esl::logging::Level::TRACE, setting.className);
+		}
+		else {
+			logger.warn << "Unknown logging level \"" << setting.level << "\" for class \"" << setting.className << "\"\n";
+		}
+	}
+
+
+	for(const auto& configCertificate : certificates) {
 		engine.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
 	}
 
-	for(const auto& object : config.objects) {
-		add(engine, object);
+	for(const auto& object : objects) {
+		object.install(engine);
+	}
+
+	for(const auto& basicServer : basicServers) {
+		basicServer.install(engine);
+	}
+
+	for(const auto& basicContext : basicContextList) {
+		basicContext.install(engine);
+	}
+
+	for(const auto& basicListener : basicListeners) {
+		basicListener.install(engine);
 	}
 
 
-	for(const auto& basicBroker : config.basicBrokers) {
-		std::vector<std::pair<std::string, std::string>> settings;
+	for(const auto& httpServer : httpServers) {
+		httpServer.install(engine);
+	}
 
-		for(const auto& setting : basicBroker.settings) {
-			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	for(const auto& httpContext : httpContextList) {
+		httpContext.install(engine);
+	}
+
+	for(const auto& httpListener : httpListeners) {
+		httpListener.install(engine);
+	}
+
+	return layout;
+}
+
+void Engine::loadXML(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Name of XML root element is empty");
+	}
+	if(std::string(element.Name()) != "jerry") {
+		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
+	}
+	if(element.GetUserData() != nullptr) {
+		throw XMLException(*this, "Node has user data but it should be empty");
+	}
+
+	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+		throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+	}
+
+	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
+		const tinyxml2::XMLElement* innerElement = node->ToElement();
+
+		if(innerElement == nullptr) {
+			continue;
 		}
 
-		engine.addBasicBroker(basicBroker.id, settings, basicBroker.implementation);
-	}
-
-
-	for(const auto& basicServer : config.basicServers) {
-		std::vector<std::pair<std::string, std::string>> settings;
-
-		for(const auto& setting : basicServer.settings) {
-			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
-		}
-
-		engine.addBasicServer(basicServer.id, settings, basicServer.implementation);
-	}
-
-
-	for(const auto& httpServer : config.httpServers) {
-		std::vector<std::pair<std::string, std::string>> settings;
-
-		for(const auto& setting : httpServer.settings) {
-			settings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
-		}
-
-		engine.addHttpServer(httpServer.id, httpServer.isHttps, settings, httpServer.implementation);
-	}
-
-	for(const auto& basicListener : config.basicListeners) {
-		add(engine, basicListener);
-	}
-
-	for(const auto& httpListener : config.httpListeners) {
-		add(engine, httpListener);
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
-std::string Engine::evaluate(const std::string& expression, const std::string& language) {
-	if(language == "plain") {
-		return expression;
+void Engine::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
 	}
 
-	std::string value;
-	std::string var;
-	enum {
-		intro,
-		begin,
-		end
-	} state = end;
+	std::string elementName(element.Name());
 
-	for(std::size_t i=0; i<expression.size(); ++i) {
-		if(state == begin) {
-			if(expression.at(i) == '}') {
-				char* val = getenv(var.c_str());
-				if(val == nullptr) {
-					throw esl::addStacktrace(std::runtime_error("No value available for variable \"" + var + "\" in expression: \"" + expression + "\""));
+	if(elementName == "include") {
+		parseInclude(element);
+	}
+	else if(elementName == "mime-types") {
+		std::string file;
+
+		if(element.GetUserData() != nullptr) {
+			throw XMLException(*this, "Element has user data but it should be empty");
+		}
+
+		for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+			if(std::string(attribute->Name()) == "file") {
+				file = attribute->Value();
+				if(file == "") {
+					throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
 				}
-				value += val;
-				state = end;
-				var.clear();
 			}
 			else {
-				var += expression.at(i);
+				throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 			}
 		}
-		else if(state == intro) {
-			if(expression.at(i) == '{') {
-				state = begin;
-			}
-			else {
-				throw esl::addStacktrace(std::runtime_error("Syntax error in expression: \"" + expression + "\""));
+
+		if(file == "") {
+			throw XMLException(*this, "Missing attribute 'file'");
+		}
+
+		utility::MIME::loadDefinition(file);
+	}
+	else if(elementName == "library") {
+		parseLibrary(element);
+	}
+	else if(elementName == "certificate") {
+		certificates.push_back(Certificate(getFileName(), element));
+	}
+	else if(elementName == "logger") {
+		loggerConfig = LoggerConfig(getFileName(), element);
+	}
+	else if(elementName == "object") {
+		objects.push_back(Object(getFileName(), element));
+	}
+	else if(elementName == "basic-server") {
+		basicServers.push_back(basic::Server(getFileName(), element));
+	}
+	else if(elementName == "basic-context") {
+		basicContextList.push_back(basic::Context(getFileName(), element, true));
+	}
+	else if(elementName == "basic-listener") {
+		basicListeners.push_back(basic::Listener(getFileName(), element));
+	}
+	else if(elementName == "http-server") {
+		httpServers.push_back(http::Server(getFileName(), element));
+	}
+	else if(elementName == "http-context") {
+		httpContextList.push_back(http::Context(getFileName(), element, true));
+	}
+	else if(elementName == "http-listener") {
+		httpListeners.push_back(http::Listener(getFileName(), element));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+	}
+}
+
+void Engine::parseInclude(const tinyxml2::XMLElement& element) {
+	std::string fileName;
+
+	if(element.GetUserData() != nullptr) {
+		throw XMLException(*this, "Element has user data but it should be empty");
+	}
+
+	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+		if(std::string(attribute->Name()) == "file") {
+			fileName = attribute->Value();
+			if(fileName == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
 		}
 		else {
-			if(expression.at(i) == '$') {
-				state = intro;
-			}
-			else {
-				value += expression.at(i);
-			}
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	return value;
+	if(fileName == "") {
+		throw XMLException(*this, "Missing attribute 'file'");
+	}
+
+	if(filesLoaded.count(fileName) == 0) {
+		auto oldXmlFile = setXMLFile(fileName, -1);
+		filesLoaded.insert(fileName);
+
+		tinyxml2::XMLDocument doc;
+		tinyxml2::XMLError xmlError = doc.LoadFile(fileName.c_str());
+		if(xmlError != tinyxml2::XML_SUCCESS) {
+			throw XMLException(*this, xmlError);
+		}
+
+		const tinyxml2::XMLElement* element = doc.RootElement();
+		if(element == nullptr) {
+			throw XMLException(*this, "No root element");
+		}
+
+		setXMLFile(fileName, *element);
+		loadXML(*element);
+		setXMLFile(oldXmlFile);
+	}
+}
+
+void Engine::parseLibrary(const tinyxml2::XMLElement& element) {
+	std::string fileName;
+
+	if(element.GetUserData() != nullptr) {
+		throw XMLException(*this, "Element has user data but it should be empty");
+	}
+
+	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+		if(std::string(attribute->Name()) == "file") {
+			fileName = attribute->Value();
+			if(fileName == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+			}
+		}
+		else {
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+		}
+	}
+
+	if(fileName == "") {
+		throw XMLException(*this, "Missing attribute 'file'");
+	}
+
+	libraries.push_back(std::make_pair(fileName, nullptr));
 }
 
 } /* namespace config */

@@ -32,10 +32,12 @@ class Context;
 
 struct Entry {
 	Entry(std::unique_ptr<Context> context);
-	Entry(const esl::com::basic::server::requesthandler::Interface& requesthandler);
+	Entry(Context& refContext);
+	Entry(std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler);
 
 	std::unique_ptr<Context> context;
-	const esl::com::basic::server::requesthandler::Interface* requesthandler = nullptr;
+	Context* refContext = nullptr;
+	std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler;
 };
 
 } /* namespace server */

@@ -17,43 +17,37 @@
  */
 
 #include <jerry/config/http/RequestHandler.h>
+#include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/module/Interface.h>
 
-#include <stdexcept>
+#include <utility>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-RequestHandler::RequestHandler(const tinyxml2::XMLElement& element) {
-	bool hasImplementation = false;
-
+RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "implementation") {
-			hasImplementation = true;
 			implementation = attribute->Value();
-		}
-		else if(std::string(attribute->Name()) == "object-implementation") {
-			objectImplementation = attribute->Value();
+			if(implementation == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
+	}
+
+	if(implementation == "") {
+		throw XMLException(*this, "Missing attribute 'implementation");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -63,43 +57,43 @@ RequestHandler::RequestHandler(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement, true));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
-		}
-	}
-
-	if(hasImplementation == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"implementation\" at line ") + std::to_string(element.GetLineNum())));
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
 void RequestHandler::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<requesthandler implementation=\"" << implementation << "\"";
+	oStream << makeSpaces(spaces) << "<requesthandler implementation=\"" << implementation << "\">\n";
 
-	if(objectImplementation.empty() == false) {
-		oStream << " object-implementation=\"" << objectImplementation << "\"";
+	for(const auto& entry : settings) {
+		entry.saveParameter(oStream, spaces+2);
 	}
 
-	if(settings.empty()) {
-		oStream << "/>\n";
+	oStream << makeSpaces(spaces) << "</requesthandler>\n";
+}
+
+void RequestHandler::install(engine::http::server::Context& context) const {
+	esl::module::Interface::Settings eslSettings;
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	context.addRequestHandler(implementation, eslSettings);
+}
+
+void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string innerElementName(element.Name());
+
+	if(innerElementName == "parameter") {
+		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		oStream << ">\n";
-
-		for(const auto& entry : settings) {
-			entry.saveParameter(oStream, spaces+2);
-		}
-
-		oStream << makeSpaces(spaces) << "</requesthandler>\n";
+		throw XMLException(*this, "Unknown element name \"" + std::string(element.Name()) + "\"");
 	}
 }
 

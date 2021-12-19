@@ -16,36 +16,30 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_HTTP_BASICAUTH_SETTINGS_H_
-#define JERRY_BUILTIN_HTTP_BASICAUTH_SETTINGS_H_
+#ifndef JERRY_ENGINE_ENTRY_H_
+#define JERRY_ENGINE_ENTRY_H_
+
+#include <jerry/engine/basic/server/Socket.h>
+#include <jerry/engine/http/server/Socket.h>
 
 #include <esl/object/Interface.h>
 
-#include <string>
 #include <memory>
 
 namespace jerry {
-namespace builtin {
-namespace http {
-namespace basicauth {
+namespace engine {
 
-class Settings : public esl::object::Interface::Object {
-public:
-	Settings(const esl::object::Interface::Settings& settings);
+struct Entry {
+	Entry(std::unique_ptr<basic::server::Socket> basicServer);
+	Entry(std::unique_ptr<http::server::Socket> httpServer);
+	Entry(std::unique_ptr<esl::object::Interface::Object> object);
 
-	const std::string& getUsername() const;
-	const std::string& getPassword() const;
-	const std::string& getRealmId() const;
-
-private:
-	std::string username;
-	std::string password;
-	std::string realmId;
+	std::unique_ptr<basic::server::Socket> basicServer;
+	std::unique_ptr<http::server::Socket> httpServer;
+	std::unique_ptr<esl::object::Interface::Object> object;
 };
 
-} /* namespace basicauth */
-} /* namespace http */
-} /* namespace builtin */
+} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_HTTP_BASICAUTH_SETTINGS_H_ */
+#endif /* JERRY_ENGINE_ENTRY_H_ */

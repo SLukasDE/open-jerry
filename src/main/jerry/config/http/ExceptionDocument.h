@@ -16,33 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_HTTP_FILE_SETTINGS_H_
-#define JERRY_BUILTIN_HTTP_FILE_SETTINGS_H_
+#ifndef JERRY_CONFIG_HTTP_EXCEPTIONDOCUMENT_H_
+#define JERRY_CONFIG_HTTP_EXCEPTIONDOCUMENT_H_
 
-#include <esl/object/Interface.h>
+#include <jerry/config/Config.h>
+
+#include <tinyxml2/tinyxml2.h>
 
 #include <string>
+#include <ostream>
 
 namespace jerry {
-namespace builtin {
+namespace config {
 namespace http {
-namespace file {
 
-class Settings : public esl::object::Interface::Object {
+class ExceptionDocument : public Config {
 public:
-	Settings(const esl::object::Interface::Settings& settings);
+	ExceptionDocument(const std::string& fileName, const tinyxml2::XMLElement& element);
 
-	const std::string& getPath() const;
-	const int getHttpStatus() const;
+	void save(std::ostream& oStream, std::size_t spaces) const;
 
-private:
-	std::string path = "/";
-	int httpStatus = 200;
+	unsigned short statusCode = 0;
+	std::string path;
+	bool parser = false;
+
 };
 
-} /* namespace file */
 } /* namespace http */
-} /* namespace builtin */
+} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_HTTP_FILE_SETTINGS_H_ */
+#endif /* JERRY_CONFIG_HTTP_EXCEPTIONDOCUMENT_H_ */

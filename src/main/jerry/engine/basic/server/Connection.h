@@ -15,45 +15,40 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
+#if 0
+#ifndef JERRY_ENGINE_BASIC_SERVER_CONNECTION_H_
+#define JERRY_ENGINE_BASIC_SERVER_CONNECTION_H_
 
-#ifndef JERRY_ENGINE_HTTP_SERVER_WRITER_H_
-#define JERRY_ENGINE_HTTP_SERVER_WRITER_H_
+#include <jerry/engine/basic/server/Context.h>
 
-#include <jerry/engine/http/server/RequestContext.h>
+#include <esl/com/basic/server/Connection.h>
+//#include <esl/com/basic/server/Response.h>
 
-#include <esl/io/Writer.h>
-#include <esl/com/http/server/RequestContext.h>
-
-#include <string>
+#include <boost/filesystem.hpp>
 
 namespace jerry {
 namespace engine {
-namespace http {
+namespace basic {
 namespace server {
 
-class Listener;
-
-class Writer : public esl::io::Writer {
+class Connection : public esl::com::basic::server::Connection {
 public:
-	Writer(const Listener& listener, esl::com::http::server::RequestContext& baseRequestContext);
+	Connection(esl::com::basic::server::Connection& baseConnection);
 
-	RequestContext& getRequestContext();
+	bool send(esl::io::Output output, std::vector<std::pair<std::string, std::string>> parameters) override;
 
-	// if function is called with size=0, this signals that writing is done, so write will not be called anymore.
-	// -> this can be used for cleanup stuff.
-	std::size_t write(const void* data, std::size_t size) override;
-
-	// returns consumable bytes to write.
-	// npos is returned if available size is unknown.
-	std::size_t getSizeWritable() const override;
+	void setParent(const Context* context);
 
 private:
-	RequestContext requestContext;
+	const Context* context = nullptr;
+	esl::com::basic::server::Connection& baseConnection;
 };
 
 } /* namespace server */
-} /* namespace http */
+} /* namespace basic */
 } /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_HTTP_SERVER_WRITER_H_ */
+#endif /* JERRY_ENGINE_BASIC_SERVER_CONNECTION_H_ */
+#endif
+

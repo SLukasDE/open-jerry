@@ -19,28 +19,32 @@
 #ifndef JERRY_CONFIG_HTTP_REQUESTHANDLER_H_
 #define JERRY_CONFIG_HTTP_REQUESTHANDLER_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
 #include <vector>
-#include <memory>
 #include <ostream>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-struct RequestHandler {
-	RequestHandler(const tinyxml2::XMLElement& element);
+class RequestHandler : public Config {
+public:
+	RequestHandler(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::http::server::Context& context) const;
 
+private:
 	std::string implementation;
-	//std::unique_ptr<std::string> refId;
-	std::string objectImplementation;
 	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace http */

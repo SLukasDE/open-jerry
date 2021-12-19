@@ -18,6 +18,7 @@
 
 #include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/basic/server/Listener.h>
+#include <jerry/engine/basic/server/RequestContext.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
@@ -35,74 +36,53 @@ namespace {
 Logger logger("jerry::engine::messaging::server::Context");
 } /* anonymous namespace */
 
-Context::Context(Listener& aListener, const Context* aParentContext, bool aInheritObjects)
-: listener(aListener),
-  parentContext(aParentContext),
-  inheritObjects(aInheritObjects)
-{ }
+/*
+void Context::setParent(Context* context) {
 
-void Context::addReference(const std::string& id, const std::string& refId) {
-	esl::object::Interface::Object* objectPtr = findLocalObject(id);
-	if(objectPtr != nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because there exists already an object with same id.");
+}
+*/
+
+Context& Context::addContext(const std::string& id, bool inheritObjects) {
+	std::unique_ptr<Context> context(new Context);
+	Context& contextRef = *context;
+
+	if(inheritObjects) {
+		contextRef.setParent(this);
+	}
+	if(id == "") {
+		entries.push_back(Entry(std::move(context)));
+	}
+	else {
+		addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
 	}
 
-	objectPtr = findHiddenObject(refId);
-	if(objectPtr == nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because it's reference id '" + refId + "' does not exists.");
+	return contextRef;
+}
+
+void Context::addContext(const std::string& refId) {
+	Context* context = findObject<Context>(refId);
+
+	if(context == nullptr) {
+	    throw std::runtime_error("No context found with ref-id=\"" + refId + "\".");
 	}
 
-	localObjectsById[id] = objectPtr;
+	entries.push_back(Entry(*context));
 }
 
-esl::object::Interface::Object& Context::addObject(const std::string& id, const std::string& implementation, const std::vector<std::pair<std::string, std::string>>& settings) {
-	esl::object::Interface::Object* objectPtr = findLocalObject(id);
-	if(objectPtr != nullptr) {
-        throw std::runtime_error("Cannot add object with id '" + id + "', because there exists already an object with same id.");
-	}
-
-	esl::object::Interface::Object& object = BaseContext::addObject(id, implementation, settings);
-
-	localObjectsById[id] = &object;
-
-	return object;
-}
-
-Context& Context::addContext(bool inheritObjects) {
-	Context* contextPtr = new Context(listener, this, inheritObjects);
-
-	entries.push_back(Entry(std::unique_ptr<Context>(contextPtr)));
-
-	return *contextPtr;
-}
-
-void Context::addRequestHandler(const std::string& implementation) {
-	auto& requestHandler = esl::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation);
-
-	entries.push_back(Entry(requestHandler));
+void Context::addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings) {
+	std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler;
+	requestHandler = esl::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation).createRequestHandler(settings);
+	entries.push_back(Entry(std::move(requestHandler)));
 }
 
 void Context::initializeContext() {
-	// initialize objects of this context
-
-#if 1
-	// Initialize owned objects only, not references
-	BaseContext::initializeContext();
-#else
-	// Don't initialize references
-	for(auto& objectEntry : localObjectsById) {
-		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::InitializeContext*>(objectEntry.second);
-		if(initializeContext) {
-			initializeContext->initializeContext(*this);
-		}
-	}
-#endif
+	ObjectContext::initializeContext();
 
 	// call initializeContext() of sub-context's
 	for(auto& entry : entries) {
 		if(entry.context) {
 			/* ************** *
-			 * handle Context *
+			 * handle context *
 			 * ************** */
 			entry.context->initializeContext();
 		}
@@ -110,19 +90,8 @@ void Context::initializeContext() {
 }
 
 void Context::dumpTree(std::size_t depth) const {
-	for(auto objectEntry : localObjectsById) {
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		if(BaseContext::findObject(objectEntry.first)) {
-			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << "\n";
-		}
-		else {
-			logger.info << "+-> Id: \"" << objectEntry.first << "\" -> " << objectEntry.second << " (reference)\n";
-		}
-	}
+	ObjectContext::dumpTree(depth);
 
-	// call dumpTree() of sub-context's
 	for(auto& entry : entries) {
 		if(entry.context) {
 			/* ************** *
@@ -135,7 +104,7 @@ void Context::dumpTree(std::size_t depth) const {
 			entry.context->dumpTree(depth + 1);
 		}
 
-		if(entry.requesthandler) {
+		if(entry.requestHandler) {
 			/* ********************* *
 			 * handle RequestHandler *
 			 * ********************* */
@@ -147,96 +116,70 @@ void Context::dumpTree(std::size_t depth) const {
 	}
 }
 
-std::set<std::string> Context::getNotifier() const {
-	std::set<std::string> notifier;
-
+std::set<std::string> Context::getNotifiers() const {
+	std::set<std::string> notifiers;
+logger.info << "create Notifiers for " << entries.size() << " entries.\n";
 	for(auto& entry : entries) {
-		if(entry.requesthandler) {
-			std::set<std::string> tmpNotifier = entry.requesthandler->getNotifiers(*this);
-			notifier.insert(tmpNotifier.begin(), tmpNotifier.end());
+		if(entry.context) {
+			std::set<std::string> tmpNotifiers = entry.context->getNotifiers();
+logger.info << "- entry is a context with " << tmpNotifiers.size() << " notifiers.\n";
+			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
 		}
+		else if(entry.refContext) {
+			std::set<std::string> tmpNotifiers = entry.refContext->getNotifiers();
+logger.info << "- entry is a ref-context with " << tmpNotifiers.size() << " notifiers.\n";
+			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
+		}
+		else if(entry.requestHandler) {
+			std::set<std::string> tmpNotifiers = entry.requestHandler->getNotifiers();
+logger.info << "- entry is a request-handler with " << tmpNotifiers.size() << " notifiers.\n";
+			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
+		}
+else {
+logger.info << "- entry is NOTHING.\n";
+}
 	}
 
-	return notifier;
+	return notifiers;
 }
 
-esl::object::Interface::Object* Context::findLocalObject(const std::string& id) const {
-	auto localObjectsByIdIter = localObjectsById.find(id);
-	if(localObjectsByIdIter == std::end(localObjectsById)) {
-		return nullptr;
-	}
-
-    return localObjectsByIdIter->second;
-}
-
-esl::object::Interface::Object* Context::findHiddenObject(const std::string& id) const {
-	esl::object::Interface::Object* object = findLocalObject(id);
-	if(object) {
-		return object;
-	}
-
-	/* check if this is NOT an instance of Listener
-	 * check could also be "if(&listener != this) { ... }" */
-	if(parentContext) {
-		return parentContext->findHiddenObject(id);
-	}
-
-	return nullptr;
-}
-
-esl::object::Interface::Object* Context::findObject(const std::string& id) const {
-	if(inheritObjects) {
-		return findHiddenObject(id);
-	}
-	else {
-		return findLocalObject(id);
-	}
-}
-
-esl::io::Input Context::createRequestHandler(std::unique_ptr<server::Writer>& writer) const {
+esl::io::Input Context::accept(RequestContext& requestContext) const {
 	esl::io::Input input;
 
+	//requestContext->setParent(this);
 	for(auto& entry : entries) {
 		if(entry.context) {
 			/* ************** *
-			 * handle Context *
+			 * handle context *
 			 * ************** */
-			writer->getRequestContext().setContext(*entry.context);
-
-			input = entry.context->createRequestHandler(writer);
+			input = entry.context->accept(requestContext);
 			if(input) {
 				return input;
 			}
-			/*
-			if(entry.context->tryRequestHandler(writer)) {
-				return true;
-			}
-			*/
+			//requestContext->setParent(this);
 		}
 
-		if(entry.requesthandler) {
-			/* **************************** *
-			 * handle RequestHandlerFactory *
-			 * **************************** */
-			writer->getRequestContext().setContext(*this);
-
-			/* set requestHandlerFactory and call it */
-			//requestHandler.setRequestHandler(entry.createRequestHandler);
-
-			/* check if calling requestHandlerFactory got a valid requestHandler */
-			/*
-			if(requestHandler.hasRequestHandler()) {
-				return true;
-			}
-			*/
-
-			input = writer->getRequestContext().createInput(writer, entry.requesthandler->createInput);
+		if(entry.refContext) {
+			/* ************************* *
+			 * handle referenced context *
+			 * ************************* */
+			input = entry.refContext->accept(requestContext);
 			if(input) {
 				return input;
 			}
-			//if(writer->getRequestContext().tryRequestHandler(entry.createRequestHandler)) {
-			//	return esl::io::Input(std::unique_ptr<esl::io::Writer>(writer.release()));
-			//}
+			//requestContext->setParent(this);
+		}
+
+		if(entry.requestHandler) {
+			/* **************************** *
+			 * handle requestHandlerFactory *
+			 * **************************** */
+
+			input = entry.requestHandler->accept(requestContext, requestContext.getContext());
+			if(input) {
+				return input;
+			}
+			//requestContext->setParent(this);
 		}
 	}
 

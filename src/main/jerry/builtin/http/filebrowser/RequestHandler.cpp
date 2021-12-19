@@ -17,7 +17,6 @@
  */
 
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
-#include <jerry/builtin/http/filebrowser/Settings.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
@@ -27,15 +26,15 @@
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/Stacktrace.h>
+#include <esl/utility/String.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <string>
+#include <stdexcept>
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <set>
 #include <memory>
 
 namespace jerry {
@@ -58,16 +57,60 @@ const std::string PAGE_301(
 		"</html>\n");
 } /* anonymous namespace */
 
-esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>();
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+}
 
-	if(settings == nullptr) {
-		logger.warn << "Settings object missing\n";
-		throw esl::com::http::server::exception::StatusCode(500);
+RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "browsable") {
+			if(setting.second == "true") {
+				browsable = true;
+			}
+			else if(setting.second == "false") {
+				browsable = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		else if(setting.first == "path") {
+#if 0
+			path = setting.second;
+			while(!path.empty() && path.at(path.size()-1) == '/') {
+				path = path.substr(0, path.size()-1);
+			}
+#endif
+			path = esl::utility::String::rtrim(setting.second, '/');
+		}
+		else if(setting.first == "default") {
+			defaults.insert(setting.second);
+		}
+		else if(setting.first == "ignoreError") {
+			if(setting.second == "true") {
+				ignoreError = true;
+			}
+			else if(setting.second == "false") {
+				ignoreError = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		/*
+		else if(setting.first == "accept-all") {
+			setAcceptAll(key, value, &Settings::setShowException);
+		}
+		*/
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
+}
 
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
 	if(requestContext.getRequest().getMethod() != "GET") {
-		if(settings->getIgnoreError()) {
+		if(ignoreError) {
 			return esl::io::Input();
 		}
 
@@ -75,10 +118,15 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		throw esl::com::http::server::exception::StatusCode(405);
 	}
 
-	boost::filesystem::path path = settings->getPath() + "/" + requestContext.getPath();
-	if(!boost::filesystem::exists(path)) {
-		logger.trace << "Original path " << path << " not exists.\n";
-		if(settings->getIgnoreError()) {
+#if 0
+	boost::filesystem::path path = path + "/" + requestContext.getPath();
+#endif
+	logger.trace << "Setting path is \"" << path << "\"\n";
+	boost::filesystem::path fullPath = path + requestContext.getPath();
+
+	if(!boost::filesystem::exists(fullPath)) {
+		logger.trace << "Original path " << fullPath << " not exists.\n";
+		if(ignoreError) {
 			return esl::io::Input();
 		}
 		else {
@@ -86,7 +134,7 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
 		}
 	}
 
-	if(boost::filesystem::is_directory(path)) {
+	if(boost::filesystem::is_directory(fullPath)) {
 		logger.trace << "Original path " << path << " is a directory\n";
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
@@ -98,25 +146,25 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
     		return esl::io::input::Closed::create();
     	}
 
-		for(const auto& defaultFile : settings->getDefaults()) {
-			boost::filesystem::path file = path / defaultFile;
+		for(const auto& defaultFile : defaults) {
+			boost::filesystem::path file = fullPath / defaultFile;
 			if(boost::filesystem::exists(file) && boost::filesystem::is_regular_file(file)) {
-				path = file;
+				fullPath = file;
 				break;
 			}
 		}
 	}
 
 
-	if(boost::filesystem::is_directory(path)) {
-		logger.trace << "Path " << path << " is a directory\n";
-    	if(settings->isBrowsable()) {
+	if(boost::filesystem::is_directory(fullPath)) {
+		logger.trace << "Path " << fullPath << " is a directory\n";
+    	if(browsable) {
     		std::string outputContent;
 
     		outputContent += "<html><head><title>Directory of " + requestContext.getPath() + "</title></head><body><h2>Directory of " + requestContext.getPath() + "</h2><br/>";
     		outputContent += "<a href=\"..\">..</a><br/>\n";
 
-    		for (boost::filesystem::directory_iterator itr(path); itr!=boost::filesystem::directory_iterator(); ++itr) {
+    		for (boost::filesystem::directory_iterator itr(fullPath); itr!=boost::filesystem::directory_iterator(); ++itr) {
     			if(boost::filesystem::is_directory(itr->path())) {
     				outputContent += "<a href=\"" + itr->path().filename().generic_string() + "/\">" + itr->path().filename().generic_string() + "/</a><br/>\n";
     			}
@@ -135,32 +183,28 @@ esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::Requ
     		return esl::io::input::Closed::create();
     	}
 
-		logger.trace << "Directory " << path << " not browsable.\n";
-    	if(settings->getIgnoreError()) {
+		logger.trace << "Directory " << fullPath << " not browsable.\n";
+    	if(ignoreError) {
     		return esl::io::Input();
     	}
 
 		throw esl::com::http::server::exception::StatusCode(403);
 	}
 
-	logger.trace << "Path " << path << " is a file\n";
-	if(boost::filesystem::is_regular_file(path)) {
-    	esl::utility::MIME mime = utility::MIME::byFilename(path.generic_string());
+	logger.trace << "Path " << fullPath << " is a file\n";
+	if(boost::filesystem::is_regular_file(fullPath)) {
+    	esl::utility::MIME mime = utility::MIME::byFilename(fullPath.generic_string());
 		esl::com::http::server::Response response(200, mime);
-		requestContext.getConnection().send(response, path);
+		requestContext.getConnection().send(response, fullPath);
 		return esl::io::input::Closed::create();
 	}
 
-	logger.warn << "Path " << path << " is not a regular file\n";
-	if(settings->getIgnoreError()) {
+	logger.warn << "Path " << fullPath << " is not a regular file\n";
+	if(ignoreError) {
 		return esl::io::Input();
 	}
 
 	throw esl::com::http::server::exception::StatusCode(422);
-}
-
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
 } /* namespace filebrowser */

@@ -19,7 +19,9 @@
 #ifndef JERRY_CONFIG_BASIC_CONTEXT_H_
 #define JERRY_CONFIG_BASIC_CONTEXT_H_
 
-#include <jerry/config/basic/Entry.h>
+#include <jerry/config/Config.h>
+#include <jerry/engine/Engine.h>
+#include <jerry/engine/basic/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -30,20 +32,26 @@ namespace jerry {
 namespace config {
 namespace basic {
 
-struct Context {
-	Context(const tinyxml2::XMLElement& element, bool isGlobal);
+class Entry;
+
+class Context : public Config {
+public:
+	Context(const std::string& fileName, const tinyxml2::XMLElement& element, bool isGlobal);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::basic::server::Context& basicContext) const;
+	void install(engine::Engine& engine) const;
 
+private:
 	const bool isGlobal;
 
-	bool hasId = false;
 	std::string id;
-
-	bool hasRefId = false;
 	std::string refId;
 
+	bool inherit = true;
 	std::vector<Entry> entries;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace basic */

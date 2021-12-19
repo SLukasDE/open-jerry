@@ -29,12 +29,16 @@ Entry::Entry(std::unique_ptr<Context> aContext)
 : context(std::move(aContext))
 { }
 
+Entry::Entry(Context& aRefContext)
+: refContext(&aRefContext)
+{ }
+
 Entry::Entry(std::unique_ptr<Endpoint> aEndpoint)
 : endpoint(std::move(aEndpoint))
 { }
 
-Entry::Entry(esl::com::http::server::requesthandler::Interface::CreateInput aCreateInput)
-: createRequestHandler(aCreateInput)
+Entry::Entry(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> aRequestHandler)
+: requestHandler(std::move(aRequestHandler))
 { }
 
 } /* namespace server */

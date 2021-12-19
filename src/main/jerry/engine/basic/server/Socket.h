@@ -20,18 +20,19 @@
 #define JERRY_ENGINE_BASIC_SERVER_SOCKET_H_
 
 #include <jerry/engine/basic/server/Listener.h>
+#include <jerry/engine/basic/server/RequestHandler.h>
 
 #include <esl/com/basic/server/Interface.h>
+#include <esl/com/basic/server/Socket.h>
 #include <esl/io/Input.h>
-#include <esl/object/ObjectContext.h>
 #include <esl/object/Interface.h>
 
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <set>
-#include <functional>
 #include <memory>
+#include <functional>
 
 namespace jerry {
 namespace engine {
@@ -40,33 +41,23 @@ namespace server {
 
 class Socket final : public esl::com::basic::server::Interface::Socket {
 public:
-	Socket(esl::object::ObjectContext& engineContext, const std::string& id, esl::com::basic::server::Interface::Socket& socket);
-	Socket(esl::object::ObjectContext& engineContext, const std::string& id,
-			const esl::object::Interface::Settings& settings, const std::string& implementation);
+	Socket(const std::string& id, const esl::object::Interface::Settings& settings, const std::string& implementation);
 
-	void addObjectFactory(const std::string& id, ObjectFactory objectFactory) override;
+	void listen(std::function<void()> onReleasedHandler);
+	void addListener(Listener& listener);
+	const Listener* getListener() const;
 
-	void listen(const std::set<std::string>& notifications, esl::com::basic::server::requesthandler::Interface::CreateInput createInput) override;
+	std::set<std::string> getNotifiers() const;
+
+	void listen(const esl::com::basic::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 
 	void dumpTree(std::size_t depth) const;
 
-	void addListener(Listener& listener);
-
-	esl::com::basic::server::Interface::Socket& getSocket() const noexcept;
-	const std::string& getId() const noexcept;
-	const std::string& getImplementation() const noexcept;
-
-	std::set<std::string> getNotifier() const;
-
-	static esl::io::Input createMessageHandler(esl::com::basic::server::RequestContext& baseRequestContext);
-
 private:
-
-	esl::object::ObjectContext& engineContext;
-	std::unique_ptr<esl::com::basic::server::Interface::Socket> socketPtr;
-	esl::com::basic::server::Interface::Socket& socket;
+	esl::com::basic::server::Socket socket;
+	RequestHandler requestHandler;
 
 	const std::string id;
 	const std::string implementation;

@@ -17,6 +17,8 @@
  */
 
 #include <jerry/config/basic/Server.h>
+#include <jerry/config/Engine.h>
+#include <jerry/config/XMLException.h>
 
 #include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
@@ -27,46 +29,34 @@ namespace jerry {
 namespace config {
 namespace basic {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Server::Server(const tinyxml2::XMLElement& element) {
-	bool hasPort = false;
-
+Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		// 	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
+			if(id == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
+			if(implementation == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+			}
 		}
-		/*
-		else if(std::string(attribute->Name()) == "port") {
-			port = std::stoi(std::string(attribute->Value()));
-			hasPort = true;
-		}
-		*/
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasPort == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"port\" at line ") + std::to_string(element.GetLineNum())));
+	if(id == "") {
+		throw XMLException(*this, "Attribute 'id' is missing");
 	}
-
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
 		const tinyxml2::XMLElement* innerElement = node->ToElement();
@@ -75,30 +65,50 @@ Server::Server(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement, true));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
-		}
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
 void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	// <basic-broker id="broker-1" implementation="rdkafka4esl" brokers="localhost:9092" threads="4">
-	oStream << makeSpaces(spaces) << "<basic-server id=\"" << id << "\" implementation=\"" << implementation << "\">\n";
+	oStream << makeSpaces(spaces) << "<basic-server id=\"" << id << "\"";
+	if(implementation != "") {
+		oStream << makeSpaces(spaces) << " implementation=\"" << implementation << "\"";
+	}
+	oStream << makeSpaces(spaces) << ">\n";
 
 	for(const auto& entry : settings) {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
-	oStream << makeSpaces(spaces) << "<basic-broker/>\n";
+	oStream << makeSpaces(spaces) << "<basic-server/>\n";
+}
+
+void Server::install(engine::Engine& engine) const {
+	std::vector<std::pair<std::string, std::string>> eslSettings;
+
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	engine.addBasicServer(id, eslSettings, implementation);
+}
+
+void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string innerElementName(element.Name());
+
+	if(innerElementName == "parameter") {
+		settings.push_back(Setting(getFileName(), element, true));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name '" + std::string(element.Name()) + "'");
+	}
+
 }
 
 } /* namespace basic */

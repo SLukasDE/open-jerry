@@ -24,17 +24,12 @@
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
-#include <esl/com/http/server/exception/StatusCode.h>
-#include <esl/com/http/server/exception/Interface.h>
-#include <esl/database/exception/SqlError.h>
-#include <esl/io/Producer.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/output/String.h>
 #include <esl/utility/MIME.h>
 #include <esl/Stacktrace.h>
+
 #include <sstream>
-#include <vector>
-#include <functional>
 
 namespace jerry {
 namespace engine {
@@ -54,40 +49,16 @@ const std::string PAGE_301(
 		"<h1>301</h1>\n"
 		"</body>\n"
 		"</html>\n");
-
-std::unique_ptr<esl::Stacktrace> createStackstrace(const esl::Stacktrace* stacktracePtr) {
-	if(stacktracePtr) {
-		return std::unique_ptr<esl::Stacktrace>(new esl::Stacktrace(*stacktracePtr));
-	}
-	return nullptr;
-}
-
-const std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>& getExceptionMessageInterfaces() {
-	static std::unique_ptr<std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>> exceptionMessageInterfaces;
-
-	if(!exceptionMessageInterfaces) {
-		exceptionMessageInterfaces.reset(new std::vector<std::reference_wrapper<const esl::com::http::server::exception::Interface>>);
-
-		for(const auto& metaInterface : esl::getModule().getMetaInterfaces()) {
-			if(metaInterface.type != esl::com::http::server::exception::Interface::getType()) {
-				continue;
-			}
-
-			const esl::com::http::server::exception::Interface& exceptionMessageInterface = esl::getModule().getInterface<esl::com::http::server::exception::Interface>(metaInterface.implementation);
-			exceptionMessageInterfaces->emplace_back(exceptionMessageInterface);
-		}
-	}
-
-	return *exceptionMessageInterfaces;
-}
-
 } /* anonymous namespace */
 
-void ExceptionHandler::dump(esl::com::http::server::Connection& connection, std::function<const http::server::Document*(unsigned short statusCode)> findDocument) const {
-	const http::server::Document* errorDocument = nullptr;
-	if(findDocument) {
-		errorDocument = findDocument(httpMessage.statusCode);
-	}
+ExceptionHandler::ExceptionHandler(std::exception_ptr exceptionPointer)
+: engine::ExceptionHandler(exceptionPointer)
+{ }
+
+void ExceptionHandler::dump(const RequestContext& requestContext) const {
+	initialize();
+
+	const http::server::Document* errorDocument = requestContext.getContext().findErrorDocument(httpStatusCode);
 
 	if(errorDocument) {
 		utility::URL url(errorDocument->getPath());
@@ -95,15 +66,15 @@ void ExceptionHandler::dump(esl::com::http::server::Connection& connection, std:
 		if(url.getScheme() == "http" || url.getScheme() == "https") {
 			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
-			connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
+			requestContext.getConnection().send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
 		}
 		if(url.getScheme().empty() || url.getScheme() == "file") {
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
-				esl::com::http::server::Response response(httpMessage.statusCode, utility::MIME::byFilename(url.getPath()));
-				connection.send(response, url.getPath());
+				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
+				requestContext.getConnection().send(response, url.getPath());
 
 				return;
 			}
@@ -121,127 +92,102 @@ void ExceptionHandler::dump(esl::com::http::server::Connection& connection, std:
 	}
 
     std::string content;
-	if(httpMessage.contentType == esl::utility::MIME::textHtml) {
-	    content = getHTMLContent();
+	if(httpContentType == esl::utility::MIME::textHtml) {
+	    content = getHTMLContent(requestContext.getContext().getShowException(), requestContext.getContext().getShowStacktrace());
 	}
-	else if(httpMessage.contentType == esl::utility::MIME::textPlain) {
-	    content = getTextContent();
+	else if(httpContentType == esl::utility::MIME::textPlain) {
+	    content = getTextContent(requestContext.getContext().getShowException(), requestContext.getContext().getShowStacktrace());
 	}
 	else {
-		content = httpMessage.message;
+		content = httpMessage;
 	}
 
-	esl::com::http::server::Response response(httpMessage.statusCode, httpMessage.contentType);
-	connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
+	esl::com::http::server::Response response(httpStatusCode, httpContentType);
+	requestContext.getConnection().send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
 }
 
-void ExceptionHandler::setMessage() {
-	engine::ExceptionHandler::setMessage();
+void ExceptionHandler::initializeMessage() const {
+	engine::ExceptionHandler::initializeMessage();
 
-	httpMessage.statusCode = 500;
-	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-	httpMessage.title = "Unknown Exception Error";
-	httpMessage.message = "unknown exception";
-	httpMessage.details.clear();
-	httpMessage.stacktrace.reset();
+	httpStatusCode = 500;
+	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpTitle = "Unknown Exception Error";
+	httpMessage = "unknown exception";
 }
 
-void ExceptionHandler::setMessage(const esl::com::http::server::exception::StatusCode& e) {
-	engine::ExceptionHandler::setMessage(e);
+void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
+	engine::ExceptionHandler::initializeMessage(e);
 
-	httpMessage.statusCode = e.getStatusCode();
-	httpMessage.contentType = e.getMimeType();
-	httpMessage.title = std::to_string(e.getStatusCode()) + " " + jerry::http::StatusCode::getMessage(e.getStatusCode());
+	httpStatusCode = e.getStatusCode();
+	httpContentType = e.getMimeType();
+	httpTitle = std::to_string(e.getStatusCode()) + " " + jerry::http::StatusCode::getMessage(e.getStatusCode());
 	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
-		httpMessage.message = e.what();
+		httpMessage = e.what();
 	}
 	else {
-		httpMessage.message = jerry::http::StatusCode::getMessage(e.getStatusCode());
-	}
-	httpMessage.details.clear();
-	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
-}
-
-void ExceptionHandler::setMessage(const esl::database::exception::SqlError& e) {
-	engine::ExceptionHandler::setMessage(e);
-
-	httpMessage.statusCode = 500;
-	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-	httpMessage.title = "SQL Error";
-	httpMessage.message = e.what();
-	httpMessage.details = getMessage().message;
-	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
-}
-
-void ExceptionHandler::setMessage(const std::runtime_error& e) {
-	engine::ExceptionHandler::setMessage(e);
-
-	httpMessage.statusCode = 500;
-	httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-	httpMessage.title = "std::runtime_error";
-	httpMessage.message = e.what();
-	httpMessage.details.clear();
-	httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
-}
-
-void ExceptionHandler::setMessage(const std::exception& e) {
-	engine::ExceptionHandler::setMessage(e);
-
-	bool httpMessageFound = false;
-	for(auto exceptionMessageInterface : getExceptionMessageInterfaces()) {
-		//std::unique_ptr<esl::http::server::exception::Interface::Message> messagePtr;
-		auto messagePtr = exceptionMessageInterface.get().createMessage(e);
-		if(messagePtr) {
-			httpMessage = std::move(*messagePtr);
-			httpMessageFound = true;
-			break;
-		}
-	}
-	if(httpMessageFound == false) {
-		httpMessage.statusCode = 500;
-		httpMessage.contentType = esl::utility::MIME(esl::utility::MIME::textHtml);
-		httpMessage.title = "std::exception";
-		httpMessage.message = e.what();
-		httpMessage.details.clear();
-		httpMessage.stacktrace = createStackstrace(esl::getStacktrace(e));
+		httpMessage = jerry::http::StatusCode::getMessage(e.getStatusCode());
 	}
 }
 
-std::string ExceptionHandler::getHTMLContent() const {
+void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
+	engine::ExceptionHandler::initializeMessage(e);
+
+	httpStatusCode = 500;
+	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpTitle = "SQL Error";
+	httpMessage = e.what();
+}
+
+void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
+	engine::ExceptionHandler::initializeMessage(e);
+
+	httpStatusCode = 500;
+	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpTitle = "Runtime error";
+	httpMessage = e.what();
+}
+
+void ExceptionHandler::initializeMessage(const std::exception& e) const {
+	engine::ExceptionHandler::initializeMessage(e);
+
+	httpStatusCode = 500;
+	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpTitle = "Exception";
+	httpMessage = e.what();
+}
+
+std::string ExceptionHandler::getHTMLContent(bool showException, bool showStacktrace) const {
 	std::string outputContent;
 
 	outputContent = "<!DOCTYPE html>\n"
 			"<html>\n"
 			"<head>\n";
 
-	outputContent += "<title>" + html::toHTML(httpMessage.title) + "</title>\n";
+	outputContent += "<title>" + html::toHTML(httpTitle) + "</title>\n";
 	outputContent += "<body bgcolor=\"white\">\n";
 
 	/* print excpetion message, if enabled */
-	if(getShowException()) {
+	if(showException) {
 		outputContent += "<center><h1>\n";
-		outputContent += html::toHTML(httpMessage.message) + "\n";
+		outputContent += html::toHTML(httpMessage) + "\n";
 		outputContent += "</h1></center>\n";
 
-		if(!httpMessage.details.empty()) {
+		if(!getDetails().empty()) {
 			outputContent += "<hr>\n";
-			outputContent += html::toHTML(httpMessage.details) + "<br>\n";
+			outputContent += html::toHTML(getDetails()) + "<br>\n";
 		}
 	}
 
 	/* print stacktrace, if enabled */
-	if(getShowStacktrace()) {
-		if(httpMessage.stacktrace) {
-			outputContent += "Stacktrace:\n"
-					"<br>\n";
-
-			std::stringstream sstream;
-			httpMessage.stacktrace->dump(sstream);
-			outputContent += html::toHTML(sstream.str());
-		}
-		else {
+	if(showStacktrace) {
+		if(getStacktrace().empty()) {
 			outputContent += "Stacktrace: not available\n"
 					"<br>\n";
+		}
+		else {
+			outputContent += "Stacktrace:\n"
+					"<br>\n";
+			outputContent += html::toHTML(getStacktrace());
 		}
 	}
 
@@ -252,35 +198,32 @@ std::string ExceptionHandler::getHTMLContent() const {
     return outputContent;
 }
 
-std::string ExceptionHandler::getTextContent() const {
+std::string ExceptionHandler::getTextContent(bool showException, bool showStacktrace) const {
 	std::string content;
 
-	content = "jerry/0.1.0: " + httpMessage.title + "\n";
-	content += "Status code: " + std::to_string(httpMessage.statusCode) + "\n";
+	content = "jerry/0.1.0: " + httpTitle + "\n";
+	content += "Status code: " + std::to_string(httpStatusCode) + "\n";
 
 	/* print excpetion message, if enabled */
-	if(getShowException()) {
+	if(showException) {
 		content += "\n\n";
-		content += "Exception: " + httpMessage.message;
+		content += "Exception: " + httpMessage;
 
-		if(!httpMessage.details.empty()) {
-			content += "\n\nException details:\n";
-			content += httpMessage.details + "\n";
+		if(!getDetails().empty()) {
+			content += "\n\nDetails:\n";
+			content += getDetails() + "\n";
 		}
 	}
 
 	/* print stacktrace, if enabled */
-	if(getShowStacktrace()) {
+	if(showStacktrace) {
 		content += "\n\n";
-		if(httpMessage.stacktrace) {
-			content += "Stacktrace:\n";
-
-			std::stringstream sstream;
-			httpMessage.stacktrace->dump(sstream);
-			content += sstream.str();
+		if(getStacktrace().empty()) {
+			content += "Stacktrace: not available\n";
 		}
 		else {
-			content += "Stacktrace: not available\n";
+			content += "Stacktrace:\n";
+			content += getStacktrace();
 		}
 	}
 

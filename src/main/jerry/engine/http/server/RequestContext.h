@@ -20,60 +20,38 @@
 #define JERRY_ENGINE_HTTP_SERVER_REQUESTCONTEXT_H_
 
 #include <jerry/engine/http/server/Connection.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <esl/com/http/server/RequestContext.h>
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/Request.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/Interface.h>
-#include <esl/io/Input.h>
 
 #include <string>
-#include <functional>
 
 namespace jerry {
 namespace engine {
 namespace http {
 namespace server {
 
-class Context;
-class Endpoint;
-class Writer;
-
 class RequestContext : public esl::com::http::server::RequestContext {
 public:
-	RequestContext(esl::com::http::server::RequestContext& baseRequestContext, Writer& writer, const Endpoint& endpoint);
-
-	esl::io::Input createRequestHandler(std::unique_ptr<Writer>& writer, esl::com::http::server::requesthandler::Interface::CreateInput createRequestHandler);
-	esl::io::Input& getInput();
-	const esl::io::Input& getInput() const;
+	RequestContext(esl::com::http::server::RequestContext& requestContext);
 
 	esl::com::http::server::Connection& getConnection() const override;
 	const esl::com::http::server::Request& getRequest() const override;
+	const std::string& getPath() const override;
 
 	void setPath(std::string path);
-	const std::string& getPath() const override;
-	const std::vector<std::string>& getPathList();
-
-	void setContext(const Context& context);
-	const Context& getContext() const noexcept;
-
-	void setEndpoint(const Endpoint& endpoint);
-	const Endpoint& getEndpoint() const noexcept;
-
-protected:
-	esl::object::Interface::Object* findObject(const std::string& id) const override;
+	void setParent(Context* context);
+	Context& getContext();
+	const Context& getContext() const;
 
 private:
-	esl::io::Input input;
-	esl::com::http::server::RequestContext& baseRequestContext;
-	Writer& writer;
-	mutable Connection connection;
-	std::reference_wrapper<const Context> context;
-	std::reference_wrapper<const Endpoint> endpoint;
+	esl::com::http::server::RequestContext& requestContext;
+	Context context;
+	Connection connection;
 	std::string path;
-	std::vector<std::string> pathList;
-	bool isEndingWithSlash = false;
 };
 
 } /* namespace server */

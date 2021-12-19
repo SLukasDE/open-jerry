@@ -19,7 +19,9 @@
 #ifndef JERRY_CONFIG_OBJECT_H_
 #define JERRY_CONFIG_OBJECT_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/engine/ObjectContext.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -30,14 +32,19 @@
 namespace jerry {
 namespace config {
 
-struct Object {
-	Object(const tinyxml2::XMLElement& element);
+class Object : public Config {
+public:
+	Object(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::ObjectContext& engineObjectContext) const;
 
+private:
 	std::string id;
 	std::string implementation;
 	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace config */

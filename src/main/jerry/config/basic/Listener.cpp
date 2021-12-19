@@ -18,8 +18,10 @@
 
 #include <jerry/config/basic/Listener.h>
 #include <jerry/config/basic/Context.h>
+#include <jerry/config/XMLException.h>
 
 #include <esl/Stacktrace.h>
+#include <esl/utility/String.h>
 
 #include <stdexcept>
 
@@ -27,27 +29,34 @@ namespace jerry {
 namespace config {
 namespace basic {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Listener::Listener(const tinyxml2::XMLElement& element) {
+Listener::Listener(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "ref-id") {
 			refId = attribute->Value();
+			if(refId == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+			}
+		}
+		else if(std::string(attribute->Name()) == "inherit") {
+			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
+			if(inheritStr == "true") {
+				inherit = true;
+			}
+			else if(inheritStr == "false") {
+				inherit = false;
+			}
+			else {
+				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
@@ -58,27 +67,21 @@ Listener::Listener(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		/*
-		if(innerElementName == "exceptions") {
-			exceptions = Exceptions(*innerElement);
-		}
-		else {
-			entries.push_back(Entry(*innerElement));
-		}
-		*/
-		entries.push_back(Entry(*innerElement));
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
 void Listener::save(std::ostream& oStream, std::size_t spaces) const {
 	// <basic-listener ref-id="broker-1">
-	oStream << makeSpaces(spaces) << "<basic-listener ref-id=\"" << refId << "\">\n";
+	oStream << makeSpaces(spaces) << "<basic-listener ref-id=\"" << refId << "\"";
+	if(inherit) {
+		oStream << " inherit=\"true\">\n";
+	}
+	else {
+		oStream << " inherit=\"false\">\n";
+	}
 
 	for(const auto& entry : entries) {
 		entry.save(oStream, spaces+2);
@@ -93,6 +96,32 @@ void Listener::save(std::ostream& oStream, std::size_t spaces) const {
 	*/
 
 	oStream << makeSpaces(spaces) << "<basic-listener/>\n";
+}
+
+void Listener::install(engine::Engine& engine) const {
+	engine::basic::server::Context& context = engine.addBasicListener(refId, inherit);
+
+	for(const auto& entry : entries) {
+		entry.install(context);
+	}
+}
+
+void Listener::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	/*
+	std::string elementName(element.Name());
+
+	if(elementName == "exceptions") {
+		exceptions = Exceptions(element);
+	}
+	else {
+		entries.push_back(Entry(element));
+	}
+	*/
+	entries.push_back(Entry(getFileName(), element));
 }
 
 } /* namespace basic */

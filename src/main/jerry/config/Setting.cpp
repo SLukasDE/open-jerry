@@ -17,54 +17,38 @@
  */
 
 #include <jerry/config/Setting.h>
-
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Setting::Setting(const tinyxml2::XMLElement& element, bool isParameter) {
-	bool hasKey = false;
-	bool hasValue = false;
-
+Setting::Setting(const std::string& fileName, const tinyxml2::XMLElement& element, bool isParameter)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "key") {
-			hasKey = true;
 			key = attribute->Value();
+			if(key == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'key' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "value") {
-			hasValue = true;
 			value = attribute->Value();
 		}
 		else if(std::string(attribute->Name()) == "language" && isParameter) {
 			language = attribute->Value();
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasKey == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"key\" at line ") + std::to_string(element.GetLineNum())));
-	}
-	if(hasValue == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"value\" at line ") + std::to_string(element.GetLineNum())));
+	if(key == "") {
+		throw XMLException(*this, "Missing attribute 'key'");
 	}
 }
 

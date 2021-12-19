@@ -17,51 +17,41 @@
  */
 
 #include <jerry/config/LevelSetting.h>
-
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-LevelSetting::LevelSetting(const tinyxml2::XMLElement& element) {
-	bool hasClass = false;
-	bool hasLevel = false;
-
+LevelSetting::LevelSetting(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "class") {
-			hasClass = true;
 			className = attribute->Value();
+			if(className == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'class' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "level") {
-			hasLevel = true;
 			level = attribute->Value();
+			if(level == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'level' is invalid.");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasClass == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"class\" at line ") + std::to_string(element.GetLineNum())));
+	if(className == "") {
+		throw XMLException(*this, "Missing attribute 'class'");
 	}
-	if(hasLevel == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"level\" at line ") + std::to_string(element.GetLineNum())));
+	if(level == "") {
+		throw XMLException(*this, "Missing attribute 'level'");
 	}
 }
 

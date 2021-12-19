@@ -19,6 +19,12 @@
 #include <jerry/builtin/basic/dump/RequestHandler.h>
 #include <jerry/Logger.h>
 
+#include <esl/io/Consumer.h>
+#include <esl/io/Reader.h>
+#include <esl/Stacktrace.h>
+
+#include <stdexcept>
+
 namespace jerry {
 namespace builtin {
 namespace basic {
@@ -26,60 +32,95 @@ namespace dump {
 
 namespace {
 Logger logger("jerry::builtin::basic::dump::RequestHandler");
-}
 
-esl::io::Input RequestHandler::createInput(esl::com::basic::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>("");
-	if(settings == nullptr) {
-		logger.warn << "Settings object is missing\n";
-		return esl::io::Input();
+class RequestConsumer : public esl::io::Consumer {
+public:
+	static esl::io::Input createInput(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext);
+
+	RequestConsumer(bool aShowContent)
+	: showContent(aShowContent)
+	{ }
+
+	/* return: true for every kind of success and get called again for more content data
+	 *         false for failure or to get not called again
+	 */
+	bool consume(esl::io::Reader& reader) override {
+		if(showContent == false) {
+			return false;
+		}
+
+		char data[1024];
+		std::size_t len = reader.read(data, 1024);
+
+		if(len == esl::io::Reader::npos) {
+			logger.info << "\"\n";
+			return false;
+		}
+
+		logger.info << std::string(data, len);
+		return true;
 	}
 
-	if(settings->getShowContext()) {
+private:
+	bool showContent;
+};
+
+} /* anonymous namespace */
+
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+}
+
+RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "show-context") {
+			if(setting.second == "true") {
+				showContext = true;
+			}
+			else if(setting.second == "false") {
+				showContext = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		else if(setting.first == "show-content") {
+			if(setting.second == "true") {
+				showContent = true;
+			}
+			else if(setting.second == "false") {
+				showContent = false;
+			}
+			else {
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+			}
+		}
+		else if(setting.first == "notifier") {
+			notifiers.insert(setting.second);
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
+	}
+}
+
+esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	if(showContext) {
 		logger.info << "Context:\n";
 		for(const auto& entry : requestContext.getRequest().getValues()) {
 			logger.info << "- \"" << entry.first << "\" = \"" << entry.second << "\"\n";
 		}
 	}
 
-	if(settings->getShowContent()) {
+	if(showContent) {
 		logger.info << "Content: \"";
 	}
 
-	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(*settings)));
+	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestConsumer(showContent)));
 }
 
-const std::set<std::string>& RequestHandler::getNotifiers(const esl::object::ObjectContext& objectContext) {
-	const Settings* settings = objectContext.findObject<Settings>("");
-	return settings->getNotifiers();
-}
-
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
-}
-
-RequestHandler::RequestHandler(const Settings& aSettings)
-: settings(aSettings)
-{ }
-
-/* return: true for every kind of success and get called again for more content data
- *         false for failure or to get not called again
- */
-bool RequestHandler::consume(esl::io::Reader& reader)  {
-	if(settings.getShowContent() == false) {
-		return false;
-	}
-
-	char data[1024];
-	std::size_t len = reader.read(data, 1024);
-
-	if(len == esl::io::Reader::npos) {
-		logger.info << "\"\n";
-		return false;
-	}
-
-	logger.info << std::string(data, len);
-	return true;
+std::set<std::string> RequestHandler::getNotifiers() const {
+	return notifiers;
 }
 
 } /* namespace dump */

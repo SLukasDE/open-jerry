@@ -17,51 +17,44 @@
  */
 
 #include <jerry/config/Object.h>
+#include <jerry/config/Engine.h>
+#include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <esl/module/Interface.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Object::Object(const tinyxml2::XMLElement& element) {
-	bool hasName = false;
-	bool hasImplementation = false;
-
+Object::Object(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
-			hasName = true;
 			id = attribute->Value();
+			if(id == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
+			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
-			hasImplementation = true;
 			implementation = attribute->Value();
+			if(implementation == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasName == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"name\" at line ") + std::to_string(element.GetLineNum())));
+	if(id == "") {
+		throw XMLException(*this, "Missing attribute 'id'");
 	}
-	if(hasImplementation == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"implementation\" at line ") + std::to_string(element.GetLineNum())));
+	if(implementation == "") {
+		throw XMLException(*this, "Missing attribute 'implementation'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -71,28 +64,55 @@ Object::Object(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement, true));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
-		}
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
 void Object::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<object id=\"" << id << "\" implementation=\"" << implementation << "\">\n";
+
 	for(const auto& entry : settings) {
 		entry.saveParameter(oStream, spaces+2);
 	}
-	oStream << makeSpaces(spaces) << "<object/>\n";
+	oStream << makeSpaces(spaces) << "</object>\n";
+}
 
+void Object::install(engine::ObjectContext& engineObjectContext) const {
+	esl::module::Interface::Settings eslSettings;
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	std::unique_ptr<esl::object::Interface::Object> eslObject;
+	try {
+		eslObject = esl::getModule().getInterface<esl::object::Interface>(implementation).createObject(eslSettings);
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create an object with id '" + id + "' for implementation '" + implementation + "'");
+	}
+
+	if(!eslObject) {
+		throw XMLException(*this, "Could not create an object with id '" + id + "' for implementation '" + implementation + "'");
+	}
+
+	engineObjectContext.addObject(id, std::move(eslObject));
+}
+
+void Object::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string elementName(element.Name());
+
+	if(elementName == "parameter") {
+		settings.push_back(Setting(getFileName(), element, true));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+	}
 }
 
 } /* namespace config */

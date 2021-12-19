@@ -19,65 +19,38 @@
 #ifndef JERRY_CONFIG_CONFIG_H_
 #define JERRY_CONFIG_CONFIG_H_
 
-#include <jerry/config/Certificate.h>
-#include <jerry/config/LoggerConfig.h>
-#include <jerry/config/Object.h>
-#include <jerry/config/Reference.h>
-#include <jerry/config/OptionalBool.h>
-#include <jerry/config/http/Server.h>
-#include <jerry/config/http/Context.h>
-#include <jerry/config/http/Listener.h>
-#include <jerry/config/basic/Broker.h>
-#include <jerry/config/basic/Server.h>
-#include <jerry/config/basic/Context.h>
-#include <jerry/config/basic/Listener.h>
-
-#include <esl/logging/Layout.h>
-#include <esl/module/Library.h>
-
 #include <tinyxml2/tinyxml2.h>
 
-#include <vector>
-#include <set>
 #include <string>
-#include <memory>
-#include <ostream>
+#include <utility>
 
 namespace jerry {
 namespace config {
 
 class Config {
 public:
-	void loadFile(const std::string& fileName, const tinyxml2::XMLElement* element = nullptr);
+	Config() = delete;
+	Config(const std::string& fileName);
+	Config(const std::string& fileName, const tinyxml2::XMLElement& element);
+	virtual ~Config() = default;
 
-	void loadLibraries();
+	std::string evaluate(const std::string& expression, const std::string& language) const;
 
-	std::unique_ptr<esl::logging::Layout> createLayout() const;
-	void setLogLevel() const;
-	//void setEngine(engine::Engine& engine) const;
+	const std::string& getFileName() const noexcept;
+	int getLineNo() const noexcept;
+	std::pair<std::string, int> getXMLFile() const noexcept;
 
-	void save(std::ostream& oStream) const;
+protected:
+	std::pair<std::string, int> setXMLFile(const std::string& fileName, int lineNo);
+	std::pair<std::string, int> setXMLFile(const std::string& fileName, const tinyxml2::XMLElement& element);
+	std::pair<std::string, int> setXMLFile(const std::pair<std::string, int>& xmlFile);
 
-	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
-	std::vector<std::string> includes;
-	std::vector<Certificate> certificates;
-	LoggerConfig loggerConfig;
-	std::vector<Object> objects;
-
-	std::vector<http::Server> httpServers;
-	std::vector<http::Context> httpContext;
-	std::vector<http::Listener> httpListeners;
-
-	std::vector<basic::Broker> basicBrokers;
-	std::vector<basic::Server> basicServers;
-	std::vector<basic::Context> basicContext;
-	std::vector<basic::Listener> basicListeners;
-
-	std::set<std::string> filesLoaded;
+	std::string makeSpaces(std::size_t spaces) const;
+	static bool stringToBool(bool& b, std::string str);
 
 private:
-	void parseInclude(const tinyxml2::XMLElement& element);
-	void parseLibrary(const tinyxml2::XMLElement& element);
+	std::string fileName;
+	int lineNo;
 };
 
 } /* namespace config */

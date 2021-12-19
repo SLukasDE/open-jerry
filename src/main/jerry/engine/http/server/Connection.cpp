@@ -17,17 +17,15 @@
  */
 
 #include <jerry/engine/http/server/Connection.h>
-#include <jerry/engine/http/server/Endpoint.h>
-#include <jerry/engine/http/server/RequestContext.h>
 
 namespace jerry {
 namespace engine {
 namespace http {
 namespace server {
 
-Connection::Connection(RequestContext& aRequestContext, esl::com::http::server::Connection& aBaseConnection)
-: requestContext(aRequestContext),
-  baseConnection(aBaseConnection)
+Connection::Connection(esl::com::http::server::Connection& aBaseConnection, const Context& aContext)
+: baseConnection(aBaseConnection),
+  context(aContext)
 { }
 
 bool Connection::send(const esl::com::http::server::Response& aResponse, esl::io::Output output) {
@@ -43,7 +41,7 @@ bool Connection::send(const esl::com::http::server::Response& aResponse, boost::
 }
 
 void Connection::addHeaders(esl::com::http::server::Response& response) {
-	const std::map<std::string, std::string> headers = requestContext.getContext().getEndpoint().getHeaders();
+	const std::map<std::string, std::string>& headers = context.getEffectiveHeaders();
 
 	for(const auto& header : headers) {
 		response.addHeader(header.first, header.second);

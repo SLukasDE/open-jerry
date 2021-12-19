@@ -20,70 +20,24 @@
 #define JERRY_ENGINE_HTTP_SERVER_ENDPOINT_H_
 
 #include <jerry/engine/http/server/Context.h>
-#include <jerry/engine/http/server/Document.h>
 
 #include <string>
-#include <vector>
-#include <map>
 
 namespace jerry {
 namespace engine {
 namespace http {
 namespace server {
 
-class Listener;
-
 class Endpoint : public Context {
-friend class Context;
 public:
-	enum OptionalBool {
-		obEmpty,
-		obTrue,
-		obFalse
-	};
-
-	const std::vector<std::string>& getPathList() const;
-	std::vector<std::string> getFullPathList() const;
-	std::size_t getDepth() const;
-
-	const Endpoint* getParentEndpoint() const;
-
-	void setShowException(bool showException);
-	bool getShowException() const;
-
-	void setShowStacktrace(bool showStacktrace);
-	bool getShowStacktrace() const;
-
-	void setInheritErrorDocuments(bool inheritErrorDocuments);
-	bool getInheritErrorDocuments() const;
-
-	void addErrorDocument(unsigned short statusCode, const std::string& path, bool parse);
-	const Document* findErrorDocument(unsigned short statusCode) const;
-
-	void addHeader(std::string key, std::string value);
-	const std::map<std::string, std::string>& getHeaders() const;
+	Endpoint(const std::string& path);
 
 	void dumpTree(std::size_t depth) const override;
 
-protected:
-	Endpoint(Listener& listener, const Endpoint& parentEndpoint, const Context& parentContext, std::vector<std::string> pathList, bool inheritObjects);
-
-	// only used by Listener
-	Endpoint(Listener& listener, bool inheritObjects);
+	const std::string& getPath() const;
 
 private:
-	const Endpoint* parentEndpoint = nullptr;
-	std::vector<std::string> pathList;
-	std::size_t depth = 0;
-
-	OptionalBool showException = obEmpty;
-	OptionalBool showStacktrace = obEmpty;
-	bool inheritErrorDocuments = true;
-
-	/* maps Status Code to Error-Doc-Path and Flag, if content has to be parsed */
-	std::map<unsigned short, Document> errorDocuments;
-
-	std::map<std::string, std::string> headers;
+	std::string path;
 };
 
 } /* namespace server */

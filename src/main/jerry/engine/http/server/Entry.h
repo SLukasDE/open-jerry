@@ -33,12 +33,18 @@ class Endpoint;
 
 struct Entry {
 	Entry(std::unique_ptr<Context> context);
+	Entry(Context& refContext);
+
 	Entry(std::unique_ptr<Endpoint> endpoint);
-	Entry(esl::com::http::server::requesthandler::Interface::CreateInput createInput);
+
+	Entry(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
 
 	std::unique_ptr<Context> context;
+	Context* refContext = nullptr;
+
 	std::unique_ptr<Endpoint> endpoint;
-	esl::com::http::server::requesthandler::Interface::CreateInput createRequestHandler = nullptr;
+
+	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
 };
 
 } /* namespace server */

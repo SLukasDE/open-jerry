@@ -17,10 +17,11 @@
  */
 
 #include <jerry/engine/basic/server/Socket.h>
+#include <jerry/engine/basic/server/RequestContext.h>
+#include <jerry/engine/basic/server/InputProxy.h>
+#include <jerry/engine/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/com/basic/server/Socket.h>
-#include <esl/object/Interface.h>
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
@@ -34,148 +35,83 @@ namespace {
 Logger logger("jerry::engine::messaging::server::Socket");
 }
 
-Socket::Socket(esl::object::ObjectContext& aEngineContext, const std::string& aId, esl::com::basic::server::Interface::Socket& aSocket)
-: engineContext(aEngineContext),
-  socket(aSocket),
-  id(aId)
-{
-	getSocket().addObjectFactory("", [this](const esl::com::basic::server::RequestContext&) {
-		esl::object::Interface::Object* object = this;
-		return object;
-	});
-}
-
-Socket::Socket(esl::object::ObjectContext& aEngineContext, const std::string& aId,
-		const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
-: engineContext(aEngineContext),
-  socketPtr(new esl::com::basic::server::Socket(aSettings, aImplementation)),
-  socket(*socketPtr),
+Socket::Socket(const std::string& aId, const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
+: socket(aSettings, aImplementation),
+  requestHandler(*this),
   id(aId),
   implementation(aImplementation),
   settings(aSettings)
-{
-	getSocket().addObjectFactory("", [this](const esl::com::basic::server::RequestContext&) {
-		esl::object::Interface::Object* object = this;
-		return object;
-	});
+{ }
+
+
+void Socket::listen(std::function<void()> onReleasedHandler) {
+	if(listener == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("There is no listener connected to basic server with id '" + id + "'."));
+	}
+	socket.listen(requestHandler, onReleasedHandler);
 }
 
-void Socket::addObjectFactory(const std::string& id, ObjectFactory objectFactory) {
-	getSocket().addObjectFactory(id, objectFactory);
+void Socket::addListener(Listener& aListener) {
+	if(listener) {
+		throw esl::addStacktrace(std::runtime_error("There is already a listener connected."));
+	}
+	listener = &aListener;
 }
 
-void Socket::listen(const std::set<std::string>& notifications, esl::com::basic::server::requesthandler::Interface::CreateInput createInput) {
+const Listener* Socket::getListener() const {
+	return listener;
+}
+
+std::set<std::string> Socket::getNotifiers() const {
+	return listener ? listener->getNotifiers() : std::set<std::string>();
+}
+
+void Socket::listen(const esl::com::basic::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
 	logger.warn << "listen 'listen' is not allowed.\n";
 	//throw esl::addStacktrace(std::runtime_error("Calling 'listen' is not allowed."));
-
-	//return false;
 }
 
 void Socket::release() {
-	logger.warn << "Calling 'release' is not allowed.\n";
+	socket.release();
+	//logger.warn << "Calling 'release' is not allowed.\n";
 	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
 }
 
 bool Socket::wait(std::uint32_t ms) {
-	logger.warn << "Calling 'wait' is not allowed.\n";
+	return socket.wait(ms);
+	//logger.warn << "Calling 'wait' is not allowed.\n";
 	//throw esl::addStacktrace(std::runtime_error("Calling 'release' is not allowed."));
-
-	return false;
+	//return false;
 }
 
 void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> ID: \"" << getId() << "\"\n";
+	logger.info << "+-> ID: \"" << id << "\"\n";
 	++depth;
 
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "Implementation: \"" << getImplementation() << "\"\n";
+	logger.info << "Implementation: \"" << implementation << "\"\n";
 
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
 	logger.info << "+-> Parameters:\n";
-	++depth;
 
 	for(const auto& setting : settings) {
-		for(std::size_t i=0; i<depth; ++i) {
+		for(std::size_t i=0; i<depth+1; ++i) {
 			logger.info << "|   ";
 		}
 		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
 	}
-}
 
-void Socket::addListener(Listener& aListener) {
-	if(listener) {
-		if(socketPtr) {
-			throw esl::addStacktrace(std::runtime_error("There is already a listener connected to basic-sever \"" + getId() + "\"."));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("There is already a listener connected to basic-broker \"" + getId() + "\"."));
-		}
+	for(std::size_t i=0; i<depth; ++i) {
+		logger.info << "|   ";
 	}
-	listener = &aListener;
-}
-
-esl::com::basic::server::Interface::Socket& Socket::getSocket() const noexcept {
-	return socket;
-}
-
-const std::string& Socket::getId() const noexcept {
-	if(!socketPtr) {
-		throw esl::addStacktrace(std::runtime_error("Calling 'Socket::getId' is not allowed."));
-	}
-	return id;
-}
-
-const std::string& Socket::getImplementation() const noexcept {
-	if(!socketPtr) {
-		throw esl::addStacktrace(std::runtime_error("Calling 'Socket::getImplementation' is not allowed."));
-	}
-	return implementation;
-}
-
-std::set<std::string> Socket::getNotifier() const {
-	std::set<std::string> notifier;
-
-	if(listener) {
-		std::set<std::string> tmpNotifier = listener->getNotifier();
-		notifier.insert(tmpNotifier.begin(), tmpNotifier.end());
-	}
-
-	return notifier;
-}
-
-esl::io::Input Socket::createMessageHandler(esl::com::basic::server::RequestContext& baseRequestContext) {
-	/* Access log */
-	logger.info << "Incoming message with " << baseRequestContext.getRequest().getValues().size() << " meta properties:\"\n";
-	for(std::size_t i=0; i<baseRequestContext.getRequest().getValues().size(); ++i) {
-		logger.info << "- \"" << baseRequestContext.getRequest().getValues()[i].first << "\" = \"" << baseRequestContext.getRequest().getValues()[i].second << "\"\n";
-	}
-
-	Socket* socket = baseRequestContext.findObject<Socket>("");
-	if(!socket) {
-		logger.info << "ERROR: No basic-server or basic-broker available for request.\n";
-		return esl::io::Input();
-	}
-
-	if(socket->socketPtr) {
-		logger.debug << "Basic-server found with id " << socket->getId() << "\"\n";
-	}
-	else {
-		logger.debug << "Basic-broker found with id " << socket->getId() << "\"\n";
-	}
-
-	if(!socket->listener) {
-		logger.info << "No listener installed.\n";
-		return esl::io::Input();
-	}
-
-	return socket->listener->createRequestHandler(baseRequestContext);
+	logger.info << "+-> Listener: -> " << getListener() << "\n";
 }
 
 } /* namespace server */

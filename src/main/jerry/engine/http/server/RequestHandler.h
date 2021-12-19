@@ -16,38 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_HTTP_FILEBROWSER_SETTINGS_H_
-#define JERRY_BUILTIN_HTTP_FILEBROWSER_SETTINGS_H_
+#ifndef JERRY_ENGINE_HTTP_SERVER_REQUESTHANDLER_H_
+#define JERRY_ENGINE_HTTP_SERVER_REQUESTHANDLER_H_
 
+#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestContext.h>
+#include <esl/io/Input.h>
 #include <esl/object/Interface.h>
 
-#include <string>
-#include <set>
-
 namespace jerry {
-namespace builtin {
+namespace engine {
 namespace http {
-namespace filebrowser {
+namespace server {
 
-class Settings : public esl::object::Interface::Object {
+class Socket;
+
+class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
 public:
-	Settings(const esl::object::Interface::Settings& settings);
+	RequestHandler(Socket& socket);
 
-	bool isBrowsable() const;
-	const std::string& getPath() const;
-	const std::set<std::string>& getDefaults() const;
-	bool getIgnoreError() const;
+	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
 
 private:
-	bool browsable = false;
-	std::string path = "/";
-	std::set<std::string> defaults;
-	bool ignoreError = false;
+	Socket& socket;
 };
 
-} /* namespace filebrowser */
+} /* namespace server */
 } /* namespace http */
-} /* namespace builtin */
+} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_HTTP_FILEBROWSER_SETTINGS_H_ */
+#endif /* JERRY_ENGINE_HTTP_SERVER_REQUESTHANDLER_H_ */

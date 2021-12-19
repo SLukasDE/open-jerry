@@ -19,8 +19,13 @@
 #ifndef JERRY_CONFIG_HTTP_ENTRY_H_
 #define JERRY_CONFIG_HTTP_ENTRY_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
+#include <jerry/config/http/Endpoint.h>
+#include <jerry/config/http/Context.h>
+#include <jerry/config/http/RequestHandler.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <memory>
 #include <ostream>
@@ -31,50 +36,20 @@ namespace jerry {
 namespace config {
 namespace http {
 
-class Endpoint;
-class Context;
-class RequestHandler;
-
-class Entry {
+class Entry : public Config {
 public:
-	enum Type {
-		etNone,
-		etObject,
-		etReference,
-		etEndpoint,
-		etContext,
-		etRequestHandler
-	};
-
-	Entry() = delete;
-	Entry(const Entry&) = delete;
-	Entry(Entry&& other);
-	Entry(const tinyxml2::XMLElement& element);
-
-	~Entry();
-
-	Entry& operator=(const Entry&) = delete;
-	Entry& operator=(Entry&& other);
+	Entry(const Entry&);
+	Entry(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	Type getType() const;
-
-	Object& getObject() const;
-	Reference& getReference() const;
-	Endpoint& getEndpoint() const;
-	Context& getContext() const;
-	RequestHandler& getRequestHandler() const;
+	void install(engine::http::server::Context& engineHttpContext) const;
 
 private:
-	void doDelete();
-
-	Type type = etNone;
 	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
-	Endpoint* endpoint = nullptr;
-	Context* context = nullptr;
-	RequestHandler* requestHandler = nullptr;
+	std::unique_ptr<Endpoint> endpoint;
+	std::unique_ptr<Context> context;
+	std::unique_ptr<RequestHandler> requestHandler;
 };
 
 } /* namespace http */

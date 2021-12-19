@@ -19,6 +19,8 @@
 #ifndef JERRY_CONFIG_SETTING_H_
 #define JERRY_CONFIG_SETTING_H_
 
+#include <jerry/config/Config.h>
+
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
@@ -27,8 +29,9 @@
 namespace jerry {
 namespace config {
 
-struct Setting {
-	Setting(const tinyxml2::XMLElement& element, bool isParameter);
+class Setting : public Config {
+public:
+	Setting(const std::string& fileName, const tinyxml2::XMLElement& element, bool isParameter);
 
 	void saveParameter(std::ostream& oStream, std::size_t spaces) const;
 	void saveLayout(std::ostream& oStream, std::size_t spaces) const;

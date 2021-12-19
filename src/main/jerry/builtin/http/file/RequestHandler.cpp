@@ -17,7 +17,6 @@
  */
 
 #include <jerry/builtin/http/file/RequestHandler.h>
-#include <jerry/builtin/http/file/Settings.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
@@ -25,9 +24,12 @@
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/io/input/Closed.h>
+#include <esl/Stacktrace.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+#include <stdexcept>
 
 namespace jerry {
 namespace builtin {
@@ -38,28 +40,39 @@ namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
 } /* anonymous namespace */
 
-esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>();
-
-	if(settings == nullptr) {
-		logger.warn << "Settings object missing\n";
-		throw esl::com::http::server::exception::StatusCode(500);
-	}
-
-	boost::filesystem::path path = settings->getPath();
-	if(boost::filesystem::is_regular_file(path)) {
-		esl::utility::MIME mime = utility::MIME::byFilename(settings->getPath());
-		esl::com::http::server::Response response(settings->getHttpStatus(), mime);
-		requestContext.getConnection().send(response, path);
-		return esl::io::input::Closed::create();
-	}
-
-	logger.warn << "Path " << path << " is not a regular file\n";
-	throw esl::com::http::server::exception::StatusCode(404);
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
+RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "path") {
+			path = setting.second;
+		}
+		else if(setting.first == "http-status") {
+			try {
+				httpStatus = std::stoi(setting.second);
+			}
+			catch(...) {
+				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+			}
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
+	}
+}
+
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	if(!boost::filesystem::is_regular_file(path)) {
+		logger.warn << "Path \"" << path << "\" is not a regular file\n";
+		throw esl::com::http::server::exception::StatusCode(404);
+	}
+
+	esl::utility::MIME mime = utility::MIME::byFilename(path);
+	esl::com::http::server::Response response(httpStatus, mime);
+	requestContext.getConnection().send(response, boost::filesystem::path(path));
+	return esl::io::input::Closed::create();
 }
 
 } /* namespace file */

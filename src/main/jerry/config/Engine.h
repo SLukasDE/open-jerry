@@ -19,23 +19,76 @@
 #ifndef JERRY_CONFIG_ENGINE_H_
 #define JERRY_CONFIG_ENGINE_H_
 
-#include <jerry/engine/Engine.h>
 #include <jerry/config/Config.h>
+#include <jerry/config/Certificate.h>
+#include <jerry/config/LoggerConfig.h>
+#include <jerry/config/Object.h>
+#include <jerry/config/OptionalBool.h>
 
+#include <jerry/config/basic/Client.h>
+#include <jerry/config/basic/Server.h>
+#include <jerry/config/basic/Context.h>
+#include <jerry/config/basic/Listener.h>
+
+#include <jerry/config/http/Client.h>
+#include <jerry/config/http/Server.h>
+#include <jerry/config/http/Context.h>
+#include <jerry/config/http/Listener.h>
+#include <jerry/config/http/RequestHandler.h>
+#include <jerry/engine/Engine.h>
+
+#include <esl/logging/Appender.h>
+#include <esl/logging/Layout.h>
+#include <esl/module/Library.h>
+
+#include <tinyxml2/tinyxml2.h>
+
+#include <vector>
+#include <set>
 #include <string>
+#include <memory>
+#include <ostream>
 
 namespace jerry {
 namespace config {
 
-class Engine {
+class Engine : public Config {
 public:
-	Engine(engine::Engine& engine);
+	Engine(const std::string& fileName);
+/*
+	void loadLibraries();
 
-	void install(const Config& config);
-	static std::string evaluate(const std::string& expression, const std::string& language);
+	std::unique_ptr<esl::logging::Layout> createLayout() const;
+	void setLogLevel() const;
+*/
+	void save(std::ostream& oStream) const;
+	std::unique_ptr<esl::logging::Layout> install(engine::Engine& engine, esl::logging::Appender& appender1, esl::logging::Appender& appender2);
+
+	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
+	std::vector<Certificate> certificates;
+	LoggerConfig loggerConfig;
+	std::vector<Object> objects;
+
+	std::vector<basic::Client> basicClients;
+	std::vector<basic::Server> basicServers;
+	std::vector<basic::Context> basicContextList;
+	std::vector<basic::Listener> basicListeners;
+
+	std::vector<http::Client> httpClients;
+	std::vector<http::Server> httpServers;
+	std::vector<http::Context> httpContextList;
+	std::vector<http::Listener> httpListeners;
+
+	std::set<std::string> filesLoaded;
 
 private:
-	engine::Engine& engine;
+	tinyxml2::XMLDocument xmlDocument;
+
+	void loadXML(const tinyxml2::XMLElement& element);
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
+	void parseInclude(const tinyxml2::XMLElement& element);
+	void parseLibrary(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace config */

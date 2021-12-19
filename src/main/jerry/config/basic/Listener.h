@@ -19,7 +19,9 @@
 #ifndef JERRY_CONFIG_BASIC_LISTENER_H_
 #define JERRY_CONFIG_BASIC_LISTENER_H_
 
+#include <jerry/config/Config.h>
 #include <jerry/config/basic/Entry.h>
+#include <jerry/engine/Engine.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -31,14 +33,20 @@ namespace jerry {
 namespace config {
 namespace basic {
 
-struct Listener {
-	Listener(const tinyxml2::XMLElement& element);
+class Listener : public Config {
+public:
+	Listener(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Engine& engine) const;
 
+private:
 	std::string refId;
+	bool inherit = true;
 
 	std::vector<Entry> entries;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace basic */

@@ -17,12 +17,11 @@
  */
 
 #include <jerry/engine/Engine.h>
-#include <jerry/engine/ExceptionHandler.h>
-#include <jerry/engine/http/server/ExceptionHandler.h>
+#include <jerry/engine/ObjectContext.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
-#include <esl/object/Interface.h>
+#include <esl/object/InitializeContext.h>
 #include <esl/utility/String.h>
 #include <esl/system/SignalHandler.h>
 #include <esl/Stacktrace.h>
@@ -32,6 +31,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+
 
 namespace jerry {
 namespace engine {
@@ -52,14 +52,13 @@ bool Engine::run(bool isDaemon) {
 	 * Load all implementations to convert 'const std::exception&' *
 	 * to esl::http::server::exception::Interface::Message         *
 	 * *********************************************************** */
-	//http::server::ExceptionHandler::initialize();
 
 	/* ************************* *
 	 * initialize global objects *
 	 * ************************* */
-	logger.info << "Initialize context of global objects...\n";
+	logger.info << "Initialize context of global objects, brokers, servers and context ...\n";
 	initializeContext();
-	logger.info << "Initialization of global objects done.\n";
+	logger.info << "Initialization of global objects, brokers, servers and context done.\n";
 
 	/* *********************************** *
 	 * initialize basic-listener objects *
@@ -86,13 +85,13 @@ bool Engine::run(bool isDaemon) {
 	/* *********************************************************** *
 	 * add certificates to socket if http-server is used for https *
 	 * *********************************************************** */
-	for(auto& entry : httpServerById) {
-		http::server::Socket& httpServer = entry.second.get();
+	for(const auto& entry: getObjects()) {
+		http::server::Socket* httpServerPtr = dynamic_cast<http::server::Socket*>(&entry.second.get());
 
 		/* add certificates to http-socket if https is used */
-		if(httpServer.isHttps()) {
+		if(httpServerPtr && httpServerPtr->isHttps()) {
 			/* host names for that we need a certificate */
-			std::set<std::string> hostnames = httpServer.getHostnames();
+			std::set<std::string> hostnames = httpServerPtr->getHostnames();
 
 			/* add certificate http-socket for each host name */
 			for(const auto& hostname : hostnames) {
@@ -100,7 +99,7 @@ bool Engine::run(bool isDaemon) {
 				if(certIter == std::end(certsByHostname)) {
 					throw std::runtime_error("No certificate available for hostname '" + hostname + "'.");
 				}
-				httpServer.getSocket().addTLSHost(hostname, certIter->second.first, certIter->second.second);
+				httpServerPtr->addTLSHost(hostname, certIter->second.first, certIter->second.second);
 			}
 		}
 	}
@@ -110,44 +109,37 @@ bool Engine::run(bool isDaemon) {
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
 
-	logger.debug << "Start basic brokers.\n";
-	for(auto& entry : basicBrokerById) {
-		basic::server::Socket& socket = entry.second.get().getServer();
+	logger.debug << "\n";
+	logger.debug << "Starting daemons and servers ...\n";
+	logger.debug << "---------------------------------------------------\n";
+	for(const auto& entry: getObjects()) {
+		esl::object::Interface::Object* objectPtr = &entry.second.get();
+		basic::server::Socket* basicServerPtr = dynamic_cast<basic::server::Socket*>(objectPtr);
+		http::server::Socket* httpServerPtr = dynamic_cast<http::server::Socket*>(objectPtr);
 
-		logger.debug << "-> Start basic broker \"" << entry.first << "\" for queues:\n";
-		if(logger.debug) {
-			std::set<std::string> notifiers = socket.getNotifier();
-			for(const auto& notifier : notifiers) {
-				logger.debug << "   - \"" << notifier << "\"\n";
+		// Check if object is basic::server::Socket
+		if(basicServerPtr) {
+			logger.debug << "-> Start basic server \"" << entry.first << "\" for queues:\n";
+			if(logger.debug) {
+				std::set<std::string> notifiers = basicServerPtr->getNotifiers();
+				for(const auto& notifier : notifiers) {
+					logger.debug << "   - \"" << notifier << "\"\n";
+				}
 			}
+
+			basicServerPtr->listen([]{});
+			logger.debug << "   ... done.\n";
 		}
 
-		socket.getSocket().listen(socket.getNotifier(), basic::server::Socket::createMessageHandler);
-	}
-
-	logger.debug << "Start basic servers.\n";
-	for(auto& entry : basicServerById) {
-		basic::server::Socket& socket = entry.second.get();
-
-		logger.debug << "-> Start basic server \"" << entry.first << "\" for queues:\n";
-		if(logger.debug) {
-			std::set<std::string> notifiers = socket.getNotifier();
-			for(const auto& notifier : notifiers) {
-				logger.debug << "   - \"" << notifier << "\"\n";
-			}
+		// Check if object is http::server::Socket
+		if(httpServerPtr) {
+			logger.debug << "-> Start http/https server \"" << entry.first << "\" ...\n";
+			httpServerPtr->listen([]{});
+			logger.debug << "   ... done.\n";
 		}
-
-		socket.getSocket().listen(socket.getNotifier(), basic::server::Socket::createMessageHandler);
 	}
-
-	logger.debug << "Start http servers.\n";
-	for(auto& entry : httpServerById) {
-		http::server::Socket& socket = entry.second.get();
-
-		logger.debug << "-> Start http/https server \"" << entry.first << "\".\n";
-
-		socket.getSocket().listen(http::server::Socket::createRequestHandler);
-	}
+	logger.debug << "---------------------------------------------------\n";
+	logger.debug << "All daemons and servers have been started.\n";
 
 	bool rc = true;
 
@@ -167,56 +159,53 @@ bool Engine::run(bool isDaemon) {
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
 	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
 
-	logger.debug << "Stop basic brokers.\n";
-	for(auto& entry : basicBrokerById) {
-		basic::server::Socket& socket = entry.second.get().getServer();
+	logger.debug << "\n";
+	logger.debug << "Stopping brokers, daemons and servers ...\n";
+	logger.debug << "---------------------------------------------------\n";
+	for(const auto& entry: getObjects()) {
+		esl::object::Interface::Object* objectPtr = &entry.second.get();
+		basic::server::Socket* basicServerPtr = dynamic_cast<basic::server::Socket*>(objectPtr);
+		http::server::Socket* httpServerPtr = dynamic_cast<http::server::Socket*>(objectPtr);
 
-		logger.debug << "-> Stop basic broker \"" << entry.first << "\".\n";
-		socket.getSocket().release();
+		// Check if object is basic::server::Socket
+		if(basicServerPtr) {
+			logger.debug << "-> Stopping basic server \"" << entry.first << "\".\n";
+			basicServerPtr->release();
+		}
+
+		// Check if object is http::server::Socket
+		if(httpServerPtr) {
+			logger.debug << "-> Stopping http server \"" << entry.first << "\".\n";
+			httpServerPtr->release();
+		}
 	}
 
-	logger.debug << "Stop basic servers.\n";
-	for(auto& entry : basicServerById) {
-		basic::server::Socket& socket = entry.second.get();
+	logger.debug << "---------------------------------------------------\n";
+	logger.debug << "Stopping brokers, daemons and servers initiated.\n";
+	logger.debug << "\n";
+	logger.debug << "Wait for stopped brokers, daemons and servers ...\n";
+	logger.debug << "---------------------------------------------------\n";
+	for(const auto& entry: getObjects()) {
+		esl::object::Interface::Object* objectPtr = &entry.second.get();
+		basic::server::Socket* basicServerPtr = dynamic_cast<basic::server::Socket*>(objectPtr);
+		http::server::Socket* httpServerPtr = dynamic_cast<http::server::Socket*>(objectPtr);
 
-		logger.debug << "-> Stop basic server \"" << entry.first << "\".\n";
-		socket.getSocket().release();
+		// Check if object is basic::server::Socket
+		if(basicServerPtr) {
+			logger.debug << "-> Waiting for basic server \"" << entry.first << "\" ...\n";
+			basicServerPtr->wait(0);
+			logger.debug << "   ... done.\n";
+		}
+
+		// Check if object is http::server::Socket
+		if(httpServerPtr) {
+			logger.debug << "-> Waiting for http server \"" << entry.first << "\" ...\n";
+			httpServerPtr->wait(0);
+			logger.debug << "   ... done.\n";
+		}
 	}
-
-	logger.debug << "Stop http servers.\n";
-	for(auto& entry : httpServerById) {
-		http::server::Socket& socket = entry.second.get();
-
-		logger.debug << "-> Stop http server \"" << socket.getId() << "\".\n";
-		socket.getSocket().release();
-	}
-
-	logger.debug << "Wait for finished basic brokers.\n";
-	for(auto& entry : basicBrokerById) {
-		basic::server::Socket& socket = entry.second.get().getServer();
-
-		logger.debug << "-> Waiting for basic broker \"" << entry.first << "\"\n";
-		socket.getSocket().wait(0);
-		logger.debug << "-> Waiting done.\n";
-	}
-
-	logger.debug << "Wait for finished basic servers.\n";
-	for(auto& entry : basicServerById) {
-		basic::server::Socket& socket = entry.second.get();
-
-		logger.debug << "-> Waiting for basic server \"" << entry.first << "\"\n";
-		socket.getSocket().wait(0);
-		logger.debug << "-> Waiting done.\n";
-	}
-
-	logger.debug << "Wait for finished http servers.\n";
-	for(auto& entry : httpServerById) {
-		http::server::Socket& socket = entry.second.get();
-
-		logger.debug << "-> Waiting for http server \"" << entry.first << "\"\n";
-		socket.getSocket().wait(0);
-		logger.debug << "-> Waiting done.\n";
-	}
+	logger.debug << "---------------------------------------------------\n";
+	logger.debug << "All brokers, daemons and servers have been stopped.\n";
 
 	return rc;
 }
@@ -250,60 +239,9 @@ void Engine::addCertificate(const std::string& hostname, const std::string& keyF
     addCertificate(hostname, std::move(key), std::move(certificate));
 }
 
-void Engine::addBasicBroker(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding basic broker (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
-
-	if(basicBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
-	}
-
-	if(basicServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
-	}
-
-	if(httpServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
-	}
-
-	esl::object::ObjectContext* thisObjectContext = this;
-	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
-	//if(findObject<esl::object::Interface::Object>(id)) {
-        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
-	}
-
-	basic::broker::Client* basicBrokerPtr = new basic::broker::Client(*this, id, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> object(basicBrokerPtr);
-	addObject(id, std::move(object));
-
-	basicBrokerById.insert(std::make_pair(id, std::ref(*basicBrokerPtr)));
-}
-
 void Engine::addBasicServer(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding basic server (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
-
-	if(basicBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
-	}
-
-	if(basicServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
-	}
-
-	if(httpServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
-	}
-
-	esl::object::ObjectContext* thisObjectContext = this;
-	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
-	//if(findObject<esl::object::Interface::Object>(id)) {
-        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
-	}
-
-	basic::server::Socket* basicSocketPtr = new basic::server::Socket(*this, id, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> object(basicSocketPtr);
-	addObject(id, std::move(object));
-
-	basicServerById.insert(std::make_pair(id, std::ref(*basicSocketPtr)));
+	addObject(id, std::unique_ptr<esl::object::Interface::Object>(new basic::server::Socket(id, settings, implementation)));
 }
 
 void Engine::addHttpServer(const std::string& id, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
@@ -314,103 +252,65 @@ void Engine::addHttpServer(const std::string& id, bool isHttps, const std::vecto
 		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	}
 
-	if(basicBrokerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic brokers defined with id \"" + id + "\".");
-	}
-
-	if(basicServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a basic servers defined with id \"" + id + "\".");
-	}
-
-	if(httpServerById.count(id) != 0) {
-        throw std::runtime_error("There is already a http servers defined with id \"" + id + "\".");
-	}
-
-	esl::object::ObjectContext* thisObjectContext = this;
-	if(thisObjectContext->findObject<esl::object::Interface::Object>(id)) {
-	//if(findObject<esl::object::Interface::Object>(id)) {
-        throw std::runtime_error("There is already an object defined with id \"" + id + "\".");
-	}
-
-	http::server::Socket* httpSocketPtr = new http::server::Socket(*this, id, isHttps, settings, implementation);
-	std::unique_ptr<esl::object::Interface::Object> object(httpSocketPtr);
-	addObject(id, std::move(object));
-
-	httpServerById.insert(std::make_pair(id, std::ref(*httpSocketPtr)));
+	addObject(id, std::unique_ptr<esl::object::Interface::Object>(new http::server::Socket(id, isHttps, settings, implementation)));
 }
 
 basic::server::Listener& Engine::addBasicListener(const std::string& refId, bool inheritObjects) {
-	std::unique_ptr<basic::server::Listener> listenerPtr;
+	std::unique_ptr<basic::server::Listener> basicListener;
 	{
 		std::vector<std::string> refIds = esl::utility::String::split(refId, ',');
 		for(auto& refId : refIds) {
 			refId = esl::utility::String::trim(refId);
 		}
 
-		listenerPtr.reset(new basic::server::Listener(*this, inheritObjects, std::move(refIds)));
+		basicListener.reset(new basic::server::Listener(std::move(refIds)));
+		if(inheritObjects) {
+			basicListener->setParent(this);
+		}
 	}
-	basic::server::Listener& listener = *listenerPtr;
 
-	for(const auto& refId : listener.getRefIds()) {
-		esl::object::ObjectContext* thisObjectContext = this;
-		esl::object::Interface::Object* object = thisObjectContext->findObject<esl::object::Interface::Object>(refId);
-		//esl::object::Interface::Object* object = findObject<esl::object::Interface::Object>(refId);
-		if(!object) {
-	        throw std::runtime_error("basic-listener is referencing an unknown object with id \"" + refId + "\".");
-		}
-
-		basic::server::Socket* basicServer = nullptr;
-		auto basicBroker = dynamic_cast<basic::broker::Client*>(object);
-		if(basicBroker) {
-			basicServer = &basicBroker->getServer();
-		}
-		else {
-			basicServer = dynamic_cast<basic::server::Socket*>(object);
-		}
-
+	for(const auto& refId : basicListener->getRefIds()) {
+		basic::server::Socket* basicServer = findObject<basic::server::Socket>(refId);
 		if(!basicServer) {
-	        throw std::runtime_error("basic-listener is referencing an object with id \"" + refId + "\", but object is neither a basic-broker nor a basic-server.");
+	        throw std::runtime_error("basic-listener is referencing an object with id \"" + refId + "\", but no basic-server or basic-broker has been found with this id.");
 		}
 
-		basicServer->addListener(listener);
+		basicServer->addListener(*basicListener);
 	}
 
-	basicListeners.push_back(std::move(listenerPtr));
+	basic::server::Listener& rv = *basicListener;
+	basicListeners.push_back(std::move(basicListener));
 
-	return listener;
+	return rv;
 }
 
 http::server::Listener& Engine::addHttpListener(const std::string& refId, bool inheritObjects, const std::string& hostname) {
-	std::unique_ptr<http::server::Listener> listenerPtr;
+	std::unique_ptr<http::server::Listener> httpListener;
 	{
 		std::vector<std::string> refIds = esl::utility::String::split(refId, ',');
 		for(auto& refId : refIds) {
 			refId = esl::utility::String::trim(refId);
 		}
 
-		listenerPtr.reset(new http::server::Listener(*this, inheritObjects, hostname, std::move(refIds)));
-	}
-	http::server::Listener& listener = *listenerPtr;
-
-	for(const auto& refId : listener.getRefIds()) {
-		esl::object::ObjectContext* thisObjectContext = this;
-		esl::object::Interface::Object* object = thisObjectContext->findObject<esl::object::Interface::Object>(refId);
-		//esl::object::Interface::Object* object = findObject<esl::object::Interface::Object>(refId);
-		if(!object) {
-	        throw std::runtime_error("http-listener is referencing an unknown object with id \"" + refId + "\".");
+		httpListener.reset(new http::server::Listener(hostname, std::move(refIds)));
+		if(inheritObjects) {
+			jerry::engine::ObjectContext* objectContext = httpListener.get();
+			objectContext->setParent(this);
 		}
+	}
 
-		auto httpServer = dynamic_cast<http::server::Socket*>(object);
+	for(const auto& refId : httpListener->getRefIds()) {
+		auto httpServer = findObject<http::server::Socket>(refId);
 		if(!httpServer) {
-	        throw std::runtime_error("http-listener is referencing an object with id \"" + refId + "\", but object is not a http-server.");
+	        throw std::runtime_error("http-listener is referencing an object with id \"" + refId + "\", but no http-server has been found with this id.");
 		}
-
-		httpServer->addListener(listener);
+		httpServer->addListener(*httpListener);
 	}
 
-	httpListeners.push_back(std::move(listenerPtr));
+	http::server::Listener& rv = *httpListener;
+	httpListeners.push_back(std::move(httpListener));
 
-	return listener;
+	return rv;
 }
 
 void Engine::dumpTree(std::size_t depth) const {
@@ -420,72 +320,79 @@ void Engine::dumpTree(std::size_t depth) const {
 	logger.info << "+-> Engine\n";
 	++depth;
 
-	BaseContext::dumpTree(depth);
-
-	dumpTreeBasicBrokers(depth);
-	dumpTreeBasicServers(depth);
-	dumpTreeHttpServers(depth);
+	dumpTreeEntries(depth);
 	dumpTreeBasicListener(depth);
 	dumpTreeHttpListener(depth);
 }
 
-void Engine::dumpTreeBasicBrokers(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> Basic brokers\n";
-	++depth;
+void Engine::dumpTreeEntries(std::size_t depth) const {
+	for(const auto& entry: getObjects()) {
+		const esl::object::Interface::Object* objectPtr = &entry.second.get();
+		const basic::server::Socket* basicServerPtr = dynamic_cast<const basic::server::Socket*>(objectPtr);
+		const basic::server::Context* basicContextPtr = dynamic_cast<const basic::server::Context*>(objectPtr);
 
-	for(const auto& entry: basicBrokerById) {
-		entry.second.get().dumpTree(depth);
-	}
-}
+		const http::server::Socket* httpServerPtr = dynamic_cast<const http::server::Socket*>(objectPtr);
+		const http::server::Context* httpContextPtr = dynamic_cast<const http::server::Context*>(objectPtr);
 
-void Engine::dumpTreeBasicServers(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> Basic servers\n";
-	++depth;
+		if(basicServerPtr) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> Basic server: \"" << entry.first << "\" -> " << basicServerPtr << "\n";
+			basicServerPtr->dumpTree(depth+1);
+		}
 
-	for(const auto& entry: basicServerById) {
-		entry.second.get().dumpTree(depth);
-	}
-}
+		else if(httpServerPtr) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> HTTP server: \"" << entry.first << "\" -> " << httpServerPtr << "\n";
+			httpServerPtr->dumpTree(depth+1);
+		}
 
-void Engine::dumpTreeHttpServers(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> HTTP servers\n";
-	++depth;
+		else if(basicContextPtr) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> Basic-Context: \"" << entry.first << "\" -> " << basicContextPtr << "\n";
+			basicContextPtr->dumpTree(depth+1);
+		}
 
-	for(const auto& entry: httpServerById) {
-		entry.second.get().dumpTree(depth);
+		else if(httpContextPtr) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> HTTP-Context: \"" << entry.first << "\" -> " << httpContextPtr << "\n";
+			httpContextPtr->dumpTree(depth+1);
+		}
+
+		else if(objectPtr) {
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> Object: \"" << entry.first << "\" -> " << objectPtr << "\n";
+		}
 	}
 }
 
 void Engine::dumpTreeBasicListener(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> Basic listeners\n";
-	++depth;
-
 	for(const auto& listener: basicListeners) {
-		listener->dumpTree(depth);
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Basic listener: -> " << listener.get() << "\n";
+		listener->dumpTree(depth + 1);
 	}
 }
 
 void Engine::dumpTreeHttpListener(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> HTTP listeners\n";
-	++depth;
-
 	for(const auto& listener: httpListeners) {
-		listener->dumpTree(depth);
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> HTTP listener: -> " << listener.get() << "\n";
+
+		listener->dumpTree(depth + 1);
 	}
 }
 

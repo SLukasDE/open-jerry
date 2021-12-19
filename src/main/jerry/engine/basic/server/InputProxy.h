@@ -16,39 +16,29 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINE_BASIC_SERVER_WRITER_H_
-#define JERRY_ENGINE_BASIC_SERVER_WRITER_H_
+#ifndef JERRY_ENGINE_BASIC_SERVER_INPUTPROXY_H_
+#define JERRY_ENGINE_BASIC_SERVER_INPUTPROXY_H_
 
 #include <jerry/engine/basic/server/RequestContext.h>
+#include <jerry/engine/InputProxy.h>
 
-#include <esl/io/Writer.h>
-#include <esl/com/basic/server/RequestContext.h>
+#include <esl/io/Input.h>
 
-#include <string>
+#include <memory>
 
 namespace jerry {
 namespace engine {
 namespace basic {
 namespace server {
 
-class Listener;
-
-class Writer : public esl::io::Writer {
+class InputProxy : public engine::InputProxy {
 public:
-	Writer(const Listener& listener, esl::com::basic::server::RequestContext& baseRequestContext);
-
-	RequestContext& getRequestContext();
-
-	// if function is called with size=0, this signals that writing is done, so write will not be called anymore.
-	// -> this can be used for cleanup stuff.
-	std::size_t write(const void* data, std::size_t size) override;
-
-	// returns consumable bytes to write.
-	// npos is returned if available size is unknown.
-	std::size_t getSizeWritable() const override;
+	static esl::io::Input create(esl::io::Input&& input, std::unique_ptr<RequestContext> requestContext);
 
 private:
-	RequestContext requestContext;
+	InputProxy(esl::io::Input&& input, std::unique_ptr<RequestContext> requestContext);
+
+	std::unique_ptr<RequestContext> requestContext;
 };
 
 } /* namespace server */
@@ -56,4 +46,4 @@ private:
 } /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_BASIC_SERVER_WRITER_H_ */
+#endif /* JERRY_ENGINE_BASIC_SERVER_INPUTPROXY_H_ */

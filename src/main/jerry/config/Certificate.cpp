@@ -17,30 +17,16 @@
  */
 
 #include <jerry/config/Certificate.h>
-
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Certificate::Certificate(const tinyxml2::XMLElement& element) {
-	bool hasKey = false;
-	bool hasCert = false;
-
+Certificate::Certificate(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -48,23 +34,27 @@ Certificate::Certificate(const tinyxml2::XMLElement& element) {
 			domain = attribute->Value();
 		}
 		else if(std::string(attribute->Name()) == "key") {
-			hasKey = true;
 			keyFile = attribute->Value();
+			if(keyFile == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'key' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "cert") {
-			hasCert = true;
 			certFile = attribute->Value();
+			if(certFile == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'cert' is invalid.");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasKey == false) {
-		throw esl::addStacktrace(std::runtime_error("Missing attribute \"key\" at line " + std::to_string(element.GetLineNum())));
+	if(keyFile == "") {
+		throw XMLException(*this, "Missing attribute 'key'");
 	}
-	if(hasCert == false) {
-		throw esl::addStacktrace(std::runtime_error("Missing attribute \"cert\" at line " + std::to_string(element.GetLineNum())));
+	if(certFile == "") {
+		throw XMLException(*this, "Missing attribute 'cert'");
 	}
 }
 

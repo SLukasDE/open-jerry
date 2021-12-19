@@ -17,17 +17,18 @@
  */
 
 #include <jerry/builtin/http/database/RequestHandler.h>
-#include <jerry/builtin/http/database/Settings.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/database/PreparedStatement.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
+#include <esl/Stacktrace.h>
 
-#include <string>
+#include <stdexcept>
 
 namespace jerry {
 namespace builtin {
@@ -60,32 +61,67 @@ const std::string PAGE_500(
 		"</html>\n");
 } /* anonymous namespace */
 
-esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>();
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+}
 
-	if(settings == nullptr) {
-		logger.warn << "Settings object missing\n";
-		throw esl::com::http::server::exception::StatusCode(500);
+RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "connectionId") {
+			connectionId = setting.second;
+		}
+		else if(setting.first == "SQL") {
+			sql = setting.second;
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
+	}
+}
+
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	if(connectionFactory == nullptr) {
+        throw esl::com::http::server::exception::StatusCode(500, "Cannot find connection factory with id \"" + connectionId + "\"");
 	}
 
-	if(settings->check()) {
-		esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::textHtml));
-		esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
-		requestContext.getConnection().send(response, std::move(output));
-		logger.debug << "OK\n";
-	}
-	else {
+	std::unique_ptr<esl::database::Connection> connection = connectionFactory->createConnection();
+	if(!connection) {
+		//throw esl::com::http::server::exception::StatusCode(503, "no connection available");
 		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
 		esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
 		requestContext.getConnection().send(response, std::move(output));
 		logger.debug << "Failure\n";
+
+		return esl::io::input::Closed::create();
 	}
+
+	try {
+	    esl::database::PreparedStatement preparedStatement = connection->prepare(sql);
+	    preparedStatement.execute();
+	}
+	catch(...) {
+		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
+		esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
+		requestContext.getConnection().send(response, std::move(output));
+		logger.debug << "Failure\n";
+
+		return esl::io::input::Closed::create();
+	}
+
+
+	esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::textHtml));
+	esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
+	requestContext.getConnection().send(response, std::move(output));
+	logger.debug << "OK\n";
 
 	return esl::io::input::Closed::create();
 }
 
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
+void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
+	if(connectionFactory == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\""));
+	}
 }
 
 } /* namespace database */

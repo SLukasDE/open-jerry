@@ -17,7 +17,6 @@
  */
 
 #include <jerry/builtin/http/basicauth/RequestHandler.h>
-#include <jerry/builtin/http/basicauth/Settings.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
@@ -26,8 +25,9 @@
 #include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
+#include <esl/Stacktrace.h>
 
-#include <string>
+#include <stdexcept>
 
 namespace jerry {
 namespace builtin {
@@ -49,27 +49,37 @@ const std::string PAGE_401(
 		"</html>\n");
 } /* anonymous namespace */
 
-esl::io::Input RequestHandler::createRequestHandler(esl::com::http::server::RequestContext& requestContext) {
-	const Settings* settings = requestContext.findObject<Settings>();
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+}
 
-	if(settings == nullptr) {
-		logger.warn << "Settings object missing\n";
-		throw esl::com::http::server::exception::StatusCode(500);
+RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "username") {
+			username = setting.second;
+		}
+		else if(setting.first == "password") {
+			password = setting.second;
+		}
+		else if(setting.first == "realmId") {
+			realmId = setting.second;
+		}
+		else {
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		}
 	}
+}
 
-	if(requestContext.getRequest().getUsername() == settings->getUsername() &&
-			requestContext.getRequest().getPassword() == settings->getPassword()) {
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	if(requestContext.getRequest().getUsername() == username &&
+			requestContext.getRequest().getPassword() == password) {
 		return esl::io::Input();
 	}
 
-	esl::com::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), settings->getRealmId());
+	esl::com::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), realmId);
 	esl::io::Output output = esl::io::output::Memory::create(PAGE_401.data(), PAGE_401.size());
 	requestContext.getConnection().send(response, std::move(output));
 	return esl::io::input::Closed::create();
-}
-
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
 }
 
 } /* namespace basicauth */

@@ -19,39 +19,29 @@
 #include <jerry/config/http/Endpoint.h>
 #include <jerry/config/http/Context.h>
 #include <jerry/config/http/RequestHandler.h>
+#include <jerry/config/http/Entry.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/Reference.h>
+#include <jerry/config/XMLException.h>
 
 #include <esl/utility/String.h>
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Endpoint::Endpoint(const tinyxml2::XMLElement& element) {
-	bool hasPath = false;
-
+Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "path") {
-			hasPath = true;
 			path = attribute->Value();
+			if(path == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'path'");
+			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
@@ -62,16 +52,16 @@ Endpoint::Endpoint(const tinyxml2::XMLElement& element) {
 				inherit = false;
 			}
 			else {
-				throw esl::addStacktrace(std::runtime_error(std::string("Invalid value \"") + attribute->Value() + "\" for attribute \"inherit\" at line " + std::to_string(element.GetLineNum())));
+				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(hasPath == false) {
-		throw esl::addStacktrace(std::runtime_error(std::string("Missing attribute \"path\" at line ") + std::to_string(element.GetLineNum())));
+	if(path == "") {
+		throw XMLException(*this, "Missing attribute 'path'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -81,21 +71,9 @@ Endpoint::Endpoint(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
-
-		std::string innerElementName(innerElement->Name());
-
-		if(innerElementName == "response-header") {
-			responseHeaders.push_back(Setting(*innerElement, false));
-		}
-		else if(innerElementName == "exceptions") {
-			exceptions = Exceptions(*innerElement);
-		}
-		else {
-			entries.push_back(Entry(*innerElement));
-		}
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
 	}
 }
 
@@ -113,6 +91,44 @@ void Endpoint::save(std::ostream& oStream, std::size_t spaces) const {
 	exceptions.save(oStream, spaces+2);
 
 	oStream << makeSpaces(spaces) << "<endpoint/>\n";
+}
+
+void Endpoint::install(engine::http::server::Context& engineHttpContext) const {
+	engine::http::server::Endpoint& newEngineHttpEndpoint = engineHttpContext.addEndpoint(path, inherit);
+
+	/* *****************
+	 * install entries *
+	 * *****************/
+	for(const auto& entry : entries) {
+		entry.install(newEngineHttpEndpoint);
+	}
+
+	/* **********************
+	 * Set response headers *
+	 * **********************/
+	for(const auto& responseHeader : responseHeaders) {
+		newEngineHttpEndpoint.addHeader(responseHeader.key, responseHeader.value);
+	}
+
+	exceptions.install(newEngineHttpEndpoint);
+}
+
+void Endpoint::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string innerElementName(element.Name());
+
+	if(innerElementName == "response-header") {
+		responseHeaders.push_back(Setting(getFileName(), element, false));
+	}
+	else if(innerElementName == "exceptions") {
+		exceptions = Exceptions(getFileName(), element);
+	}
+	else {
+		entries.push_back(Entry(getFileName(), element));
+	}
 }
 
 } /* namespace http */

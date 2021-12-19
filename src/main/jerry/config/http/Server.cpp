@@ -17,38 +17,35 @@
  */
 
 #include <jerry/config/http/Server.h>
+#include <jerry/config/Engine.h>
+#include <jerry/config/XMLException.h>
 
 #include <esl/utility/String.h>
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-namespace {
-std::string makeSpaces(std::size_t spaces) {
-	std::string rv;
-	for(std::size_t i=0; i<spaces; ++i) {
-		rv += " ";
-	}
-	return rv;
-}
-}
-
-Server::Server(const tinyxml2::XMLElement& element) {
+Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
+: Config(fileName, element)
+{
 	if(element.GetUserData() != nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Element has user data but it should be empty (line " + std::to_string(element.GetLineNum()) + ")"));
+		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		// 	<http-server id="http-1" implementation="mhd4esl" port="8080" https="true">
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
+			if(id == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
+			if(implementation == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
+			}
 		}
 		else if(std::string(attribute->Name()) == "https") {
 			std::string httpsStr = esl::utility::String::toLower(attribute->Value());
@@ -59,14 +56,17 @@ Server::Server(const tinyxml2::XMLElement& element) {
 				isHttps = false;
 			}
 			else {
-				throw esl::addStacktrace(std::runtime_error(std::string("Invalid value \"") + attribute->Value() + "\" for attribute \"https\" at line " + std::to_string(element.GetLineNum())));
+				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
 			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error(std::string("Unknown attribute \"") + attribute->Name() + "\" at line " + std::to_string(element.GetLineNum())));
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
+	if(id == "") {
+		throw XMLException(*this, "Missing attribute 'id'");
+	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
 		const tinyxml2::XMLElement* innerElement = node->ToElement();
@@ -75,31 +75,52 @@ Server::Server(const tinyxml2::XMLElement& element) {
 			continue;
 		}
 
-		if(innerElement->Name() == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Element name is empty at line " + std::to_string(innerElement->GetLineNum())));
-		}
+		auto oldXmlFile = setXMLFile(getFileName(), *innerElement);
+		parseInnerElement(*innerElement);
+		setXMLFile(oldXmlFile);
+	}
+}
 
-		std::string innerElementName(innerElement->Name());
+void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
 
-		if(innerElementName == "parameter") {
-			settings.push_back(Setting(*innerElement, true));
-		}
-		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown element name \"" + std::string(innerElement->Name()) + "\" at line " + std::to_string(innerElement->GetLineNum())));
-		}
+	std::string elementName(element.Name());
+
+	if(elementName == "parameter") {
+		settings.push_back(Setting(getFileName(), element, true));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 
 void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<http-server id=\"" << id << "\" implementation=\"" << implementation << "\" https=\"";
-	oStream << (isHttps ? "true" : "false");
-	oStream << "\">\n";
+	oStream << makeSpaces(spaces) << "<http-server id=\"" << id << "\"";
+	if(implementation != "") {
+		oStream <<  " implementation=\"" << implementation << "\"";
+	}
+	if(isHttps) {
+		oStream << " https=\"true\"";
+	}
+	oStream << ">\n";
 
 	for(const auto& entry : settings) {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
-	oStream << makeSpaces(spaces) << "<http-server/>\n";
+	oStream << makeSpaces(spaces) << "</http-server>\n";
+}
+
+void Server::install(engine::Engine& engine) const {
+	std::vector<std::pair<std::string, std::string>> eslSettings;
+
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	engine.addHttpServer(id, isHttps, eslSettings, implementation);
 }
 
 } /* namespace http */

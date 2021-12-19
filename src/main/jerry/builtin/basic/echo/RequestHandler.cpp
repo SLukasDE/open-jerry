@@ -23,6 +23,8 @@
 #include <esl/io/output/String.h>
 #include <esl/io/Producer.h>
 #include <esl/io/Output.h>
+#include <esl/io/Consumer.h>
+#include <esl/io/Reader.h>
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
@@ -37,60 +39,92 @@ namespace echo {
 
 namespace {
 Logger logger("jerry::builtin::basic::echo::RequestHandler");
-}
 
-esl::io::Input RequestHandler::createInput(esl::com::basic::server::RequestContext& requestContext) {
-	Settings* settings = requestContext.findObject<Settings>("");
-	if(settings == nullptr) {
-		logger.warn << "Settings object is missing\n";
-		return esl::io::Input();
+class RequestConsumer : public esl::io::Consumer {
+public:
+	RequestConsumer(esl::com::basic::server::RequestContext& aRequestContext, esl::com::basic::client::Interface::ConnectionFactory& aConnectionFactory, unsigned long aMsDelay)
+	: requestContext(aRequestContext),
+	  msDelay(aMsDelay),
+	  connectionFactory(aConnectionFactory)
+	{ }
+
+	/* return: true for every kind of success and get called again for more content data
+	 *         false for failure or to get not called again
+	 */
+	bool consume(esl::io::Reader& reader) override {
+		char data[1024];
+		std::size_t len = reader.read(data, 1024);
+
+		if(len == esl::io::Reader::npos) {
+			logger.info << "Echo - sleep " << msDelay << "ms\n";
+			std::this_thread::sleep_for(std::chrono::milliseconds(msDelay));
+
+			std::unique_ptr<esl::com::basic::client::Interface::Connection> connection = connectionFactory.createConnection();
+			if(connection) {
+				std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(message)));
+
+				logger.info << "Echo - send echo\n";
+				connection->send({}, esl::io::Output(std::move(producer)), esl::io::Input());
+			}
+			else {
+				logger.error << "Echo - send echo failed because connection could not be established\n";
+			}
+			return false;
+		}
+
+		message += std::string(data, len);
+		return true;
 	}
 
-	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestHandler(requestContext, *settings)));
+private:
+	esl::com::basic::server::RequestContext& requestContext;
+	unsigned long msDelay;
+	esl::com::basic::client::Interface::ConnectionFactory& connectionFactory;
+	std::string message;
+};
+
+} /* anonymous namespace */
+
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-const std::set<std::string>& RequestHandler::getNotifiers(const esl::object::ObjectContext& objectContext) {
-	const Settings* settings = objectContext.findObject<Settings>("");
-	return settings->getNotifiers();
-}
-
-std::unique_ptr<esl::object::Interface::Object> RequestHandler::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Settings(settings));
-}
-
-RequestHandler::RequestHandler(esl::com::basic::server::RequestContext& aRequestContext, Settings& aSettings)
-: requestContext(aRequestContext),
-  settings(aSettings)
-{ }
-
-/* return: true for every kind of success and get called again for more content data
- *         false for failure or to get not called again
- */
-bool RequestHandler::consume(esl::io::Reader& reader) {
-	char data[1024];
-	std::size_t len = reader.read(data, 1024);
-
-	if(len == esl::io::Reader::npos) {
-		logger.info << "Echo - sleep " << settings.getMSDelay() << "ms\n";
-		std::this_thread::sleep_for(std::chrono::milliseconds(settings.getMSDelay()));
-
-		std::unique_ptr<esl::com::basic::client::Interface::Connection> connection = settings.createConnection();
-		if(connection) {
-			std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(message)));
-
-			logger.info << "Echo - send echo\n";
-			connection->send(esl::io::Output(std::move(producer)));
+RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+	for(const auto& setting : settings) {
+		if(setting.first == "notifier") {
+			notifiers.insert(setting.second);
+		}
+		else if(setting.first == "delay-ms") {
+			try {
+				msDelay = std::stoul(setting.second);
+			}
+			catch(...) {
+				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+			}
+		}
+		else if(setting.first == "connection-factory-id") {
+			connectionFactoryId = setting.second;
 		}
 		else {
-			logger.info << "Echo - send echo failed because connection could not be established\n";
+			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
-		return false;
 	}
-
-	message += std::string(data, len);
-	return true;
 }
 
+void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+	connectionFactory = objectContext.findObject<esl::com::basic::client::Interface::ConnectionFactory>(connectionFactoryId);
+	if(connectionFactory == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));
+	}
+}
+
+esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestConsumer(requestContext, *connectionFactory, msDelay)));
+}
+
+std::set<std::string> RequestHandler::getNotifiers() const {
+	return notifiers;
+}
 
 } /* namespace echo */
 } /* namespace basic */

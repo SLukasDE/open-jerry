@@ -19,54 +19,28 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_LISTENER_H_
 #define JERRY_ENGINE_HTTP_SERVER_LISTENER_H_
 
-#include <jerry/engine/http/server/Endpoint.h>
-
-#include <esl/com/http/server/RequestContext.h>
-#include <esl/io/Input.h>
-#include <esl/object/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <string>
-#include <map>
 #include <vector>
-#include <memory>
 
 namespace jerry {
 namespace engine {
 namespace http {
 namespace server {
 
-class Listener : public Endpoint {
+class Listener : public Context {
 public:
-	Listener(esl::object::ObjectContext& engineContext, bool inheritObjects, const std::string& hostname, std::vector<std::string> refIds);
+	Listener(const std::string& hostname, std::vector<std::string> refIds);
 
-friend class Endpoint;
-
-	esl::object::Interface::Object* findHiddenObject(const std::string& id) const override;
 	void dumpTree(std::size_t depth) const override;
 
 	const std::vector<std::string>& getRefIds() const;
-
 	const std::string& getHostname() const;
-	esl::io::Input createRequestHandler(esl::com::http::server::RequestContext& baseRequestContext);
 
 private:
-	struct EndpointEntry {
-		EndpointEntry() = default;
-		EndpointEntry(const Endpoint* endpoint);
-
-		//std::size_t depth = 0;
-		const Endpoint* endpoint = nullptr;
-		std::map<std::string, std::unique_ptr<EndpointEntry>> entries;
-	};
-
-	esl::object::ObjectContext& engineContext;
 	std::string hostname;
 	std::vector<std::string> refIds;
-
-	EndpointEntry rootEndpointEntry;
-
-	void registerEndpoint(const Endpoint& endpoint);
 };
 
 } /* namespace server */
