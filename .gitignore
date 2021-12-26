@@ -12,7 +12,8 @@ src/main/tinyxml2
 build.sh
 server.key
 server.pem
-
+server_empty.xml
+cp_libs.sh
 
 # Prerequisites
 *.d
