@@ -27,7 +27,7 @@ namespace basic {
 namespace server {
 
 namespace {
-Logger logger("jerry::engine::messaging::server::RequestContext");
+Logger logger("jerry::engine::basic::server::RequestContext");
 }
 
 RequestContext::RequestContext(esl::com::basic::server::RequestContext& aRequestContext)
@@ -43,7 +43,7 @@ const esl::com::basic::server::Request& RequestContext::getRequest() const {
 }
 
 void RequestContext::setParent(Context* aContext) {
-	baseContext = aContext;
+	//baseContext = aContext;
 	context.setParent(aContext);
 }
 

@@ -19,7 +19,6 @@
 #include <jerry/engine/basic/server/RequestHandler.h>
 #include <jerry/engine/basic/server/RequestContext.h>
 #include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/basic/server/Listener.h>
 #include <jerry/engine/basic/server/InputProxy.h>
 #include <jerry/engine/ExceptionHandler.h>
 #include <jerry/Logger.h>
@@ -46,14 +45,17 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& b
 
 	try {
 		/* Access log */
-		logger.info << "Request received\n";
-
+		logger.debug << "Request received\n";
+#if 0
 		const Listener* listener = socket.getListener();
 		if(listener == nullptr) {
 			throw std::runtime_error("No basic-listener found for incoming request");
 		}
 
 		esl::io::Input input = listener->accept(*requestContext);
+#endif
+		esl::io::Input input = socket.getContext().accept(*requestContext);
+
 		if(input) {
 			return InputProxy::create(std::move(input), std::move(requestContext));
 		}

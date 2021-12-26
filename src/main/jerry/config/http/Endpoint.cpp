@@ -94,23 +94,23 @@ void Endpoint::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Endpoint::install(engine::http::server::Context& engineHttpContext) const {
-	engine::http::server::Endpoint& newEngineHttpEndpoint = engineHttpContext.addEndpoint(path, inherit);
+	engine::http::server::Context& newEngineContext = engineHttpContext.addEndpoint(path, inherit);
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry.install(newEngineHttpEndpoint);
+		entry.install(newEngineContext);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		newEngineHttpEndpoint.addHeader(responseHeader.key, responseHeader.value);
+		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(newEngineHttpEndpoint);
+	exceptions.install(newEngineContext);
 }
 
 void Endpoint::parseInnerElement(const tinyxml2::XMLElement& element) {

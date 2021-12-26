@@ -16,12 +16,13 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_BASIC_LISTENER_H_
-#define JERRY_CONFIG_BASIC_LISTENER_H_
+#ifndef JERRY_CONFIG_HTTP_HOST_H_
+#define JERRY_CONFIG_HTTP_HOST_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/basic/Entry.h>
-#include <jerry/engine/Engine.h>
+#include <jerry/config/http/Exceptions.h>
+#include <jerry/config/Setting.h>
+#include <jerry/engine/http/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -31,26 +32,30 @@
 
 namespace jerry {
 namespace config {
-namespace basic {
+namespace http {
 
-class Listener : public Config {
+class Entry;
+
+class Host : public Config {
 public:
-	Listener(const std::string& fileName, const tinyxml2::XMLElement& element);
+	Host(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
+	void install(engine::http::server::Context& engineHttpContext) const;
 
 private:
-	std::string refId;
-	bool inherit = true;
+	std::string serverName;
 
+	bool inherit = true;
 	std::vector<Entry> entries;
+	std::vector<Setting> responseHeaders;
+	Exceptions exceptions;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
-} /* namespace basic */
+} /* namespace http */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_BASIC_LISTENER_H_ */
+#endif /* JERRY_CONFIG_HTTP_HOST_H_ */

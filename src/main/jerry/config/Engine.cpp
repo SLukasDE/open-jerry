@@ -71,26 +71,33 @@ void Engine::save(std::ostream& oStream) const {
 		entry.save(oStream, 2);
 	}
 
+	for(const auto& basicClient : basicClients) {
+		basicClient.save(oStream, 2);
+	}
+
+	for(const auto& httpClient : httpClients) {
+		httpClient.save(oStream, 2);
+	}
 
 	for(const basic::Context& basicContext : basicContextList) {
 		basicContext.save(oStream, 2);
-	}
-
-	for(const basic::Listener& basicListener : basicListeners) {
-		basicListener.save(oStream, 2);
-	}
-
-
-	for(const http::Server& httpServer : httpServers) {
-		httpServer.save(oStream, 2);
 	}
 
 	for(const http::Context& httpContext : httpContextList) {
 		httpContext.save(oStream, 2);
 	}
 
-	for(const http::Listener& httpListener : httpListeners) {
-		httpListener.save(oStream, 2);
+
+	for(const basic::Server& basicServer : basicServers) {
+		basicServer.save(oStream, 2);
+	}
+
+	for(const http::Server& httpServer : httpServers) {
+		httpServer.save(oStream, 2);
+	}
+
+	for(const daemon::Daemon& daemon : daemons) {
+		daemon.save(oStream, 2);
 	}
 
 	oStream << "</jerry>\n";
@@ -175,29 +182,37 @@ std::unique_ptr<esl::logging::Layout> Engine::install(engine::Engine& engine, es
 		object.install(engine);
 	}
 
-	for(const auto& basicServer : basicServers) {
-		basicServer.install(engine);
+	for(const auto& basicClient : basicClients) {
+		basicClient.install(engine);
 	}
 
 	for(const auto& basicContext : basicContextList) {
 		basicContext.install(engine);
 	}
-
+/*
 	for(const auto& basicListener : basicListeners) {
 		basicListener.install(engine);
 	}
+*/
 
-
-	for(const auto& httpServer : httpServers) {
-		httpServer.install(engine);
+	for(const auto& httpClient : httpClients) {
+		httpClient.install(engine);
 	}
 
 	for(const auto& httpContext : httpContextList) {
 		httpContext.install(engine);
 	}
 
-	for(const auto& httpListener : httpListeners) {
-		httpListener.install(engine);
+	for(const auto& basicServer : basicServers) {
+		basicServer.install(engine);
+	}
+
+	for(const auto& httpServer : httpServers) {
+		httpServer.install(engine);
+	}
+
+	for(const auto& daemon : daemons) {
+		daemon.install(engine);
 	}
 
 	return layout;
@@ -281,20 +296,28 @@ void Engine::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else if(elementName == "basic-server") {
 		basicServers.push_back(basic::Server(getFileName(), element));
 	}
-	else if(elementName == "basic-context") {
-		basicContextList.push_back(basic::Context(getFileName(), element, true));
+	else if(elementName == "basic-client") {
+		basicClients.push_back(basic::Client(getFileName(), element));
 	}
+	else if(elementName == "basic-context") {
+		basicContextList.push_back(basic::Context(getFileName(), element, basic::Context::globalContext));
+	}
+	/*
 	else if(elementName == "basic-listener") {
 		basicListeners.push_back(basic::Listener(getFileName(), element));
 	}
+	*/
 	else if(elementName == "http-server") {
 		httpServers.push_back(http::Server(getFileName(), element));
 	}
-	else if(elementName == "http-context") {
-		httpContextList.push_back(http::Context(getFileName(), element, true));
+	else if(elementName == "http-client") {
+		httpClients.push_back(http::Client(getFileName(), element));
 	}
-	else if(elementName == "http-listener") {
-		httpListeners.push_back(http::Listener(getFileName(), element));
+	else if(elementName == "http-context") {
+		httpContextList.push_back(http::Context(getFileName(), element, http::Context::globalContext));
+	}
+	else if(elementName == "daemon") {
+		daemons.push_back(daemon::Daemon(getFileName(), element));
 	}
 	else {
 		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");

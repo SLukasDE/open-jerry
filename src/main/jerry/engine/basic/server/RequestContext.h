@@ -47,8 +47,7 @@ public:
 private:
 	esl::com::basic::server::RequestContext& requestContext;
 	Context context;
-	Context* baseContext = nullptr;
-	//Connection connection;
+	//Context* baseContext = nullptr;
 };
 
 } /* namespace server */

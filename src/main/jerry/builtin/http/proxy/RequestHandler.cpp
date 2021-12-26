@@ -16,14 +16,18 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/http/basicauth/RequestHandler.h>
+#include <jerry/builtin/http/proxy/RequestHandler.h>
 #include <jerry/Logger.h>
 
+#include <esl/com/http/client/Response.h>
+#include <esl/com/http/client/Request.h>
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-#include <esl/io/output/Memory.h>
+//#include <esl/com/http/client/Connection.h>
+#include <esl/io/input/String.h>
 #include <esl/io/input/Closed.h>
+#include <esl/io/output/String.h>
 #include <esl/utility/MIME.h>
 #include <esl/Stacktrace.h>
 
@@ -32,21 +36,10 @@
 namespace jerry {
 namespace builtin {
 namespace http {
-namespace basicauth {
+namespace proxy {
 
 namespace {
-Logger logger("jerry::builtin::http::basicauth::RequestHandler");
-
-const std::string PAGE_401(
-		"<!DOCTYPE html>\n"
-		"<html>\n"
-		"<head>\n"
-		"<title>401 - Unauthorized</title>\n"
-		"</head>\n"
-		"<body>\n"
-		"<h1>401 - Unauthorized</h1>\n"
-		"</body>\n"
-		"</html>\n");
+Logger logger("jerry::builtin::http::proxy::RequestHandler");
 } /* anonymous namespace */
 
 std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
@@ -55,14 +48,8 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 
 RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
-		if(setting.first == "username") {
-			username = setting.second;
-		}
-		else if(setting.first == "password") {
-			password = setting.second;
-		}
-		else if(setting.first == "realmId") {
-			realmId = setting.second;
+		if(setting.first == "http-client-id") {
+			httpClientId = setting.second;
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
@@ -71,18 +58,34 @@ RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings)
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
-	if(requestContext.getRequest().getUsername() == username &&
-			requestContext.getRequest().getPassword() == password) {
-		return esl::io::Input();
+	if(connectionFactory == nullptr) {
+        throw esl::com::http::server::exception::StatusCode(500, "Initialization failed, http-client not found with id \"" + httpClientId + "\"");
 	}
 
-	esl::com::http::server::Response response(401, esl::utility::MIME(esl::utility::MIME::textHtml), realmId);
-	esl::io::Output output = esl::io::output::Memory::create(PAGE_401.data(), PAGE_401.size());
-	requestContext.getConnection().send(response, std::move(output));
+	std::unique_ptr<esl::com::http::client::Interface::Connection> connection = connectionFactory->createConnection();
+	if(!connection) {
+		throw esl::com::http::server::exception::StatusCode(503, "no client connection available");
+	}
+
+	esl::com::http::client::Request clientRequest(requestContext.getPath(), esl::utility::HttpMethod::httpGet, esl::utility::MIME());
+	esl::io::input::String clientString;
+	esl::com::http::client::Response clientResponse = connection->send(clientRequest, esl::io::Output(), esl::io::Input(clientString));
+
+	esl::com::http::server::Response serverResponse(clientResponse.getStatusCode(), clientResponse.getContentType());
+	esl::io::Output output = esl::io::output::String::create(clientString.getString());
+	requestContext.getConnection().send(serverResponse, std::move(output));
+
 	return esl::io::input::Closed::create();
 }
 
-} /* namespace basicauth */
+void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+	connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(httpClientId);
+	if(connectionFactory == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Cannot find http-client with id \"" + httpClientId + "\""));
+	}
+}
+
+} /* namespace proxy */
 } /* namespace http */
 } /* namespace builtin */
 } /* namespace jerry */

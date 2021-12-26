@@ -16,36 +16,39 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINE_HTTP_SERVER_LISTENER_H_
-#define JERRY_ENGINE_HTTP_SERVER_LISTENER_H_
+#ifndef JERRY_CONFIG_DAEMON_DAEMON_H_
+#define JERRY_CONFIG_DAEMON_DAEMON_H_
 
-#include <jerry/engine/http/server/Context.h>
+#include <jerry/config/Config.h>
+#include <jerry/config/Setting.h>
+#include <jerry/engine/Engine.h>
+
+#include <tinyxml2/tinyxml2.h>
 
 #include <string>
 #include <vector>
+#include <ostream>
 
 namespace jerry {
-namespace engine {
-namespace http {
-namespace server {
+namespace config {
+namespace daemon {
 
-class Listener : public Context {
+class Daemon : public Config {
 public:
-	Listener(const std::string& hostname, std::vector<std::string> refIds);
+	Daemon(const std::string& fileName, const tinyxml2::XMLElement& element);
 
-	void dumpTree(std::size_t depth) const override;
-
-	const std::vector<std::string>& getRefIds() const;
-	const std::string& getHostname() const;
+	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Engine& engine) const;
 
 private:
-	std::string hostname;
-	std::vector<std::string> refIds;
+	std::string implementation;
+	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
-} /* namespace server */
-} /* namespace http */
-} /* namespace engine */
+} /* namespace daemon */
+} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_HTTP_SERVER_LISTENER_H_ */
+#endif /* JERRY_CONFIG_DAEMON_DAEMON_H_ */

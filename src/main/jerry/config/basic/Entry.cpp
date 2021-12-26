@@ -43,7 +43,7 @@ Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
 		object = std::unique_ptr<Object>(new Object(getFileName(), element));
 	}
 	else if(elementName == "context") {
-		context = std::unique_ptr<Context>(new Context(getFileName(), element, false));
+		context = std::unique_ptr<Context>(new Context(getFileName(), element, Context::context));
 	}
 	else if(elementName == "requesthandler") {
 		requestHandler = std::unique_ptr<RequestHandler>(new RequestHandler(getFileName(), element));

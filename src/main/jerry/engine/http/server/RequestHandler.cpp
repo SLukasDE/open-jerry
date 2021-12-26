@@ -19,7 +19,6 @@
 #include <jerry/engine/http/server/RequestHandler.h>
 #include <jerry/engine/http/server/RequestContext.h>
 #include <jerry/engine/http/server/Socket.h>
-#include <jerry/engine/http/server/Listener.h>
 #include <jerry/engine/http/server/InputProxy.h>
 #include <jerry/engine/http/server/ExceptionHandler.h>
 #include <jerry/Logger.h>
@@ -49,19 +48,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 		/* Access log */
 		logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
 
-		/* *************************************************** *
-		 * Lookup corresponding Listener matching the hostname *
-		 * *************************************************** */
-		logger.debug << "Lookup http-listerner by host name \"" << baseRequestContext.getRequest().getHostName() << "\"\n";
-
-		Listener* listener = socket.getListenerByHostname(baseRequestContext.getRequest().getHostName());
-		if(listener == nullptr) {
-			throw esl::com::http::server::exception::StatusCode(500, "No http-listener found for request to \"" + baseRequestContext.getRequest().getHostName() + ":" + std::to_string(baseRequestContext.getRequest().getHostPort()));
-		}
-
-		logger.debug << "HTTP listener found\n";
-
-		esl::io::Input input = listener->accept(*requestContext);
+		esl::io::Input input = socket.getContext().accept(*requestContext);
 		if(input) {
 			return InputProxy::create(std::move(input), std::move(requestContext));
 		}

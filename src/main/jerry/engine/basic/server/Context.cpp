@@ -17,7 +17,6 @@
  */
 
 #include <jerry/engine/basic/server/Context.h>
-#include <jerry/engine/basic/server/Listener.h>
 #include <jerry/engine/basic/server/RequestContext.h>
 #include <jerry/Logger.h>
 
@@ -33,14 +32,8 @@ namespace basic {
 namespace server {
 
 namespace {
-Logger logger("jerry::engine::messaging::server::Context");
+Logger logger("jerry::engine::basic::server::Context");
 } /* anonymous namespace */
-
-/*
-void Context::setParent(Context* context) {
-
-}
-*/
 
 Context& Context::addContext(const std::string& id, bool inheritObjects) {
 	std::unique_ptr<Context> context(new Context);
@@ -81,10 +74,20 @@ void Context::initializeContext() {
 	// call initializeContext() of sub-context's
 	for(auto& entry : entries) {
 		if(entry.context) {
-			/* ************** *
-			 * handle context *
-			 * ************** */
+			/* ****************** *
+			 * initialize context *
+			 * ****************** */
 			entry.context->initializeContext();
+		}
+
+		if(entry.requestHandler) {
+			/* ************************* *
+			 * initialize requestHandler *
+			 * ************************* */
+			esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(entry.requestHandler.get());
+			if(initializeContext) {
+				initializeContext->initializeContext(*this);
+			}
 		}
 	}
 }
@@ -94,9 +97,9 @@ void Context::dumpTree(std::size_t depth) const {
 
 	for(auto& entry : entries) {
 		if(entry.context) {
-			/* ************** *
-			 * handle Context *
-			 * ************** */
+			/* ************ *
+			 * dump Context *
+			 * ************ */
 			for(std::size_t i=0; i<depth; ++i) {
 				logger.info << "|   ";
 			}
@@ -104,10 +107,20 @@ void Context::dumpTree(std::size_t depth) const {
 			entry.context->dumpTree(depth + 1);
 		}
 
+		if(entry.refContext) {
+			/* *********************** *
+			 * dump referenced context *
+			 * *********************** */
+			for(std::size_t i=0; i<depth; ++i) {
+				logger.info << "|   ";
+			}
+			logger.info << "+-> Context: -> " << entry.refContext << " (reference)\n";
+		}
+
 		if(entry.requestHandler) {
-			/* ********************* *
-			 * handle RequestHandler *
-			 * ********************* */
+			/* ******************* *
+			 * dump RequestHandler *
+			 * ******************* */
 			for(std::size_t i=0; i<depth; ++i) {
 				logger.info << "|   ";
 			}
@@ -118,26 +131,20 @@ void Context::dumpTree(std::size_t depth) const {
 
 std::set<std::string> Context::getNotifiers() const {
 	std::set<std::string> notifiers;
-logger.info << "create Notifiers for " << entries.size() << " entries.\n";
+
 	for(auto& entry : entries) {
 		if(entry.context) {
 			std::set<std::string> tmpNotifiers = entry.context->getNotifiers();
-logger.info << "- entry is a context with " << tmpNotifiers.size() << " notifiers.\n";
 			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
 		}
 		else if(entry.refContext) {
 			std::set<std::string> tmpNotifiers = entry.refContext->getNotifiers();
-logger.info << "- entry is a ref-context with " << tmpNotifiers.size() << " notifiers.\n";
 			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
 		}
 		else if(entry.requestHandler) {
 			std::set<std::string> tmpNotifiers = entry.requestHandler->getNotifiers();
-logger.info << "- entry is a request-handler with " << tmpNotifiers.size() << " notifiers.\n";
 			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
 		}
-else {
-logger.info << "- entry is NOTHING.\n";
-}
 	}
 
 	return notifiers;

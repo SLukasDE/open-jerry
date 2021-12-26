@@ -16,8 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/http/Server.h>
-#include <jerry/config/http/Exceptions.h>
+#include <jerry/config/daemon/Daemon.h>
 #include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
 
@@ -25,9 +24,9 @@
 
 namespace jerry {
 namespace config {
-namespace http {
+namespace daemon {
 
-Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
+Daemon::Daemon(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -35,23 +34,11 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		// 	<http-server implementation="mhd4esl" https="true">
+		// 	<daemon implementation="...">
 		if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
 				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
-			}
-		}
-		else if(std::string(attribute->Name()) == "https") {
-			std::string httpsStr = esl::utility::String::toLower(attribute->Value());
-			if(httpsStr == "true") {
-				isHttps = true;
-			}
-			else if(httpsStr == "false") {
-				isHttps = false;
-			}
-			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
 			}
 		}
 		else {
@@ -70,40 +57,27 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		parseInnerElement(*innerElement);
 		setXMLFile(oldXmlFile);
 	}
-
-	if(!listener) {
-		throw XMLException(*this, "Missing definition of element \"listener\"");
-	}
 }
 
-void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
+void Daemon::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
 
-	std::string innerElementName(element.Name());
+	std::string elementName(element.Name());
 
-	if(innerElementName == "parameter") {
+	if(elementName == "parameter") {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
-	else if(innerElementName == "listener") {
-		if(listener) {
-			throw XMLException(*this, "Multiple definition of element \"listener\"");
-		}
-		listener = std::unique_ptr<Context>(new Context(getFileName(), element, Context::listener));
-	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + innerElementName + "\"");
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 
-void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<http-server";
+void Daemon::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<daemon";
 	if(implementation != "") {
 		oStream <<  " implementation=\"" << implementation << "\"";
-	}
-	if(isHttps) {
-		oStream << " https=\"true\"";
 	}
 	oStream << ">\n";
 
@@ -111,24 +85,19 @@ void Server::save(std::ostream& oStream, std::size_t spaces) const {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
-	listener->save(oStream, spaces+2);
-
-	oStream << makeSpaces(spaces) << "</http-server>\n";
+	oStream << makeSpaces(spaces) << "</daemon>\n";
 }
 
-void Server::install(engine::Engine& jEngine) const {
+void Daemon::install(engine::Engine& engine) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine::http::server::Context& newEngineHttpContext = jEngine.addHttpServer(isHttps, eslSettings, implementation);
-
-	listener->install(newEngineHttpContext);
-
+	engine.addDaemon(eslSettings, implementation);
 }
 
-} /* namespace http */
+} /* namespace daemon */
 } /* namespace config */
 } /* namespace jerry */

@@ -42,8 +42,12 @@ void Endpoint::dumpTree(std::size_t depth) const {
 	Context::dumpTree(depth);
 }
 
-const std::string& Endpoint::getPath() const {
+const std::string& Endpoint::getPath() const noexcept {
 	return path;
+}
+
+bool Endpoint::isMatch(const std::string& currentPath) const {
+	return currentPath.rfind(getPath()) == 0 && (currentPath.size() == getPath().size() || currentPath.at(getPath().size()) == '/');
 }
 
 } /* namespace server */

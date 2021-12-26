@@ -21,8 +21,12 @@ SOFTWARE.
 */
 
 #include <jerry/engine/ObjectContext.h>
+#include <jerry/engine/basic/server/Context.h>
+#include <jerry/engine/http/server/Context.h>
 #include <jerry/Logger.h>
 
+#include <esl/com/basic/client/Interface.h>
+#include <esl/com/http/client/Interface.h>
 #include <esl/object/InitializeContext.h>
 
 #include <stdexcept>
@@ -33,6 +37,10 @@ namespace engine {
 namespace {
 Logger logger("jerry::engine::ObjectContext");
 } /* anonymous namespace */
+
+ObjectContext::ObjectContext(bool aIsGlobal)
+: isGlobal(aIsGlobal)
+{ }
 
 void ObjectContext::setParent(esl::object::Interface::ObjectContext* objectContext) {
 	parent = objectContext;
@@ -75,11 +83,12 @@ void ObjectContext::addReference(const std::string& id, const std::string& refId
 void ObjectContext::initializeContext() {
 	for(auto& object : objects) {
 		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(object.second.get());
+		ObjectContext* objectContext = dynamic_cast<ObjectContext*>(object.second.get());
+
 		if(initializeContext) {
 			initializeContext->initializeContext(*this);
 		}
 
-		ObjectContext* objectContext = dynamic_cast<ObjectContext*>(object.second.get());
 		if(objectContext) {
 			objectContext->initializeContext();
 		}
@@ -87,23 +96,55 @@ void ObjectContext::initializeContext() {
 }
 
 void ObjectContext::dumpTree(std::size_t depth) const {
-	for(const auto& objectEntry : objectRefsById) {
+	for(const auto& entry : objectRefsById) {
+		const esl::object::Interface::Object* objectPtr = &entry.second.get();
+		std::string isReferenceStr = objects.count(entry.first) == 0 ? " (reference)" : "";
+
+		const basic::server::Context* basicContextPtr = dynamic_cast<const basic::server::Context*>(objectPtr);
+		const http::server::Context* httpContextPtr = dynamic_cast<const http::server::Context*>(objectPtr);
+
+		const esl::com::basic::client::Interface::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::Interface::ConnectionFactory*>(objectPtr);
+		const esl::com::http::client::Interface::ConnectionFactory* httpConnectionFactory = dynamic_cast<const esl::com::http::client::Interface::ConnectionFactory*>(objectPtr);
+
+		const ObjectContext* objectContext = dynamic_cast<const ObjectContext*>(objectPtr);
+
 		for(std::size_t i=0; i<depth; ++i) {
 			logger.info << "|   ";
 		}
 
-		const ObjectContext* context = dynamic_cast<const ObjectContext*>(&objectEntry.second.get());
-		if(context) {
-			logger.info << "+-> Context: \"";
+		if(basicContextPtr) {
+			if(isGlobal) {
+				logger.info << "+-> Basic context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
+			}
+			else {
+				logger.info << "+-> Context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
+			}
+			basicContextPtr->dumpTree(depth+1);
+		}
+
+		else if(httpContextPtr) {
+			if(isGlobal) {
+				logger.info << "+-> HTTP context: \"" << entry.first << "\" -> " << httpContextPtr << "\n";
+			}
+			else {
+				logger.info << "+-> Context: \"" << entry.first << "\" -> " << httpContextPtr << "\n";
+			}
+			httpContextPtr->dumpTree(depth+1);
+		}
+
+		else if(basicConnectionFactory) {
+			logger.info << "+-> Basic-Client: \"" << entry.first << "\" -> " << basicConnectionFactory << "\n";
+		}
+
+		else if(httpConnectionFactory) {
+			logger.info << "+-> HTTP-Client: \"" << entry.first << "\" -> " << httpConnectionFactory << "\n";
+		}
+
+		else if(objectContext) {
+			logger.info << "+-> Object context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
 		}
 		else {
-			logger.info << "+-> Object: \"";
-		}
-		if(objects.count(objectEntry.first) != 0) {
-			logger.info << objectEntry.first << "\" -> " << &objectEntry.second.get() << "\n";
-		}
-		else {
-			logger.info << objectEntry.first << "\" -> " << &objectEntry.second.get() << " (reference)\n";
+			logger.info << "+-> Object: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
 		}
 	}
 }
@@ -111,6 +152,10 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 esl::object::Interface::Object* ObjectContext::getObject() const {
 	auto iter = objectRefsById.find("");
 	return iter == std::end(objectRefsById) ? nullptr : &iter->second.get();
+}
+
+const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& ObjectContext::getObjects() const {
+	return objectRefsById;
 }
 
 esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
@@ -124,10 +169,6 @@ esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& 
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
 	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
-}
-
-const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& ObjectContext::getObjects() const {
-	return objectRefsById;
 }
 
 void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {

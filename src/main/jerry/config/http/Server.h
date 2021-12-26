@@ -22,13 +22,14 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 #include <jerry/engine/Engine.h>
+#include <jerry/config/http/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-//#include <cstdint>
 #include <string>
 #include <vector>
 #include <ostream>
+#include <memory>
 
 namespace jerry {
 namespace config {
@@ -42,10 +43,10 @@ public:
 	void install(engine::Engine& engine) const;
 
 private:
-	std::string id;
 	std::string implementation;
 	bool isHttps = false;
 	std::vector<Setting> settings;
+	std::unique_ptr<Context> listener;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };

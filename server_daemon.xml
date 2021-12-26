@@ -62,54 +62,16 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-	<http-context id="x">
-		<requesthandler implementation="jerry/builtin/http/filebrowser">
-			<parameter key="browsable" value="true"/>
-			<parameter key="ignoreError" value="true"/>
-			<parameter key="path" value="/tmp/"/>
-		</requesthandler>
-	</http-context>
+	<object id="x" implementation="jerry/builtin/procedure/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</object>
 	
-	<http-server implementation="mhd4esl" https="false">
-		<parameter key="threads" value="4"/>
-		<parameter key="port" value="8080"/>
-		<listener>
-			<host server-name="*">
-				<context ref-id="ref-context"/>
-			</host>
-		</listener>
-	</http-server>
+	<object id="y" implementation="jerry/builtin/procedure/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</object>
 	
-	<http-client id="http-client-1" implementation="curl4esl" url="https://www.heise.de"/>
-	
-	<http-context id="ref-context">
-		<requesthandler implementation="jerry/builtin/http/basicauth">
-			<parameter key="username" value="Hans"/>
-			<parameter key="password" value="Wurst1"/>
-			<parameter key="realmId" value="AuthArea3453458"/>
-		</requesthandler>
-		<endpoint path="test1/log">
-			<endpoint path="mc-lukas">
-				<requesthandler implementation="jerry/builtin/http/filebrowser">
-					<parameter key="browsable" value="true"/>
-					<parameter key="path" value="/usr/"/>
-				</requesthandler>
-			</endpoint>
-			
-			<reference id="y" ref-id="x"/>
-			
-			<context ref-id="y"/>
-			<!--requesthandler implementation="jerry/builtin/http/filebrowser">
-				<parameter key="browsable" value="true"/>
-				<parameter key="ignoreError" value="true"/>
-				<parameter key="path" value="/tmp/"/>
-			</requesthandler-->
-			
-		</endpoint>
-		<endpoint path="heise">
-			<requesthandler implementation="jerry/builtin/http/proxy">
-				<parameter key="http-client-id" value="http-client-1"/>
-			</requesthandler>
-		</endpoint>
-	</http-context>
+	<daemon implementation="jerry/builtin/daemon/procedures">
+		<parameter key="procedure-id" value="x"/>
+		<parameter key="procedure-id" value="y"/>
+	</daemon>
 </jerry>

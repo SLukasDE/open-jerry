@@ -21,13 +21,13 @@
 
 #include <jerry/engine/Entry.h>
 #include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/basic/server/Listener.h>
+#include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/http/server/Socket.h>
-#include <jerry/engine/http/server/Listener.h>
+#include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/ObjectContext.h>
 
 #include <esl/object/Interface.h>
-#include <esl/utility/MessageTimer.h>
+#include <esl/processing/daemon/Interface.h>
 
 #include <cstdint>
 #include <set>
@@ -44,39 +44,38 @@ namespace engine {
 
 class Engine : public ObjectContext {
 public:
-	struct Message {
-		int i;
-		std::function<void(Engine& engine)> f;
-	};
-
 	Engine();
-
-	bool run(bool isDaemon);
-	bool runCGI();
-	void stop();
 
 	void addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate);
 	void addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile);
+	const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
+	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
-	void addBasicServer(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	void addHttpServer(const std::string& id, bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	basic::server::Context& addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	http::server::Context& addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	void addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
-	basic::server::Listener& addBasicListener(const std::string& refId, bool inheritObjects);
-	http::server::Listener& addHttpListener(const std::string& refId, bool inheritObjects, const std::string& hostname);
+	void addBasicClient(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	void addHttpClient(const std::string& id, const std::string& url, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
+	const std::vector<std::unique_ptr<basic::server::Socket>>& getBasicServers() const;
+	const std::vector<std::unique_ptr<http::server::Socket>>& getHttpServers() const;
+	const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& getDaemons() const;
+
+	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
 
 private:
-	void dumpTreeEntries(std::size_t depth) const;
-	void dumpTreeBasicListener(std::size_t depth) const;
-	void dumpTreeHttpListener(std::size_t depth) const;
+	void dumpTreeBasicServers(std::size_t depth) const;
+	void dumpTreeHttpServers(std::size_t depth) const;
+	void dumpTreeDaemons(std::size_t depth) const;
 
-    std::thread::id runThreadId = std::thread::id();
-
-    esl::utility::MessageTimer<std::string, Message> messageTimer;
 	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
-	std::vector<std::unique_ptr<basic::server::Listener>> basicListeners;
-	std::vector<std::unique_ptr<http::server::Listener>> httpListeners;
+
+	std::vector<std::unique_ptr<basic::server::Socket>> basicServers;
+	std::vector<std::unique_ptr<http::server::Socket>> httpServers;
+	std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>> daemons;
+
 };
 
 } /* namespace engine */

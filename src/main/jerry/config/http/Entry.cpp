@@ -27,8 +27,9 @@ Entry::Entry(const Entry& other)
 : Config(other),
   object(other.object ? new Object(*other.object) : nullptr),
   reference(other.reference ? new Reference(*other.reference) : nullptr),
-  endpoint(other.endpoint ? new Endpoint(*other.endpoint) : nullptr),
   context(other.context ? new Context(*other.context) : nullptr),
+  endpoint(other.endpoint ? new Endpoint(*other.endpoint) : nullptr),
+  host(other.host ? new Host(*other.host) : nullptr),
   requestHandler(other.requestHandler ? new RequestHandler(*other.requestHandler) : nullptr)
 { }
 
@@ -47,11 +48,14 @@ Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
 	else if(elementName == "reference") {
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
+	else if(elementName == "context") {
+		context = std::unique_ptr<Context>(new Context(getFileName(), element, Context::context));
+	}
 	else if(elementName == "endpoint") {
 		endpoint = std::unique_ptr<Endpoint>(new Endpoint(getFileName(), element));
 	}
-	else if(elementName == "context") {
-		context = std::unique_ptr<Context>(new Context(getFileName(), element, false));
+	else if(elementName == "host") {
+		host = std::unique_ptr<Host>(new Host(getFileName(), element));
 	}
 	else if(elementName == "requesthandler") {
 		requestHandler = std::unique_ptr<RequestHandler>(new RequestHandler(getFileName(), element));
@@ -68,11 +72,14 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(reference) {
 		reference->save(oStream, spaces);
 	}
+	if(context) {
+		context->save(oStream, spaces);
+	}
 	if(endpoint) {
 		endpoint->save(oStream, spaces);
 	}
-	if(context) {
-		context->save(oStream, spaces);
+	if(host) {
+		host->save(oStream, spaces);
 	}
 	if(requestHandler) {
 		requestHandler->save(oStream, spaces);
@@ -86,11 +93,14 @@ void Entry::install(engine::http::server::Context& engineHttpContext) const {
 	if(reference) {
 		reference->install(engineHttpContext);
 	}
+	if(context) {
+		context->install(engineHttpContext);
+	}
 	if(endpoint) {
 		endpoint->install(engineHttpContext);
 	}
-	if(context) {
-		context->install(engineHttpContext);
+	if(host) {
+		host->install(engineHttpContext);
 	}
 	if(requestHandler) {
 		requestHandler->install(engineHttpContext);

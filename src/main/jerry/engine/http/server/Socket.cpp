@@ -17,7 +17,6 @@
  */
 
 #include <jerry/engine/http/server/Socket.h>
-#include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/http/server/RequestContext.h>
 #include <jerry/Logger.h>
 
@@ -35,13 +34,10 @@ namespace {
 Logger logger("jerry::engine::http::server::Socket");
 }
 
-Socket::Socket(const std::string& aId, bool aHttps,
-		const esl::object::Interface::Settings& aSettings,
-		const std::string& aImplementation)
+Socket::Socket(bool aHttps, const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
 : socket(aSettings, aImplementation),
   requestHandler(*this),
   https(aHttps),
-  id(aId),
   implementation(aImplementation),
   settings(aSettings)
 { }
@@ -56,47 +52,12 @@ void Socket::listen(std::function<void()> onReleasedHandler) {
 	socket.listen(requestHandler, onReleasedHandler);
 }
 
-void Socket::addListener(Listener& listener) {
-	if(listenerByHostname.count(listener.getHostname()) > 0) {
-		throw esl::addStacktrace(std::runtime_error("Cannot add http-listener for hostname \"" + listener.getHostname() + "\" because there is already another listener added for same hostname."));
-
-	}
-	listenerByHostname[listener.getHostname()] = &listener;
-	refListeners.push_back(std::ref(listener));
-}
-
 bool Socket::isHttps() const noexcept {
 	return https;
 }
 
-std::set<std::string> Socket::getHostnames() const {
-	std::set<std::string> hostnames;
-
-	for(auto& entry : listenerByHostname) {
-		hostnames.insert(entry.first);
-	}
-
-	return hostnames;
-}
-
-Listener* Socket::getListenerByHostname(std::string hostname) const {
-	auto iter = listenerByHostname.find(hostname);
-	while(iter == std::end(listenerByHostname)) {
-		std::string::size_type pos = hostname.find_first_of('.');
-		if(pos == std::string::npos) {
-			logger.debug << "Lookup http-listerner by host name \"*\"\n";
-			iter = listenerByHostname.find("*");
-			break;
-		}
-		hostname = hostname.substr(pos+1);
-		logger.debug << "Lookup http-listerner by host name \"*." << hostname << "\"\n";
-		iter = listenerByHostname.find("*." + hostname);
-	}
-
-	if(iter == std::end(listenerByHostname)) {
-		return nullptr;
-	}
-	return iter->second;
+Context& Socket::getContext() noexcept {
+	return context;
 }
 
 void Socket::listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
@@ -117,13 +78,12 @@ bool Socket::wait(std::uint32_t ms) {
 	//return false;
 }
 
-void Socket::dumpTree(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> ID: \"" << getId() << "\" -> " << this << "\n";
-	++depth;
+//void Socket::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+void Socket::initializeContext() {
+	getContext().initializeContext();
+}
 
+void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
@@ -151,22 +111,11 @@ void Socket::dumpTree(std::size_t depth) const {
 		logger.info << "key: \"" << setting.first << "\" = value: \"" << setting.second << "\"\n";
 	}
 
-	std::set<std::string> hostnames = getHostnames();
-	for(const auto& hostname : hostnames) {
-		http::server::Listener* listener = getListenerByHostname(hostname);
-		if(listener == nullptr) {
-			continue;
-		}
-
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "+-> Hostname: \"" << hostname << "\" -> " << listener << "\n";
+	for(std::size_t i=0; i<depth+1; ++i) {
+		logger.info << "|   ";
 	}
-}
-
-const std::string& Socket::getId() const noexcept {
-	return id;
+	logger.info << "Listener:\n";
+	context.dumpTree(depth+1);
 }
 
 const std::string& Socket::getImplementation() const noexcept {

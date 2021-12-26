@@ -52,7 +52,7 @@ public:
 	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
 
 private:
-	std::set<std::string> notifiers;
+	std::string notifier;
 	unsigned long msDelay = 0;
 	std::string connectionFactoryId;
 	esl::com::basic::client::Interface::ConnectionFactory* connectionFactory = nullptr;

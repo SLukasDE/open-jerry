@@ -37,13 +37,7 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		if(std::string(attribute->Name()) == "id") {
-			id = attribute->Value();
-			if(id == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
-			}
-		}
-		else if(std::string(attribute->Name()) == "implementation") {
+		if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
 				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
@@ -52,10 +46,6 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		else {
 			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
-	}
-
-	if(id == "") {
-		throw XMLException(*this, "Attribute 'id' is missing");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -69,10 +59,14 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		parseInnerElement(*innerElement);
 		setXMLFile(oldXmlFile);
 	}
+
+	if(!listener) {
+		throw XMLException(*this, "Missing definition of element \"listener\"");
+	}
 }
 
 void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<basic-server id=\"" << id << "\"";
+	oStream << makeSpaces(spaces) << "<basic-server";
 	if(implementation != "") {
 		oStream << makeSpaces(spaces) << " implementation=\"" << implementation << "\"";
 	}
@@ -82,17 +76,21 @@ void Server::save(std::ostream& oStream, std::size_t spaces) const {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
+	listener->save(oStream, spaces+2);
+
 	oStream << makeSpaces(spaces) << "<basic-server/>\n";
 }
 
-void Server::install(engine::Engine& engine) const {
+void Server::install(engine::Engine& jEngine) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine.addBasicServer(id, eslSettings, implementation);
+	engine::basic::server::Context& newEngineHttpContext = jEngine.addBasicServer(eslSettings, implementation);
+
+	listener->install(newEngineHttpContext);
 }
 
 void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
@@ -105,10 +103,15 @@ void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(innerElementName == "parameter") {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
+	else if(innerElementName == "listener") {
+		if(listener) {
+			throw XMLException(*this, "Multiple definition of element \"listener\"");
+		}
+		listener = std::unique_ptr<Context>(new Context(getFileName(), element, Context::listener));
+	}
 	else {
 		throw XMLException(*this, "Unknown element name '" + std::string(element.Name()) + "'");
 	}
-
 }
 
 } /* namespace basic */

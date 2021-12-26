@@ -24,7 +24,6 @@ SOFTWARE.
 #define JERRY_ENGINE_OBJECTCONTEXT_H_
 
 #include <esl/object/Interface.h>
-//#include <esl/object/InitializeContext.h>
 
 #include <string>
 #include <map>
@@ -35,9 +34,10 @@ SOFTWARE.
 namespace jerry {
 namespace engine {
 
-//class ObjectContext : virtual public esl::object::Interface::ObjectContext, public esl::object::InitializeContext {
 class ObjectContext : public esl::object::Interface::ObjectContext {
 public:
+	ObjectContext(bool isGlobal = false);
+
 	void setParent(esl::object::Interface::ObjectContext* objectContext);
 
 	esl::object::Interface::Object& addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings);
@@ -49,12 +49,13 @@ public:
 	virtual void initializeContext();
 	virtual void dumpTree(std::size_t depth) const;
 	esl::object::Interface::Object* getObject() const;
+	const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& getObjects() const;
 
 protected:
 	esl::object::Interface::Object* findRawObject(const std::string& id) const override;
-	const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& getObjects() const;
 
 private:
+	bool isGlobal;
 	esl::object::Interface::ObjectContext* parent = nullptr;
 	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 	std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>> objectRefsById;

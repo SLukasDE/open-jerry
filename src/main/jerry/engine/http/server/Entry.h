@@ -30,12 +30,14 @@ namespace server {
 
 class Context;
 class Endpoint;
+class Host;
 
 struct Entry {
 	Entry(std::unique_ptr<Context> context);
 	Entry(Context& refContext);
 
 	Entry(std::unique_ptr<Endpoint> endpoint);
+	Entry(std::unique_ptr<Host> host);
 
 	Entry(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
 
@@ -43,6 +45,7 @@ struct Entry {
 	Context* refContext = nullptr;
 
 	std::unique_ptr<Endpoint> endpoint;
+	std::unique_ptr<Host> host;
 
 	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
 };

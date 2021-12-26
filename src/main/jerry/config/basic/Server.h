@@ -21,6 +21,7 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/config/basic/Context.h>
 #include <jerry/engine/Engine.h>
 
 #include <tinyxml2/tinyxml2.h>
@@ -41,9 +42,9 @@ public:
 	void install(engine::Engine& engine) const;
 
 private:
-	std::string id;
 	std::string implementation;
 	std::vector<Setting> settings;
+	std::unique_ptr<Context> listener;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };

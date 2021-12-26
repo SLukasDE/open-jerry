@@ -16,20 +16,20 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/basic/Listener.h>
-#include <jerry/config/basic/Context.h>
+#include <jerry/config/http/Host.h>
+#include <jerry/config/http/Context.h>
+#include <jerry/config/http/RequestHandler.h>
+#include <jerry/config/http/Entry.h>
+#include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
-
-#include <stdexcept>
 
 namespace jerry {
 namespace config {
-namespace basic {
+namespace http {
 
-Listener::Listener(const std::string& fileName, const tinyxml2::XMLElement& element)
+Host::Host(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -37,10 +37,10 @@ Listener::Listener(const std::string& fileName, const tinyxml2::XMLElement& elem
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		if(std::string(attribute->Name()) == "ref-id") {
-			refId = attribute->Value();
-			if(refId == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+		if(std::string(attribute->Name()) == "server-name") {
+			serverName = attribute->Value();
+			if(serverName == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'server-name'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
@@ -60,6 +60,10 @@ Listener::Listener(const std::string& fileName, const tinyxml2::XMLElement& elem
 		}
 	}
 
+	if(serverName == "") {
+		throw XMLException(*this, "Missing attribute 'server-name'");
+	}
+
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
 		const tinyxml2::XMLElement* innerElement = node->ToElement();
 
@@ -73,57 +77,60 @@ Listener::Listener(const std::string& fileName, const tinyxml2::XMLElement& elem
 	}
 }
 
-void Listener::save(std::ostream& oStream, std::size_t spaces) const {
-	// <basic-listener ref-id="broker-1">
-	oStream << makeSpaces(spaces) << "<basic-listener ref-id=\"" << refId << "\"";
-	if(inherit) {
-		oStream << " inherit=\"true\">\n";
-	}
-	else {
-		oStream << " inherit=\"false\">\n";
-	}
+void Host::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<host server-name=\"" << serverName << "\">\n";
 
 	for(const auto& entry : entries) {
 		entry.save(oStream, spaces+2);
 	}
 
-	/*
 	for(const auto& entry : responseHeaders) {
 		entry.saveResponseHeader(oStream, spaces+2);
 	}
 
 	exceptions.save(oStream, spaces+2);
-	*/
 
-	oStream << makeSpaces(spaces) << "<basic-listener/>\n";
+	oStream << makeSpaces(spaces) << "<endpoint/>\n";
 }
 
-void Listener::install(engine::Engine& engine) const {
-	engine::basic::server::Context& context = engine.addBasicListener(refId, inherit);
+void Host::install(engine::http::server::Context& engineHttpContext) const {
+	engine::http::server::Context& newEngineContext = engineHttpContext.addHost(serverName, inherit);
 
+	/* *****************
+	 * install entries *
+	 * *****************/
 	for(const auto& entry : entries) {
-		entry.install(context);
+		entry.install(newEngineContext);
 	}
+
+	/* **********************
+	 * Set response headers *
+	 * **********************/
+	for(const auto& responseHeader : responseHeaders) {
+		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
+	}
+
+	exceptions.install(newEngineContext);
 }
 
-void Listener::parseInnerElement(const tinyxml2::XMLElement& element) {
+void Host::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
 
-	/*
-	std::string elementName(element.Name());
+	std::string innerElementName(element.Name());
 
-	if(elementName == "exceptions") {
-		exceptions = Exceptions(element);
+	if(innerElementName == "response-header") {
+		responseHeaders.push_back(Setting(getFileName(), element, false));
+	}
+	else if(innerElementName == "exceptions") {
+		exceptions = Exceptions(getFileName(), element);
 	}
 	else {
-		entries.push_back(Entry(element));
+		entries.push_back(Entry(getFileName(), element));
 	}
-	*/
-	entries.push_back(Entry(getFileName(), element));
 }
 
-} /* namespace basic */
+} /* namespace http */
 } /* namespace config */
 } /* namespace jerry */

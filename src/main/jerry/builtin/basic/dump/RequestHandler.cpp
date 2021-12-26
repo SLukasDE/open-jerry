@@ -35,8 +35,6 @@ Logger logger("jerry::builtin::basic::dump::RequestHandler");
 
 class RequestConsumer : public esl::io::Consumer {
 public:
-	static esl::io::Input createInput(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext);
-
 	RequestConsumer(bool aShowContent)
 	: showContent(aShowContent)
 	{ }
@@ -92,19 +90,40 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 				showContent = false;
 			}
 			else {
-				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
+				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter '" + setting.first + "'. Possible values are \"true\" or \"false\".");
 			}
 		}
 		else if(setting.first == "notifier") {
-			notifiers.insert(setting.second);
+			if(notifier != "") {
+				throw std::runtime_error("Multiple specification for parameter 'notifier'.");
+			}
+
+			notifier = setting.second;
+			if(notifier == "") {
+				throw std::runtime_error("Invalid value \"\" for parameter 'notifier'.");
+			}
 		}
 		else {
 			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
+
+	if(notifier == "") {
+		throw std::runtime_error("Missing specification for parameter 'notifier'.");
+	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	logger.trace << "DUMP: Check notifier...\n";
+	if(requestContext.getRequest().hasValue("topic") == false) {
+		logger.trace << "DUMP: DROP: topic name not available.\n";
+		return esl::io::Input();
+	}
+	if(requestContext.getRequest().getValue("topic") != notifier) {
+		logger.trace << "DUMP: DROP: topic name is \"" << requestContext.getRequest().getValue("topic") << "\", not \"" << notifier << "\".\n";
+		return esl::io::Input();
+	}
+
 	if(showContext) {
 		logger.info << "Context:\n";
 		for(const auto& entry : requestContext.getRequest().getValues()) {
@@ -120,7 +139,7 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
 }
 
 std::set<std::string> RequestHandler::getNotifiers() const {
-	return notifiers;
+	return std::set<std::string>{notifier};
 }
 
 } /* namespace dump */

@@ -32,38 +32,27 @@ namespace basic {
 namespace server {
 
 namespace {
-Logger logger("jerry::engine::messaging::server::Socket");
+Logger logger("jerry::engine::basic::server::Socket");
 }
 
-Socket::Socket(const std::string& aId, const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
+Socket::Socket(const esl::object::Interface::Settings& aSettings, const std::string& aImplementation)
 : socket(aSettings, aImplementation),
   requestHandler(*this),
-  id(aId),
   implementation(aImplementation),
   settings(aSettings)
 { }
 
 
 void Socket::listen(std::function<void()> onReleasedHandler) {
-	if(listener == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("There is no listener connected to basic server with id '" + id + "'."));
-	}
 	socket.listen(requestHandler, onReleasedHandler);
 }
 
-void Socket::addListener(Listener& aListener) {
-	if(listener) {
-		throw esl::addStacktrace(std::runtime_error("There is already a listener connected."));
-	}
-	listener = &aListener;
-}
-
-const Listener* Socket::getListener() const {
-	return listener;
-}
-
 std::set<std::string> Socket::getNotifiers() const {
-	return listener ? listener->getNotifiers() : std::set<std::string>();
+	return context.getNotifiers();
+}
+
+Context& Socket::getContext() noexcept {
+	return context;
 }
 
 void Socket::listen(const esl::com::basic::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
@@ -84,13 +73,11 @@ bool Socket::wait(std::uint32_t ms) {
 	//return false;
 }
 
-void Socket::dumpTree(std::size_t depth) const {
-	for(std::size_t i=0; i<depth; ++i) {
-		logger.info << "|   ";
-	}
-	logger.info << "+-> ID: \"" << id << "\"\n";
-	++depth;
+void Socket::initializeContext() {
+	getContext().initializeContext();
+}
 
+void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
@@ -111,7 +98,9 @@ void Socket::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "+-> Listener: -> " << getListener() << "\n";
+	logger.info << "+-> Listener:\n";
+	//logger.info << "Listener:\n";
+	context.dumpTree(depth+1);
 }
 
 } /* namespace server */

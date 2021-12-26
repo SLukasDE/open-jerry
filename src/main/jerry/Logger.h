@@ -23,11 +23,7 @@
 #include <esl/logging/Level.h>
 
 namespace jerry {
-
 using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
-
-extern Logger logger;
-
 } /* namespace jerry */
 
 #endif /* JERRY_LOGGER_H_ */

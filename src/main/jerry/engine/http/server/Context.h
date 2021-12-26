@@ -54,7 +54,8 @@ public:
 	Context& addContext(const std::string& id, bool inheritObjects);
 	void addContext(const std::string& refId);
 
-	Endpoint& addEndpoint(const std::string& path, bool inheritObjects);
+	Context& addEndpoint(const std::string& path, bool inheritObjects);
+	Context& addHost(const std::string& serverName, bool inheritObjects);
 
 	void addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings);
 
@@ -103,4 +104,5 @@ private:
 
 #endif /* JERRY_ENGINE_HTTP_SERVER_CONTEXT_H_ */
 
+#include <jerry/engine/http/server/Host.h> // important for compiler to know size of Context (see Entry.h)
 #include <jerry/engine/http/server/Endpoint.h> // important for compiler to know size of Context (see Entry.h)

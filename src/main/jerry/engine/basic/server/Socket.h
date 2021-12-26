@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_BASIC_SERVER_SOCKET_H_
 #define JERRY_ENGINE_BASIC_SERVER_SOCKET_H_
 
-#include <jerry/engine/basic/server/Listener.h>
+#include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/basic/server/RequestHandler.h>
 
 #include <esl/com/basic/server/Interface.h>
@@ -41,17 +41,17 @@ namespace server {
 
 class Socket final : public esl::com::basic::server::Interface::Socket {
 public:
-	Socket(const std::string& id, const esl::object::Interface::Settings& settings, const std::string& implementation);
+	Socket(const esl::object::Interface::Settings& settings, const std::string& implementation);
 
 	void listen(std::function<void()> onReleasedHandler);
-	void addListener(Listener& listener);
-	const Listener* getListener() const;
-
 	std::set<std::string> getNotifiers() const;
+	Context& getContext() noexcept;
 
 	void listen(const esl::com::basic::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
+
+	void initializeContext();
 
 	void dumpTree(std::size_t depth) const;
 
@@ -59,11 +59,10 @@ private:
 	esl::com::basic::server::Socket socket;
 	RequestHandler requestHandler;
 
-	const std::string id;
 	const std::string implementation;
 	const esl::object::Interface::Settings settings;
 
-	Listener* listener = nullptr;
+	Context context;
 };
 
 } /* namespace server */

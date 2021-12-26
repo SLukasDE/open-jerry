@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/engine/http/server/Listener.h>
+#include <jerry/engine/http/server/Host.h>
 #include <jerry/Logger.h>
 
 namespace jerry {
@@ -25,37 +25,40 @@ namespace http {
 namespace server {
 
 namespace {
-Logger logger("jerry::engine::http::server::Listener");
-}
+Logger logger("jerry::engine::http::server::Host");
+} /* anonymous namespace */
 
-Listener::Listener(const std::string& aHostname, std::vector<std::string> aRefIds)
-: hostname(aHostname),
-  refIds(std::move(aRefIds))
+Host::Host(const std::string& aServerName)
+: serverName(aServerName)
 { }
 
-void Listener::dumpTree(std::size_t depth) const {
+void Host::dumpTree(std::size_t depth) const {
 	for(std::size_t i=0; i<depth; ++i) {
 		logger.info << "|   ";
 	}
-	logger.info << "Hostname: \"" + getHostname() + "\"\n";
-
-	for(const auto& refId : refIds) {
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "Added to: \"" + refId + "\"\n";
-	}
-
-	//Endpoint::dumpTree(depth);
+	logger.info << "Server name: \"" << getServerName() << "\"\n";
 	Context::dumpTree(depth);
 }
 
-const std::vector<std::string>& Listener::getRefIds() const {
-	return refIds;
+const std::string& Host::getServerName() const noexcept {
+	return serverName;
 }
 
-const std::string& Listener::getHostname() const {
-	return hostname;
+bool Host::isMatch(const std::string& hostName) const {
+	if(serverName == "*" || serverName == hostName) {
+		return true;
+	}
+
+	std::string newHostName = hostName;
+	for(std::string::size_type pos = newHostName.find_first_of('.'); pos != std::string::npos ; pos = newHostName.find_first_of('.')) {
+		newHostName = newHostName.substr(pos+1);
+		logger.debug << "Lookup for server-name \"*." << newHostName << "\"\n";
+		if("*." + newHostName == serverName) {
+			return true;
+		}
+	};
+
+	return false;
 }
 
 } /* namespace server */

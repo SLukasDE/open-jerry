@@ -29,9 +29,9 @@ namespace jerry {
 namespace config {
 namespace http {
 
-Context::Context(const std::string& fileName, const tinyxml2::XMLElement& element, bool aIsGlobal)
+Context::Context(const std::string& fileName, const tinyxml2::XMLElement& element, Nature aNature)
 : Config(fileName, element),
-  isGlobal(aIsGlobal)
+  nature(aNature)
 {
 	if(element.GetUserData() != nullptr) {
 		throw XMLException(*this, "Element has user data but it should be empty");
@@ -42,6 +42,9 @@ Context::Context(const std::string& fileName, const tinyxml2::XMLElement& elemen
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") { // && isGlobal == true) {
 			id = attribute->Value();
+			if(nature == listener) {
+				throw XMLException(*this, "Attribute 'id' is not allowed.");
+			}
 			if(id == "") {
 				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
 			}
@@ -51,7 +54,10 @@ Context::Context(const std::string& fileName, const tinyxml2::XMLElement& elemen
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
 			refId = attribute->Value();
-			if(isGlobal) {
+			if(nature == listener) {
+				throw XMLException(*this, "Attribute 'ref-id' is not allowed.");
+			}
+			if(nature == globalContext) {
 				throw XMLException(*this, "Attribute 'ref-id' is not allowed in global scope.");
 			}
 			if(refId == "") {
@@ -85,7 +91,7 @@ Context::Context(const std::string& fileName, const tinyxml2::XMLElement& elemen
 		}
 	}
 
-	if(isGlobal && id == "") {
+	if(nature == globalContext && id == "") {
 		throw XMLException(*this, "Attribute 'id' is missing");
 	}
 
@@ -103,11 +109,16 @@ Context::Context(const std::string& fileName, const tinyxml2::XMLElement& elemen
 }
 
 void Context::save(std::ostream& oStream, std::size_t spaces) const {
-	if(isGlobal) {
+	switch(nature) {
+	case globalContext:
 		oStream << makeSpaces(spaces) << "<http-context";
-	}
-	else {
+		break;
+	case listener:
+		oStream << makeSpaces(spaces) << "<listener";
+		break;
+	case context:
 		oStream << makeSpaces(spaces) << "<context";
+		break;
 	}
 
 	if(refId != "") {
@@ -135,42 +146,44 @@ void Context::save(std::ostream& oStream, std::size_t spaces) const {
 
 		exceptions.save(oStream, spaces+2);
 
-		if(isGlobal) {
+		switch(nature) {
+		case globalContext:
 			oStream << makeSpaces(spaces) << "</http-context>\n";
-		}
-		else {
+			break;
+		case listener:
+			oStream << makeSpaces(spaces) << "</listener>\n";
+			break;
+		case context:
 			oStream << makeSpaces(spaces) << "</context>\n";
+			break;
 		}
 	}
 }
 
 void Context::install(engine::Engine& engine) const {
-	engine::http::server::Context* contextPtr;
-	{
-		std::unique_ptr<engine::http::server::Context> context(new engine::http::server::Context);
-		contextPtr = context.get();
-		engine.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
-	}
+	std::unique_ptr<engine::http::server::Context> context(new engine::http::server::Context);
 
 	if(inherit) {
-		contextPtr->ObjectContext::setParent(&engine);
+		context->ObjectContext::setParent(&engine);
 	}
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry.install(*contextPtr);
+		entry.install(*context);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		contextPtr->addHeader(responseHeader.key, responseHeader.value);
+		context->addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(*contextPtr);
+	exceptions.install(*context);
+
+	engine.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
 }
 
 void Context::install(engine::http::server::Context& engineHttpContext) const {

@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_SOCKET_H_
 #define JERRY_ENGINE_HTTP_SERVER_SOCKET_H_
 
-#include <jerry/engine/http/server/Listener.h>
+#include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/http/server/RequestHandler.h>
 
 #include <esl/com/http/server/Interface.h>
@@ -42,26 +42,24 @@ namespace server {
 
 class Socket final : public esl::com::http::server::Interface::Socket {
 public:
-	Socket(const std::string& id, bool https,
-			const esl::object::Interface::Settings& settings, const std::string& implementation);
+	Socket(bool https, const esl::object::Interface::Settings& settings, const std::string& implementation);
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
 	void listen(std::function<void()> onReleasedHandler);
-	void addListener(Listener& listener);
 
 	bool isHttps() const noexcept;
 
-	std::set<std::string> getHostnames() const;
-	Listener* getListenerByHostname(std::string hostname) const;
+	Context& getContext() noexcept;
 
 	void listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler)  override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 
+	void initializeContext();
+
 	void dumpTree(std::size_t depth) const;
 
-	const std::string& getId() const noexcept;
 	const std::string& getImplementation() const noexcept;
 
 private:
@@ -69,12 +67,10 @@ private:
 	RequestHandler requestHandler;
 
 	const bool https;
-	const std::string id;
 	const std::string implementation;
 	const esl::object::Interface::Settings settings;
 
-	std::map<std::string, Listener*> listenerByHostname;
-	std::vector<std::reference_wrapper<Listener>> refListeners;
+	Context context;
 };
 
 } /* namespace server */

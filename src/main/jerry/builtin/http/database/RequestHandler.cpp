@@ -36,7 +36,7 @@ namespace http {
 namespace database {
 
 namespace {
-Logger logger("jerry::builtin::database::RequestHandler");
+Logger logger("jerry::builtin::http::database::RequestHandler");
 
 const std::string PAGE_200(
 		"<!DOCTYPE html>\n"

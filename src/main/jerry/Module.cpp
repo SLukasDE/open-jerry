@@ -24,9 +24,14 @@
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
 #include <jerry/builtin/http/file/RequestHandler.h>
 #include <jerry/builtin/http/self/RequestHandler.h>
+#include <jerry/builtin/http/proxy/RequestHandler.h>
+#include <jerry/builtin/procedure/sleep/Procedure.h>
+#include <jerry/builtin/daemon/procedures/Daemon.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
+//#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/daemon/Interface.h>
 #include <esl/object/Interface.h>
 #include <esl/Module.h>
 
@@ -66,6 +71,22 @@ void Module::install(esl::module::Module& module) {
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			jerry::builtin::http::self::RequestHandler::getImplementation(),
 			&jerry::builtin::http::self::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			jerry::builtin::http::proxy::RequestHandler::getImplementation(),
+			&jerry::builtin::http::proxy::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::processing::daemon::Interface::createInterface(
+			jerry::builtin::daemon::procedures::Daemon::getImplementation(),
+			&jerry::builtin::daemon::procedures::Daemon::create));
+/*
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			jerry::builtin::procedure::sleep::Procedure::getImplementation(),
+			&jerry::builtin::procedure::sleep::Procedure::createProcedure));
+*/
+	module.addInterface(esl::object::Interface::createInterface(
+			jerry::builtin::procedure::sleep::Procedure::getImplementation(),
+			&jerry::builtin::procedure::sleep::Procedure::createObject));
 }
 
 } /* namespace jerry */

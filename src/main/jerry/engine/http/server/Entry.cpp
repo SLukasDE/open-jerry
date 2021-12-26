@@ -19,6 +19,7 @@
 #include <jerry/engine/http/server/Entry.h>
 #include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/http/server/Endpoint.h>
+#include <jerry/engine/http/server/Host.h>
 
 namespace jerry {
 namespace engine {
@@ -35,6 +36,10 @@ Entry::Entry(Context& aRefContext)
 
 Entry::Entry(std::unique_ptr<Endpoint> aEndpoint)
 : endpoint(std::move(aEndpoint))
+{ }
+
+Entry::Entry(std::unique_ptr<Host> aHost)
+: host(std::move(aHost))
 { }
 
 Entry::Entry(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> aRequestHandler)

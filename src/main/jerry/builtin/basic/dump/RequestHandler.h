@@ -49,7 +49,7 @@ public:
 private:
 	bool showContext = true;
 	bool showContent = false;
-	std::set<std::string> notifiers;
+	std::string notifier;
 };
 
 } /* namespace dump */

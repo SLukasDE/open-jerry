@@ -20,7 +20,6 @@
 #define JERRY_CONFIG_HTTP_ENDPOINT_H_
 
 #include <jerry/config/Config.h>
-//#include <jerry/config/http/Entry.h>
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/config/Setting.h>
 #include <jerry/engine/http/server/Context.h>

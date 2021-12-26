@@ -16,40 +16,34 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINE_BASIC_SERVER_LISTENER_H_
-#define JERRY_ENGINE_BASIC_SERVER_LISTENER_H_
+#ifndef JERRY_ENGINE_HTTP_SERVER_HOST_H_
+#define JERRY_ENGINE_HTTP_SERVER_HOST_H_
 
-#include <jerry/engine/basic/server/Context.h>
-#if 0
-#include <esl/com/basic/server/RequestContext.h>
-#include <esl/io/Input.h>
-#include <esl/object/Interface.h>
-#endif
+#include <jerry/engine/http/server/Context.h>
+
 #include <string>
-#include <vector>
 
 namespace jerry {
 namespace engine {
-namespace basic {
+namespace http {
 namespace server {
 
-class Listener : public Context {
+class Host : public Context {
 public:
-	Listener(std::vector<std::string> serverRefIds);
+	Host(const std::string& serverName);
 
 	void dumpTree(std::size_t depth) const override;
 
-	const std::vector<std::string>& getRefIds() const;
-
-	//esl::io::Input createRequestHandler(esl::com::basic::server::RequestContext& requestContext);
+	const std::string& getServerName() const noexcept;
+	bool isMatch(const std::string& hostName) const;
 
 private:
-	std::vector<std::string> serverRefIds;
+	std::string serverName;
 };
 
 } /* namespace server */
-} /* namespace basic */
+} /* namespace http */
 } /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_BASIC_SERVER_LISTENER_H_ */
+#endif /* JERRY_ENGINE_HTTP_SERVER_HOST_H_ */

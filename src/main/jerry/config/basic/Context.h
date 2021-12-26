@@ -36,14 +36,19 @@ class Entry;
 
 class Context : public Config {
 public:
-	Context(const std::string& fileName, const tinyxml2::XMLElement& element, bool isGlobal);
+	enum Nature {
+		globalContext,
+		listener,
+		context
+	};
+	Context(const std::string& fileName, const tinyxml2::XMLElement& element, Nature nature);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::basic::server::Context& basicContext) const;
 	void install(engine::Engine& engine) const;
+	void install(engine::basic::server::Context& basicContext) const;
 
 private:
-	const bool isGlobal;
+	const Nature nature;
 
 	std::string id;
 	std::string refId;
@@ -57,5 +62,7 @@ private:
 } /* namespace basic */
 } /* namespace config */
 } /* namespace jerry */
+
+#include <jerry/config/basic/Entry.h>
 
 #endif /* JERRY_CONFIG_BASIC_CONTEXT_H_ */

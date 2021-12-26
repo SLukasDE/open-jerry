@@ -20,8 +20,8 @@
 #define JERRY_CONFIG_HTTP_CONTEXT_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/http/Exceptions.h>
 #include <jerry/config/Setting.h>
+#include <jerry/config/http/Exceptions.h>
 #include <jerry/engine/Engine.h>
 #include <jerry/engine/http/server/Context.h>
 
@@ -38,14 +38,19 @@ class Entry;
 
 class Context : public Config {
 public:
-	Context(const std::string& fileName, const tinyxml2::XMLElement& element, bool isGlobal);
+	enum Nature {
+		globalContext,
+		listener,
+		context
+	};
+	Context(const std::string& fileName, const tinyxml2::XMLElement& element, Nature nature);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::Engine& engine) const;
 	void install(engine::http::server::Context& engineHttpContext) const;
 
 private:
-	const bool isGlobal;
+	const Nature nature;
 
 	std::string id;
 	std::string refId;
@@ -61,5 +66,7 @@ private:
 } /* namespace http */
 } /* namespace config */
 } /* namespace jerry */
+
+#include <jerry/config/http/Entry.h>
 
 #endif /* JERRY_CONFIG_HTTP_CONTEXT_H_ */

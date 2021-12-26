@@ -28,13 +28,14 @@
 #include <jerry/config/basic/Client.h>
 #include <jerry/config/basic/Server.h>
 #include <jerry/config/basic/Context.h>
-#include <jerry/config/basic/Listener.h>
+//#include <jerry/config/basic/Listener.h>
 
 #include <jerry/config/http/Client.h>
 #include <jerry/config/http/Server.h>
 #include <jerry/config/http/Context.h>
-#include <jerry/config/http/Listener.h>
-#include <jerry/config/http/RequestHandler.h>
+
+#include <jerry/config/daemon/Daemon.h>
+
 #include <jerry/engine/Engine.h>
 
 #include <esl/logging/Appender.h>
@@ -72,12 +73,13 @@ public:
 	std::vector<basic::Client> basicClients;
 	std::vector<basic::Server> basicServers;
 	std::vector<basic::Context> basicContextList;
-	std::vector<basic::Listener> basicListeners;
+	//std::vector<basic::Listener> basicListeners;
 
 	std::vector<http::Client> httpClients;
 	std::vector<http::Server> httpServers;
 	std::vector<http::Context> httpContextList;
-	std::vector<http::Listener> httpListeners;
+
+	std::vector<daemon::Daemon> daemons;
 
 	std::set<std::string> filesLoaded;
 

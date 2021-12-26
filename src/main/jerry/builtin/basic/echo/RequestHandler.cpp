@@ -28,7 +28,6 @@
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
-
 #include <chrono>
 #include <thread>
 
@@ -56,14 +55,17 @@ public:
 		std::size_t len = reader.read(data, 1024);
 
 		if(len == esl::io::Reader::npos) {
-			logger.info << "Echo - sleep " << msDelay << "ms\n";
-			std::this_thread::sleep_for(std::chrono::milliseconds(msDelay));
-
+			logger.debug << "Echo - sleep " << msDelay << "ms\n";
+			if(msDelay > 0) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(msDelay));
+			}
+			logger.debug << "Echo - sleep done\n";
 			std::unique_ptr<esl::com::basic::client::Interface::Connection> connection = connectionFactory.createConnection();
 			if(connection) {
+				logger.debug << "Got connection\n";
 				std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(message)));
 
-				logger.info << "Echo - send echo\n";
+				logger.debug << "Echo - send echo\n";
 				connection->send({}, esl::io::Output(std::move(producer)), esl::io::Input());
 			}
 			else {
@@ -92,7 +94,14 @@ std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandl
 RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "notifier") {
-			notifiers.insert(setting.second);
+			if(notifier != "") {
+				throw std::runtime_error("Multiple specification for parameter 'notifier'.");
+			}
+
+			notifier = setting.second;
+			if(notifier == "") {
+				throw std::runtime_error("Invalid value \"\" for parameter 'notifier'.");
+			}
 		}
 		else if(setting.first == "delay-ms") {
 			try {
@@ -109,6 +118,10 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
+
+	if(notifier == "") {
+		throw std::runtime_error("Missing specification for parameter 'notifier'.");
+	}
 }
 
 void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
@@ -119,11 +132,25 @@ void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& ob
 }
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+	if(connectionFactory == nullptr) {
+		throw esl::addStacktrace(std::runtime_error("Initialization failed"));
+	}
+
+	logger.trace << "ECHO: Check notifier...\n";
+	if(requestContext.getRequest().hasValue("topic") == false) {
+		logger.trace << "ECHO: DROP: topic name not available.\n";
+		return esl::io::Input();
+	}
+	if(requestContext.getRequest().getValue("topic") != notifier) {
+		logger.trace << "ECHO: DROP: topic name is \"" << requestContext.getRequest().getValue("topic") << "\", not \"" << notifier << "\".\n";
+		return esl::io::Input();
+	}
+
 	return esl::io::Input(std::unique_ptr<esl::io::Consumer>(new RequestConsumer(requestContext, *connectionFactory, msDelay)));
 }
 
 std::set<std::string> RequestHandler::getNotifiers() const {
-	return notifiers;
+	return std::set<std::string>{notifier};
 }
 
 } /* namespace echo */

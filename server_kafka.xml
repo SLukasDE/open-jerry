@@ -62,22 +62,42 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-	<basic-server id="kafka-1" implementation="rdkafka4esl">
+	<object id="kafka-broker-1" implementation="rdkafka4esl">
+		<parameter key="kafka.group.id" value="test"/>
+		<parameter key="kafka.bootstrap.servers" value="192.168.2.105:9092"/>
+	</object>
+	
+	<basic-client id="kafka-client-1" implementation="rdkafka4esl">
+		<parameter key="broker-id" value="kafka-broker-1"/>
+		<parameter key="topic" value="quickstart-results"/>
+	</basic-client>
+	
+	<basic-server implementation="rdkafka4esl">
 		<parameter key="threads" value="4"/>
 		<parameter key="poll-timeout-ms" value="500"/>
 		<parameter key="kafka.group.id" value="test"/>
 		<parameter key="kafka.bootstrap.servers" value="192.168.2.105:9092"/>
+	
+		<listener>
+			<context ref-id="ref-context"/>
+		</listener>
 	</basic-server>
 	
-	<basic-listener ref-id="kafka-1">
-		<context ref-id="ref-context"/>
-	</basic-listener>
-	
 	<basic-context id="ref-context">
-		<requesthandler implementation="jerry/builtin/basic/dump">
+		<requesthandler implementation="jerry/builtin/basic/echo">
 			<parameter key="notifier" value="quickstart-events"/>
+			<!--parameter key="delay-ms" value="1000"/-->
+			<parameter key="connection-factory-id" value="kafka-client-1"/>
+		</requesthandler>
+		<requesthandler implementation="jerry/builtin/basic/dump">
+			<parameter key="notifier" value="quickstart-results"/>
 			<parameter key="show-context" value="true"/>
 			<parameter key="show-content" value="true"/>
 		</requesthandler>
+		<!--requesthandler implementation="jerry/builtin/basic/dump">
+			<parameter key="notifier" value="quickstart-events"/>
+			<parameter key="show-context" value="true"/>
+			<parameter key="show-content" value="true"/>
+		</requesthandler-->
 	</basic-context>
 </jerry>
