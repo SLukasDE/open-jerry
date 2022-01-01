@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,9 +23,9 @@ namespace engine {
 namespace http {
 namespace server {
 
-Connection::Connection(esl::com::http::server::Connection& aBaseConnection, const Context& aContext)
+Connection::Connection(esl::com::http::server::Connection& aBaseConnection, const Context& aHeadersContext)
 : baseConnection(aBaseConnection),
-  context(aContext)
+  headersContext(aHeadersContext)
 { }
 
 bool Connection::send(const esl::com::http::server::Response& aResponse, esl::io::Output output) {
@@ -41,7 +41,7 @@ bool Connection::send(const esl::com::http::server::Response& aResponse, boost::
 }
 
 void Connection::addHeaders(esl::com::http::server::Response& response) {
-	const std::map<std::string, std::string>& headers = context.getEffectiveHeaders();
+	const std::map<std::string, std::string>& headers = headersContext.getEffectiveHeaders();
 
 	for(const auto& header : headers) {
 		response.addHeader(header.first, header.second);

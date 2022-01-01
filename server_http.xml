@@ -70,16 +70,6 @@
 		</requesthandler>
 	</http-context>
 	
-	<http-server implementation="mhd4esl" https="false">
-		<parameter key="threads" value="4"/>
-		<parameter key="port" value="8080"/>
-		<listener>
-			<host server-name="*">
-				<context ref-id="ref-context"/>
-			</host>
-		</listener>
-	</http-server>
-	
 	<http-client id="http-client-1" implementation="curl4esl" url="https://www.heise.de"/>
 	
 	<http-context id="ref-context">
@@ -112,4 +102,14 @@
 			</requesthandler>
 		</endpoint>
 	</http-context>
+	
+	<http-server implementation="mhd4esl" https="false">
+		<parameter key="threads" value="4"/>
+		<parameter key="port" value="8080"/>
+		<listener>
+			<host server-name="*">
+				<context ref-id="ref-context"/>
+			</host>
+		</listener>
+	</http-server>
 </jerry>

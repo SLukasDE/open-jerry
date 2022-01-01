@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,10 +17,12 @@
  */
 
 #include <jerry/config/Object.h>
-#include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
 
 #include <esl/module/Interface.h>
+#include <esl/object/Interface.h>
+
+#include <memory>
 
 namespace jerry {
 namespace config {

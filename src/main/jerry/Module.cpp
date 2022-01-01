@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,6 +17,7 @@
  */
 #include <jerry/Module.h>
 #include <jerry/builtin/Properties.h>
+
 #include <jerry/builtin/basic/dump/RequestHandler.h>
 #include <jerry/builtin/basic/echo/RequestHandler.h>
 #include <jerry/builtin/http/basicauth/RequestHandler.h>
@@ -30,7 +31,7 @@
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
-//#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/procedure/Interface.h>
 #include <esl/processing/daemon/Interface.h>
 #include <esl/object/Interface.h>
 #include <esl/Module.h>
@@ -41,52 +42,48 @@ void Module::install(esl::module::Module& module) {
 	esl::setModule(module);
 
 	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::Properties::getImplementation(),
-			&jerry::builtin::Properties::createSettings));
+			builtin::Properties::getImplementation(),
+			&builtin::Properties::createSettings));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			jerry::builtin::basic::dump::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::dump::RequestHandler::createRequestHandler));
+			builtin::basic::dump::RequestHandler::getImplementation(),
+			&builtin::basic::dump::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			jerry::builtin::basic::echo::RequestHandler::getImplementation(),
-			&jerry::builtin::basic::echo::RequestHandler::createRequestHandler));
+			builtin::basic::echo::RequestHandler::getImplementation(),
+			&builtin::basic::echo::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::basicauth::RequestHandler::getImplementation(),
-			&jerry::builtin::http::basicauth::RequestHandler::createRequestHandler));
+			builtin::http::basicauth::RequestHandler::getImplementation(),
+			&builtin::http::basicauth::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::database::RequestHandler::getImplementation(),
-			&jerry::builtin::http::database::RequestHandler::createRequestHandler));
+			builtin::http::database::RequestHandler::getImplementation(),
+			&builtin::http::database::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::filebrowser::RequestHandler::getImplementation(),
-			&jerry::builtin::http::filebrowser::RequestHandler::createRequestHandler));
+			builtin::http::filebrowser::RequestHandler::getImplementation(),
+			&builtin::http::filebrowser::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::file::RequestHandler::getImplementation(),
-			&jerry::builtin::http::file::RequestHandler::createRequestHandler));
+			builtin::http::file::RequestHandler::getImplementation(),
+			&builtin::http::file::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::self::RequestHandler::getImplementation(),
-			&jerry::builtin::http::self::RequestHandler::createRequestHandler));
+			builtin::http::self::RequestHandler::getImplementation(),
+			&builtin::http::self::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			jerry::builtin::http::proxy::RequestHandler::getImplementation(),
-			&jerry::builtin::http::proxy::RequestHandler::createRequestHandler));
+			builtin::http::proxy::RequestHandler::getImplementation(),
+			&builtin::http::proxy::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::processing::daemon::Interface::createInterface(
-			jerry::builtin::daemon::procedures::Daemon::getImplementation(),
-			&jerry::builtin::daemon::procedures::Daemon::create));
-/*
+			builtin::daemon::procedures::Daemon::getImplementation(),
+			&builtin::daemon::procedures::Daemon::create));
+
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			jerry::builtin::procedure::sleep::Procedure::getImplementation(),
-			&jerry::builtin::procedure::sleep::Procedure::createProcedure));
-*/
-	module.addInterface(esl::object::Interface::createInterface(
-			jerry::builtin::procedure::sleep::Procedure::getImplementation(),
-			&jerry::builtin::procedure::sleep::Procedure::createObject));
+			builtin::procedure::sleep::Procedure::getImplementation(),
+			&builtin::procedure::sleep::Procedure::createProcedure));
 }
 
 } /* namespace jerry */

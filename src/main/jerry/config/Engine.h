@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,19 +22,9 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Certificate.h>
 #include <jerry/config/LoggerConfig.h>
+#include <jerry/config/Entry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/OptionalBool.h>
-
-#include <jerry/config/basic/Client.h>
-#include <jerry/config/basic/Server.h>
-#include <jerry/config/basic/Context.h>
-//#include <jerry/config/basic/Listener.h>
-
-#include <jerry/config/http/Client.h>
-#include <jerry/config/http/Server.h>
-#include <jerry/config/http/Context.h>
-
-#include <jerry/config/daemon/Daemon.h>
 
 #include <jerry/engine/Engine.h>
 
@@ -56,30 +46,15 @@ namespace config {
 class Engine : public Config {
 public:
 	Engine(const std::string& fileName);
-/*
-	void loadLibraries();
 
-	std::unique_ptr<esl::logging::Layout> createLayout() const;
-	void setLogLevel() const;
-*/
 	void save(std::ostream& oStream) const;
 	std::unique_ptr<esl::logging::Layout> install(engine::Engine& engine, esl::logging::Appender& appender1, esl::logging::Appender& appender2);
 
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
 	LoggerConfig loggerConfig;
-	std::vector<Object> objects;
 
-	std::vector<basic::Client> basicClients;
-	std::vector<basic::Server> basicServers;
-	std::vector<basic::Context> basicContextList;
-	//std::vector<basic::Listener> basicListeners;
-
-	std::vector<http::Client> httpClients;
-	std::vector<http::Server> httpServers;
-	std::vector<http::Context> httpContextList;
-
-	std::vector<daemon::Daemon> daemons;
+	std::vector<std::unique_ptr<Entry>> entries;
 
 	std::set<std::string> filesLoaded;
 

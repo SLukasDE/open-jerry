@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,7 @@
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
 #include <string>
 
@@ -40,18 +41,21 @@ public:
 
 	esl::com::http::server::Connection& getConnection() const override;
 	const esl::com::http::server::Request& getRequest() const override;
+	void setPath(std::string path);
 	const std::string& getPath() const override;
 
-	void setPath(std::string path);
-	void setParent(Context* context);
-	Context& getContext();
-	const Context& getContext() const;
+	esl::object::Interface::ObjectContext& getObjectContext();
+
+	const Context& getHeadersAndErrorHandlingContext() const;
+	void setParentHeadersAndErrorHandlingContext(Context* errorHandlingContext);
 
 private:
 	esl::com::http::server::RequestContext& requestContext;
-	Context context;
 	Connection connection;
 	std::string path;
+
+	esl::object::ObjectContext objectContext;
+	Context headersAndErrorHandlingContext;
 };
 
 } /* namespace server */

@@ -1,32 +1,31 @@
 /*
-MIT License
-Copyright (c) 2019-2021 Sven Lukas
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
+ * This file is part of Jerry application server.
+ * Copyright (C) 2020-2022 Sven Lukas
+ *
+ * Jerry is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * Jerry is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #include <jerry/engine/ObjectContext.h>
 #include <jerry/engine/basic/server/Context.h>
 #include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/server/Endpoint.h>
+#include <jerry/engine/http/server/Host.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/basic/client/Interface.h>
 #include <esl/com/http/client/Interface.h>
+#include <esl/processing/procedure/Interface.h>
 #include <esl/object/InitializeContext.h>
 
 #include <stdexcept>
@@ -44,20 +43,6 @@ ObjectContext::ObjectContext(bool aIsGlobal)
 
 void ObjectContext::setParent(esl::object::Interface::ObjectContext* objectContext) {
 	parent = objectContext;
-}
-
-esl::object::Interface::Object& ObjectContext::addObject(const std::string& id, const std::string& implementation, const esl::object::Interface::Settings& settings) {
-	logger.trace << "Adding object with id=\"" << id << "\" and implementation=\"" << implementation << "\"\n";
-
-	std::unique_ptr<esl::object::Interface::Object> object = esl::getModule().getInterface<esl::object::Interface>(implementation).createObject(settings);
-	if(!object) {
-		throw std::runtime_error("Cannot create an object with id '" + id + "' for implementation '" + implementation + "' because interface method createObject() returns nullptr.");
-	}
-
-	esl::object::Interface::Object* objectPtr = object.get();
-	addObject(id, std::move(object));
-
-	return *objectPtr;
 }
 
 void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
@@ -98,11 +83,15 @@ void ObjectContext::initializeContext() {
 void ObjectContext::dumpTree(std::size_t depth) const {
 	for(const auto& entry : objectRefsById) {
 		const esl::object::Interface::Object* objectPtr = &entry.second.get();
-		std::string isReferenceStr = objects.count(entry.first) == 0 ? " (reference)" : "";
+		bool isReference = objects.count(entry.first) == 0;
+		std::string isReferenceStr = isReference ? " (reference)" : "";
 
 		const basic::server::Context* basicContextPtr = dynamic_cast<const basic::server::Context*>(objectPtr);
 		const http::server::Context* httpContextPtr = dynamic_cast<const http::server::Context*>(objectPtr);
+		const http::server::Endpoint* httpEndpointPtr = dynamic_cast<const http::server::Endpoint*>(objectPtr);
+		const http::server::Host* httpHostPtr = dynamic_cast<const http::server::Host*>(objectPtr);
 
+		const esl::processing::procedure::Interface::Procedure* procedurePtr = dynamic_cast<const esl::processing::procedure::Interface::Procedure*>(objectPtr);
 		const esl::com::basic::client::Interface::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::Interface::ConnectionFactory*>(objectPtr);
 		const esl::com::http::client::Interface::ConnectionFactory* httpConnectionFactory = dynamic_cast<const esl::com::http::client::Interface::ConnectionFactory*>(objectPtr);
 
@@ -119,27 +108,43 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 			else {
 				logger.info << "+-> Context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
 			}
-			basicContextPtr->dumpTree(depth+1);
-		}
+			if(!isReference) {
 
+				basicContextPtr->dumpTree(depth+1);
+			}
+		}
+		else if(httpEndpointPtr) {
+			logger.info << "+-> Endpoint \"" << entry.first << "\" -> " << httpEndpointPtr << isReferenceStr << "\n";
+			if(!isReference) {
+				httpEndpointPtr->dumpTree(depth+1);
+			}
+		}
+		else if(httpHostPtr) {
+			logger.info << "+-> Host \"" << entry.first << "\" -> " << httpHostPtr << isReferenceStr << "\n";
+			if(!isReference) {
+				httpHostPtr->dumpTree(depth+1);
+			}
+		}
 		else if(httpContextPtr) {
 			if(isGlobal) {
-				logger.info << "+-> HTTP context: \"" << entry.first << "\" -> " << httpContextPtr << "\n";
+				logger.info << "+-> HTTP context: \"" << entry.first << "\" -> " << httpContextPtr << isReferenceStr << "\n";
 			}
 			else {
-				logger.info << "+-> Context: \"" << entry.first << "\" -> " << httpContextPtr << "\n";
+				logger.info << "+-> Context: \"" << entry.first << "\" -> " << httpContextPtr << isReferenceStr << "\n";
 			}
-			httpContextPtr->dumpTree(depth+1);
+			if(!isReference) {
+				httpContextPtr->dumpTree(depth+1);
+			}
 		}
-
 		else if(basicConnectionFactory) {
-			logger.info << "+-> Basic-Client: \"" << entry.first << "\" -> " << basicConnectionFactory << "\n";
+			logger.info << "+-> Basic-Client: \"" << entry.first << "\" -> " << basicConnectionFactory << isReferenceStr << "\n";
 		}
-
 		else if(httpConnectionFactory) {
-			logger.info << "+-> HTTP-Client: \"" << entry.first << "\" -> " << httpConnectionFactory << "\n";
+			logger.info << "+-> HTTP-Client: \"" << entry.first << "\" -> " << httpConnectionFactory << isReferenceStr << "\n";
 		}
-
+		else if(procedurePtr) {
+			logger.info << "+-> Procedure: \"" << entry.first << "\" -> " << procedurePtr << isReferenceStr << "\n";
+		}
 		else if(objectContext) {
 			logger.info << "+-> Object context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
 		}

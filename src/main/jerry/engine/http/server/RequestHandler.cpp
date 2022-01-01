@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -56,7 +56,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 	catch(...) {
 		ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.engine::ExceptionHandler::dump(logger.error);
-		exceptionHandler.dump(*requestContext);
+		exceptionHandler.dump(*requestContext, requestContext->getHeadersAndErrorHandlingContext());
 	}
 
 	return esl::io::Input();

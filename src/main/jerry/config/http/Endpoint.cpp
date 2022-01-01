@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,7 @@
 #include <jerry/config/http/Endpoint.h>
 #include <jerry/config/http/Context.h>
 #include <jerry/config/http/RequestHandler.h>
-#include <jerry/config/http/Entry.h>
+#include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
@@ -36,6 +36,8 @@ Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& elem
 		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
+	bool hasInherit = false;
+
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "path") {
 			path = attribute->Value();
@@ -45,6 +47,10 @@ Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& elem
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
+			if(hasInherit) {
+				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+			}
+			hasInherit = true;
 			if(inheritStr == "true") {
 				inherit = true;
 			}
@@ -81,11 +87,11 @@ void Endpoint::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<endpoint path=\"" << path << "\">\n";
 
 	for(const auto& entry : entries) {
-		entry.save(oStream, spaces+2);
+		entry->save(oStream, spaces+2);
 	}
 
-	for(const auto& entry : responseHeaders) {
-		entry.saveResponseHeader(oStream, spaces+2);
+	for(const auto& responseHeader : responseHeaders) {
+		responseHeader.saveResponseHeader(oStream, spaces+2);
 	}
 
 	exceptions.save(oStream, spaces+2);
@@ -100,7 +106,7 @@ void Endpoint::install(engine::http::server::Context& engineHttpContext) const {
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry.install(newEngineContext);
+		entry->install(newEngineContext);
 	}
 
 	/* **********************
@@ -127,7 +133,7 @@ void Endpoint::parseInnerElement(const tinyxml2::XMLElement& element) {
 		exceptions = Exceptions(getFileName(), element);
 	}
 	else {
-		entries.push_back(Entry(getFileName(), element));
+		entries.emplace_back(new EntryImpl(getFileName(), element));
 	}
 }
 

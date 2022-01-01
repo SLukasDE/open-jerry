@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,10 @@
 #ifndef JERRY_ENGINE_BASIC_SERVER_ENTRY_H_
 #define JERRY_ENGINE_BASIC_SERVER_ENTRY_H_
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/io/Input.h>
 
-#include <memory>
+#include <string>
+#include <set>
 
 namespace jerry {
 namespace engine {
@@ -29,15 +30,16 @@ namespace basic {
 namespace server {
 
 class Context;
+class RequestContext;
 
-struct Entry {
-	Entry(std::unique_ptr<Context> context);
-	Entry(Context& refContext);
-	Entry(std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler);
+class Entry {
+public:
+	virtual ~Entry() = default;
 
-	std::unique_ptr<Context> context;
-	Context* refContext = nullptr;
-	std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler;
+	virtual void initializeContext(Context& ownerContext) = 0;
+	virtual std::set<std::string> getNotifiers() const = 0;
+	virtual void dumpTree(std::size_t depth) const = 0;
+	virtual esl::io::Input accept(RequestContext& requestContext) = 0;
 };
 
 } /* namespace server */

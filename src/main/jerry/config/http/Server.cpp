@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +20,7 @@
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/engine/http/server/Socket.h>
 
 #include <esl/utility/String.h>
 
@@ -90,7 +91,7 @@ void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 		if(listener) {
 			throw XMLException(*this, "Multiple definition of element \"listener\"");
 		}
-		listener = std::unique_ptr<Context>(new Context(getFileName(), element, Context::listener));
+		listener.reset(new Listener(getFileName(), element));
 	}
 	else {
 		throw XMLException(*this, "Unknown element name \"" + innerElementName + "\"");
@@ -123,9 +124,9 @@ void Server::install(engine::Engine& jEngine) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine::http::server::Context& newEngineHttpContext = jEngine.addHttpServer(isHttps, eslSettings, implementation);
+	engine::http::server::Socket& engineHttpSocket = jEngine.addHttpServer(isHttps, eslSettings, implementation);
 
-	listener->install(newEngineHttpContext);
+	listener->install(jEngine, engineHttpSocket);
 
 }
 

@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,20 @@
  */
 
 #include <jerry/config/http/Client.h>
-#include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/Logger.h>
 
-#include <esl/utility/String.h>
+#include <esl/com/http/client/Interface.h>
+
+#include <stdexcept>
 
 namespace jerry {
 namespace config {
 namespace http {
+
+namespace {
+Logger logger("jerry::config::http::Client");
+} /* anonymous namespace */
 
 Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
@@ -108,14 +114,26 @@ void Client::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</http-client>\n";
 }
 
-void Client::install(engine::Engine& engine) const {
+void Client::install(engine::ObjectContext& engineObjectContext) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
-
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine.addHttpClient(id, url, eslSettings, implementation);
+	logger.trace << "Adding http-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
+	std::unique_ptr<esl::com::http::client::Interface::ConnectionFactory> connectionFactory;
+	try {
+		connectionFactory = esl::getModule().getInterface<esl::com::http::client::Interface>(implementation).createConnectionFactory(url, eslSettings);
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "'");
+	}
+
+	if(!connectionFactory) {
+		throw std::runtime_error("Cannot create an basic connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
+	}
+
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
 }
 
 } /* namespace http */

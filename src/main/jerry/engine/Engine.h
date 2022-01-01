@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,11 +20,9 @@
 #define JERRY_ENGINE_ENGINE_H_
 
 #include <jerry/engine/Entry.h>
-#include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/basic/server/Context.h>
-#include <jerry/engine/http/server/Socket.h>
-#include <jerry/engine/http/server/Context.h>
 #include <jerry/engine/ObjectContext.h>
+#include <jerry/engine/basic/server/Socket.h>
+#include <jerry/engine/http/server/Socket.h>
 
 #include <esl/object/Interface.h>
 #include <esl/processing/daemon/Interface.h>
@@ -51,15 +49,13 @@ public:
 	const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
 	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
-	basic::server::Context& addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	http::server::Context& addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	void addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-
-	void addBasicClient(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	void addHttpClient(const std::string& id, const std::string& url, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-
+	basic::server::Socket& addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	const std::vector<std::unique_ptr<basic::server::Socket>>& getBasicServers() const;
+
+	http::server::Socket& addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	const std::vector<std::unique_ptr<http::server::Socket>>& getHttpServers() const;
+
+	void addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& getDaemons() const;
 
 	void initializeContext() override;

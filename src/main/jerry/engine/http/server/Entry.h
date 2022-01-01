@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,9 @@
 #ifndef JERRY_ENGINE_HTTP_SERVER_ENTRY_H_
 #define JERRY_ENGINE_HTTP_SERVER_ENTRY_H_
 
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/io/Input.h>
 
-#include <memory>
+#include <string>
 
 namespace jerry {
 namespace engine {
@@ -29,25 +29,15 @@ namespace http {
 namespace server {
 
 class Context;
-class Endpoint;
-class Host;
+class RequestContext;
 
-struct Entry {
-	Entry(std::unique_ptr<Context> context);
-	Entry(Context& refContext);
+class Entry {
+public:
+	virtual ~Entry() = default;
 
-	Entry(std::unique_ptr<Endpoint> endpoint);
-	Entry(std::unique_ptr<Host> host);
-
-	Entry(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
-
-	std::unique_ptr<Context> context;
-	Context* refContext = nullptr;
-
-	std::unique_ptr<Endpoint> endpoint;
-	std::unique_ptr<Host> host;
-
-	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
+	virtual void initializeContext(Context& ownerContext) = 0;
+	virtual void dumpTree(std::size_t depth) const = 0;
+	virtual esl::io::Input accept(RequestContext& requestContext) = 0;
 };
 
 } /* namespace server */

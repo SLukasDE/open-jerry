@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,13 +19,14 @@
 #include <jerry/engine/http/server/ExceptionHandler.h>
 #include <jerry/html/HTML.h>
 #include <jerry/http/StatusCode.h>
-#include <jerry/utility/URL.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/output/String.h>
+#include <esl/utility/URL.h>
+#include <esl/utility/Protocol.h>
 #include <esl/utility/MIME.h>
 #include <esl/Stacktrace.h>
 
@@ -55,22 +56,22 @@ ExceptionHandler::ExceptionHandler(std::exception_ptr exceptionPointer)
 : engine::ExceptionHandler(exceptionPointer)
 { }
 
-void ExceptionHandler::dump(const RequestContext& requestContext) const {
+void ExceptionHandler::dump(const esl::com::http::server::RequestContext& requestContext, const Context& errorHandlingContext) const {
 	initialize();
 
-	const http::server::Document* errorDocument = requestContext.getContext().findErrorDocument(httpStatusCode);
+	const http::server::Document* errorDocument = errorHandlingContext.findErrorDocument(httpStatusCode);
 
 	if(errorDocument) {
-		utility::URL url(errorDocument->getPath());
+		esl::utility::URL url(errorDocument->getPath());
 
-		if(url.getScheme() == "http" || url.getScheme() == "https") {
+		if(url.getScheme() == esl::utility::Protocol::http || url.getScheme() == esl::utility::Protocol::https) {
 			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
 			requestContext.getConnection().send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
 		}
-		if(url.getScheme().empty() || url.getScheme() == "file") {
+		if(!url.getScheme() || url.getScheme() == esl::utility::Protocol::file) {
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
 				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
@@ -93,10 +94,10 @@ void ExceptionHandler::dump(const RequestContext& requestContext) const {
 
     std::string content;
 	if(httpContentType == esl::utility::MIME::textHtml) {
-	    content = getHTMLContent(requestContext.getContext().getShowException(), requestContext.getContext().getShowStacktrace());
+	    content = getHTMLContent(errorHandlingContext.getShowException(), errorHandlingContext.getShowStacktrace());
 	}
 	else if(httpContentType == esl::utility::MIME::textPlain) {
-	    content = getTextContent(requestContext.getContext().getShowException(), requestContext.getContext().getShowStacktrace());
+	    content = getTextContent(errorHandlingContext.getShowException(), errorHandlingContext.getShowStacktrace());
 	}
 	else {
 		content = httpMessage;

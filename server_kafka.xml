@@ -72,17 +72,6 @@
 		<parameter key="topic" value="quickstart-results"/>
 	</basic-client>
 	
-	<basic-server implementation="rdkafka4esl">
-		<parameter key="threads" value="4"/>
-		<parameter key="poll-timeout-ms" value="500"/>
-		<parameter key="kafka.group.id" value="test"/>
-		<parameter key="kafka.bootstrap.servers" value="192.168.2.105:9092"/>
-	
-		<listener>
-			<context ref-id="ref-context"/>
-		</listener>
-	</basic-server>
-	
 	<basic-context id="ref-context">
 		<requesthandler implementation="jerry/builtin/basic/echo">
 			<parameter key="notifier" value="quickstart-events"/>
@@ -100,4 +89,15 @@
 			<parameter key="show-content" value="true"/>
 		</requesthandler-->
 	</basic-context>
+	
+	<basic-server implementation="rdkafka4esl">
+		<parameter key="threads" value="4"/>
+		<parameter key="poll-timeout-ms" value="500"/>
+		<parameter key="kafka.group.id" value="test"/>
+		<parameter key="kafka.bootstrap.servers" value="192.168.2.105:9092"/>
+	
+		<listener>
+			<context ref-id="ref-context"/>
+		</listener>
+	</basic-server>
 </jerry>

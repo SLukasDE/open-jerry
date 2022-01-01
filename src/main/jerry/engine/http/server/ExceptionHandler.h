@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -38,9 +38,8 @@ namespace server {
 class ExceptionHandler : public engine::ExceptionHandler {
 public:
 	ExceptionHandler(std::exception_ptr e);
-	//ExceptionHandler(std::exception_ptr e, std::function<const http::server::Document*(unsigned short statusCode)> findDocument = nullptr);
 
-	void dump(const RequestContext& requestContext) const;
+	void dump(const esl::com::http::server::RequestContext& requestContext, const Context& errorHandlingContext) const;
 
 protected:
 	void initializeMessage() const override;

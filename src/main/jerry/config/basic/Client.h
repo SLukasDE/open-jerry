@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,7 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
-#include <jerry/engine/Engine.h>
+#include <jerry/engine/ObjectContext.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -38,7 +38,7 @@ public:
 	Client(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
+	void install(engine::ObjectContext& engineObjectContext) const;
 
 private:
 	std::string id;

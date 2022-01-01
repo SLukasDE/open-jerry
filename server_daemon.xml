@@ -62,13 +62,13 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-	<object id="x" implementation="jerry/builtin/procedure/sleep">
+	<procedure id="x" implementation="jerry/builtin/procedure/sleep">
 		<parameter key="sleep-ms" value="1000"/>
-	</object>
+	</procedure>
 	
-	<object id="y" implementation="jerry/builtin/procedure/sleep">
+	<procedure id="y" implementation="jerry/builtin/procedure/sleep">
 		<parameter key="sleep-ms" value="1000"/>
-	</object>
+	</procedure>
 	
 	<daemon implementation="jerry/builtin/daemon/procedures">
 		<parameter key="procedure-id" value="x"/>

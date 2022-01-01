@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,8 +21,8 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/config/http/Listener.h>
 #include <jerry/engine/Engine.h>
-#include <jerry/config/http/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -37,6 +37,7 @@ namespace http {
 
 class Server : public Config {
 public:
+	Server(const Server&) = delete;
 	Server(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
@@ -46,7 +47,7 @@ private:
 	std::string implementation;
 	bool isHttps = false;
 	std::vector<Setting> settings;
-	std::unique_ptr<Context> listener;
+	std::unique_ptr<Listener> listener;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };

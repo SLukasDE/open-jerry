@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -50,14 +50,12 @@ public:
 
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
-
 	std::set<std::string> getNotifiers() const;
-
-	virtual esl::io::Input accept(RequestContext& requestContext) const;
+	esl::io::Input accept(RequestContext& requestContext) const;
 
 private:
 	Context* parent = nullptr;
-	std::vector<Entry> entries;
+	std::vector<std::unique_ptr<Entry>> entries;
 };
 
 } /* namespace server */

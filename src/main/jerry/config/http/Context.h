@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,44 +21,37 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
+#include <jerry/config/http/Entry.h>
 #include <jerry/config/http/Exceptions.h>
-#include <jerry/engine/Engine.h>
 #include <jerry/engine/http/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <vector>
 #include <ostream>
+#include <string>
+#include <memory>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-class Entry;
-
 class Context : public Config {
 public:
-	enum Nature {
-		globalContext,
-		listener,
-		context
-	};
-	Context(const std::string& fileName, const tinyxml2::XMLElement& element, Nature nature);
+	Context(const Context&) = delete;
+	Context(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
 	void install(engine::http::server::Context& engineHttpContext) const;
 
 private:
-	const Nature nature;
-
 	std::string id;
 	std::string refId;
 
 	bool inherit = true;
-	std::vector<Entry> entries;
 	std::vector<Setting> responseHeaders;
 	Exceptions exceptions;
+	std::vector<std::unique_ptr<Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
@@ -66,7 +59,5 @@ private:
 } /* namespace http */
 } /* namespace config */
 } /* namespace jerry */
-
-#include <jerry/config/http/Entry.h>
 
 #endif /* JERRY_CONFIG_HTTP_CONTEXT_H_ */

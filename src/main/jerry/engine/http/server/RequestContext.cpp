@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,7 +30,7 @@ Logger logger("jerry::engine::http::server::RequestContext");
 
 RequestContext::RequestContext(esl::com::http::server::RequestContext& aRequestContext)
 : requestContext(aRequestContext),
-  connection(requestContext.getConnection(), context),
+  connection(requestContext.getConnection(), headersAndErrorHandlingContext),
   path(requestContext.getPath())
 { }
 
@@ -42,24 +42,24 @@ const esl::com::http::server::Request& RequestContext::getRequest() const {
 	return requestContext.getRequest();
 }
 
-const std::string& RequestContext::getPath() const {
-	return path;
-}
-
 void RequestContext::setPath(std::string aPath) {
 	path = std::move(aPath);
 }
 
-void RequestContext::setParent(Context* aContext) {
-	context.setParent(aContext);
+const std::string& RequestContext::getPath() const {
+	return path;
 }
 
-Context& RequestContext::getContext() {
-	return context;
+esl::object::Interface::ObjectContext& RequestContext::getObjectContext() {
+	return objectContext;
 }
 
-const Context& RequestContext::getContext() const {
-	return context;
+const Context& RequestContext::getHeadersAndErrorHandlingContext() const {
+	return headersAndErrorHandlingContext;
+}
+
+void RequestContext::setParentHeadersAndErrorHandlingContext(Context* aHeadersAndErrorHandlingContext) {
+	headersAndErrorHandlingContext.setParent(aHeadersAndErrorHandlingContext);
 }
 
 } /* namespace server */

@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,17 +17,20 @@
  */
 
 #include <jerry/config/basic/Client.h>
-#include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/Logger.h>
 
-#include <esl/Stacktrace.h>
-#include <esl/utility/String.h>
+#include <esl/com/basic/client/Interface.h>
 
 #include <stdexcept>
 
 namespace jerry {
 namespace config {
 namespace basic {
+
+namespace {
+Logger logger("jerry::config::basic::Client");
+} /* anonymous namespace */
 
 Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
@@ -85,14 +88,26 @@ void Client::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<basic-client/>\n";
 }
 
-void Client::install(engine::Engine& engine) const {
+void Client::install(engine::ObjectContext& engineObjectContext) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
-
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine.addBasicClient(id, eslSettings, implementation);
+	logger.trace << "Adding basic-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
+	std::unique_ptr<esl::com::basic::client::Interface::ConnectionFactory> connectionFactory;
+	try {
+		connectionFactory = esl::getModule().getInterface<esl::com::basic::client::Interface>(implementation).createConnectionFactory(eslSettings);
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "'");
+	}
+
+	if(!connectionFactory) {
+		throw std::runtime_error("Cannot create an basic connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
+	}
+
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
 }
 
 void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
@@ -108,7 +123,6 @@ void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else {
 		throw XMLException(*this, "Unknown element name '" + std::string(element.Name()) + "'");
 	}
-
 }
 
 } /* namespace basic */

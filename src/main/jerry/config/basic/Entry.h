@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,14 +20,11 @@
 #define JERRY_CONFIG_BASIC_ENTRY_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/Object.h>
-#include <jerry/config/basic/Context.h>
-#include <jerry/config/basic/RequestHandler.h>
 #include <jerry/engine/basic/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <memory>
+#include <string>
 #include <ostream>
 
 namespace jerry {
@@ -36,16 +33,11 @@ namespace basic {
 
 class Entry : public Config {
 public:
-	Entry(const Entry&);
-	Entry(const std::string& fileName, const tinyxml2::XMLElement& element);
+	Entry(const Entry&) = delete;
+	using Config::Config;
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::basic::server::Context& engineBasicContext) const;
-
-private:
-	std::unique_ptr<config::Object> object;
-	std::unique_ptr<Context> context;
-	std::unique_ptr<RequestHandler> requestHandler;
+	virtual void save(std::ostream& oStream, std::size_t spaces) const = 0;
+	virtual void install(engine::basic::server::Context& engineBasicContext) const = 0;
 };
 
 } /* namespace basic */

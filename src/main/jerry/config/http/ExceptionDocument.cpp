@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,9 @@
 
 #include <jerry/config/http/ExceptionDocument.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/utility/URL.h>
 
+#include <esl/utility/URL.h>
+#include <esl/utility/Protocol.h>
 #include <esl/Stacktrace.h>
 
 #include <stdexcept>
@@ -67,8 +68,8 @@ ExceptionDocument::ExceptionDocument(const std::string& fileName, const tinyxml2
 	}
 
 	if(parser) {
-		utility::URL url(path);
-		if(!url.getScheme().empty() && url.getScheme() != "file") {
+		esl::utility::URL url(path);
+		if(url.getScheme() && url.getScheme() != esl::utility::Protocol::file) {
 			throw XMLException(*this, "Attribute parse=\"true\" is only allowed with file protocol specified for attribute 'path'.");
 		}
 	}

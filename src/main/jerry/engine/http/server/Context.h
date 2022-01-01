@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -77,11 +77,10 @@ public:
 
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
-
-	virtual esl::io::Input accept(RequestContext& requestContext);
+	esl::io::Input accept(RequestContext& requestContext);
 
 private:
-	std::vector<Entry> entries;
+	std::vector<std::unique_ptr<Entry>> entries;
 
 	Context* parent = nullptr;
 	bool followParentOnFind = true;
@@ -103,6 +102,3 @@ private:
 } /* namespace jerry */
 
 #endif /* JERRY_ENGINE_HTTP_SERVER_CONTEXT_H_ */
-
-#include <jerry/engine/http/server/Host.h> // important for compiler to know size of Context (see Entry.h)
-#include <jerry/engine/http/server/Endpoint.h> // important for compiler to know size of Context (see Entry.h)

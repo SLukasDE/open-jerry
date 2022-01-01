@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,7 +40,7 @@ public:
 
 private:
 	esl::com::http::server::Connection& baseConnection;
-	const Context& context;
+	const Context& headersContext;
 
 	void addHeaders(esl::com::http::server::Response& response);
 };

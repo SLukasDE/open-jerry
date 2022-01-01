@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +20,9 @@
 #define JERRY_CONFIG_HTTP_ENDPOINT_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/http/Exceptions.h>
 #include <jerry/config/Setting.h>
+#include <jerry/config/http/Entry.h>
+#include <jerry/config/http/Exceptions.h>
 #include <jerry/engine/http/server/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
@@ -29,15 +30,15 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <memory>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-class Entry;
-
 class Endpoint : public Config {
 public:
+	Endpoint(const Endpoint&) = delete;
 	Endpoint(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
@@ -47,9 +48,9 @@ private:
 	std::string path;
 
 	bool inherit = true;
-	std::vector<Entry> entries;
 	std::vector<Setting> responseHeaders;
 	Exceptions exceptions;
+	std::vector<std::unique_ptr<Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };

@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,6 +17,7 @@
  */
 
 #include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/server/EntryImpl.h>
 #include <jerry/engine/http/server/Endpoint.h>
 #include <jerry/engine/http/server/Host.h>
 #include <jerry/engine/http/server/RequestContext.h>
@@ -58,7 +59,7 @@ Context& Context::addContext(const std::string& id, bool inheritObjects) {
 	Context& reference = *context;
 
 	if(id == "") {
-		entries.push_back(Entry(std::move(context)));
+		entries.emplace_back(new EntryImpl(std::move(context)));
 	}
 	else {
 		addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
@@ -78,14 +79,14 @@ void Context::addContext(const std::string& refId) {
 	    throw std::runtime_error("No context found with ref-id=\"" + refId + "\".");
 	}
 
-	entries.push_back(Entry(*context));
+	entries.emplace_back(new EntryImpl(*context));
 }
 
 Context& Context::addEndpoint(const std::string& path, bool inheritObjects) {
 	std::unique_ptr<Endpoint> endpoint(new Endpoint(path));
 	Context& reference = *endpoint;
 
-	entries.push_back(Entry(std::move(endpoint)));
+	entries.emplace_back(new EntryImpl(std::move(endpoint)));
 
 	if(inheritObjects) {
 		reference.setParent(this);
@@ -98,7 +99,7 @@ Context& Context::addHost(const std::string& serverName, bool inheritObjects) {
 	std::unique_ptr<Host> host(new Host(serverName));
 	Context& reference = *host;
 
-	entries.push_back(Entry(std::move(host)));
+	entries.emplace_back(new EntryImpl(std::move(host)));
 
 	if(inheritObjects) {
 		reference.setParent(this);
@@ -110,7 +111,7 @@ Context& Context::addHost(const std::string& serverName, bool inheritObjects) {
 void Context::addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings) {
 	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
 	requestHandler = esl::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createRequestHandler(settings);
-	entries.push_back(Entry(std::move(requestHandler)));
+	entries.emplace_back(new EntryImpl(std::move(requestHandler)));
 }
 
 void Context::setShowException(Context::OptionalBool aShowException) {
@@ -215,36 +216,7 @@ void Context::initializeContext() {
 
 	// call initializeContext() of sub-context's
 	for(auto& entry : entries) {
-		if(entry.context) {
-			/* ****************** *
-			 * initialize context *
-			 * ****************** */
-			entry.context->initializeContext();
-		}
-
-		if(entry.host) {
-			/* *************** *
-			 * initialize host *
-			 * *************** */
-			entry.host->initializeContext();
-		}
-
-		if(entry.endpoint) {
-			/* ******************* *
-			 * initialize endpoint *
-			 * ******************* */
-			entry.endpoint->initializeContext();
-		}
-
-		if(entry.requestHandler) {
-			/* ************************* *
-			 * initialize requestHandler *
-			 * ************************* */
-			esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(entry.requestHandler.get());
-			if(initializeContext) {
-				initializeContext->initializeContext(*this);
-			}
-		}
+		entry->initializeContext(*this);
 	}
 }
 
@@ -326,130 +298,21 @@ void Context::dumpTree(std::size_t depth) const {
 
 	// call dumpTree() of sub-context's
 	for(auto& entry : entries) {
-		if(entry.context) {
-			/* ************ *
-			 * dump context *
-			 * ************ */
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "+-> Context: -> " << entry.context.get() << "\n";
-			entry.context->dumpTree(depth + 1);
-		}
-
-		if(entry.refContext) {
-			/* *********************** *
-			 * dump referenced context *
-			 * *********************** */
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "+-> Context: -> " << entry.refContext << " (reference)\n";
-		}
-
-		if(entry.host) {
-			/* ********* *
-			 * dump host *
-			 * ********* */
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "+-> Host: -> " << entry.host.get() << "\n";
-			entry.host->dumpTree(depth + 1);
-		}
-
-		if(entry.endpoint) {
-			/* ************* *
-			 * dump endpoint *
-			 * ************* */
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "+-> Endpoint: -> " << entry.endpoint.get() << "\n";
-			entry.endpoint->dumpTree(depth + 1);
-		}
-
-		if(entry.requestHandler) {
-			/* ******************* *
-			 * dump requestHandler *
-			 * ******************* */
-			for(std::size_t i=0; i<depth; ++i) {
-				logger.info << "|   ";
-			}
-			logger.info << "+-> RequestHandler: -> " << entry.requestHandler.get() << "\n";
-		}
+		entry->dumpTree(depth);
 	}
 }
 
 esl::io::Input Context::accept(RequestContext& requestContext) {
-	esl::io::Input input;
-
-	requestContext.setParent(this);
+	requestContext.setParentHeadersAndErrorHandlingContext(this);
 	for(auto& entry : entries) {
-		if(entry.context) {
-			/* *************** *
-			 * handle context *
-			 * *************** */
-			input = entry.context->accept(requestContext);
-			if(input) {
-				break;
-			}
-			requestContext.setParent(this);
+		esl::io::Input input = entry->accept(requestContext);
+		if(input) {
+			return input;
 		}
-
-		if(entry.refContext) {
-			/* ************************* *
-			 * handle referenced context *
-			 * ************************* */
-			input = entry.refContext->accept(requestContext);
-			if(input) {
-				break;
-			}
-			requestContext.setParent(this);
-		}
-
-		if(entry.host) {
-			/* *********** *
-			 * handle host *
-			 * *********** */
-			if(entry.host->isMatch(requestContext.getRequest().getHostName())) {
-				input = entry.host->accept(requestContext);
-				if(input) {
-					break;
-				}
-				requestContext.setParent(this);
-			}
-		}
-
-		if(entry.endpoint) {
-			/* *************** *
-			 * handle endpoint *
-			 * *************** */
-			if(entry.endpoint->isMatch(requestContext.getPath())) {
-				std::string path = requestContext.getPath();
-				requestContext.setPath(path.substr(entry.endpoint->getPath().size()));
-				input = entry.endpoint->accept(requestContext);
-				if(input) {
-					break;
-				}
-				requestContext.setParent(this);
-				requestContext.setPath(path);
-			}
-		}
-
-		if(entry.requestHandler) {
-			/* ********************** *
-			 * handle request handler *
-			 * ********************** */
-			input = entry.requestHandler->accept(requestContext, requestContext.getContext());
-			if(input) {
-				break;
-			}
-			requestContext.setParent(this);
-		}
+		requestContext.setParentHeadersAndErrorHandlingContext(this);
 	}
 
-	return input;
+	return esl::io::Input();
 }
 
 } /* namespace server */

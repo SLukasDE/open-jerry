@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -67,7 +67,7 @@ bool InputProxy::Consumer::consume(esl::io::Reader& reader) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
 	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext);
+			exceptionHandler.dump(requestContext, requestContext.getHeadersAndErrorHandlingContext());
 		}
 	}
 
@@ -89,7 +89,7 @@ std::size_t InputProxy::Writer::write(const void* data, std::size_t size) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
 	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext);
+			exceptionHandler.dump(requestContext, requestContext.getHeadersAndErrorHandlingContext());
 		}
 	}
 
@@ -105,7 +105,7 @@ std::size_t InputProxy::Writer::getSizeWritable() const {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
 	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext);
+			exceptionHandler.dump(requestContext, requestContext.getHeadersAndErrorHandlingContext());
 		}
 	}
 

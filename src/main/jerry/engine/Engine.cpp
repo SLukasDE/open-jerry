@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (C) 2020-2021 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,9 +23,6 @@
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
-#include <esl/com/basic/client/Interface.h>
-#include <esl/com/http/client/Interface.h>
-#include <esl/processing/daemon/Interface.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
@@ -78,22 +75,20 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Engine:
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
-basic::server::Context& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+basic::server::Socket& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding basic server (implementation=\"" << implementation << "\")\n";
 
-	std::unique_ptr<basic::server::Socket> socket(new basic::server::Socket(settings, implementation));
-	basic::server::Context& context = socket->getContext();
-	basicServers.push_back(std::move(socket));
-
-	bool inheritObjects = true;
-	if(inheritObjects) {
-		context.ObjectContext::setParent(this);
-	}
-
-	return context;
+	std::unique_ptr<basic::server::Socket> socketPtr(new basic::server::Socket(settings, implementation));
+	basic::server::Socket& socket = *socketPtr;
+	basicServers.push_back(std::move(socketPtr));
+	return socket;
 }
 
-http::server::Context& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+const std::vector<std::unique_ptr<basic::server::Socket>>& Engine::getBasicServers() const {
+	return basicServers;
+}
+
+http::server::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	if(isHttps) {
 		logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\")\n";
 	}
@@ -101,16 +96,14 @@ http::server::Context& Engine::addHttpServer(bool isHttps, const std::vector<std
 		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
 	}
 
-	std::unique_ptr<http::server::Socket> socket(new http::server::Socket(isHttps, settings, implementation));
-	http::server::Context& context = socket->getContext();
-	httpServers.push_back(std::move(socket));
+	std::unique_ptr<http::server::Socket> socketPtr(new http::server::Socket(isHttps, settings, implementation));
+	http::server::Socket& socket = *socketPtr;
+	httpServers.push_back(std::move(socketPtr));
+	return socket;
+}
 
-	bool inheritObjects = true;
-	if(inheritObjects) {
-		context.ObjectContext::setParent(this);
-	}
-
-	return context;
+const std::vector<std::unique_ptr<http::server::Socket>>& Engine::getHttpServers() const {
+	return httpServers;
 }
 
 void Engine::addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
@@ -121,34 +114,6 @@ void Engine::addDaemon(const std::vector<std::pair<std::string, std::string>>& s
 	}
 
 	daemons.push_back(std::move(daemon));
-}
-
-void Engine::addBasicClient(const std::string& id, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding basic client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
-	std::unique_ptr<esl::com::basic::client::Interface::ConnectionFactory> connectionFactory = esl::getModule().getInterface<esl::com::basic::client::Interface>(implementation).createConnectionFactory(settings);
-	if(!connectionFactory) {
-		throw std::runtime_error("Cannot create an basic connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
-	}
-
-	addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
-}
-
-void Engine::addHttpClient(const std::string& id, const std::string& url, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding http client (implementation=\"" << implementation << "\") with id=\"" << id << "\" and url=\"" + url + "\"\n";
-	std::unique_ptr<esl::com::http::client::Interface::ConnectionFactory> connectionFactory = esl::getModule().getInterface<esl::com::http::client::Interface>(implementation).createConnectionFactory(url, settings);
-	if(!connectionFactory) {
-		throw std::runtime_error("Cannot create an basic connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
-	}
-
-	addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
-}
-
-const std::vector<std::unique_ptr<basic::server::Socket>>& Engine::getBasicServers() const {
-	return basicServers;
-}
-
-const std::vector<std::unique_ptr<http::server::Socket>>& Engine::getHttpServers() const {
-	return httpServers;
 }
 
 const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& Engine::getDaemons() const {
