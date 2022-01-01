@@ -10,6 +10,7 @@ build
 server2.xml
 src/main/tinyxml2
 build.sh
+ca-key.pem
 server.key
 server.pem
 server_empty.xml
