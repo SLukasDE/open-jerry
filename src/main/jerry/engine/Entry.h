@@ -19,8 +19,8 @@
 #ifndef JERRY_ENGINE_ENTRY_H_
 #define JERRY_ENGINE_ENTRY_H_
 
-#include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/http/server/Socket.h>
+#include <jerry/engine/basic/Socket.h>
+#include <jerry/engine/http/Socket.h>
 
 #include <esl/object/Interface.h>
 
@@ -30,12 +30,12 @@ namespace jerry {
 namespace engine {
 
 struct Entry {
-	Entry(std::unique_ptr<basic::server::Socket> basicServer);
-	Entry(std::unique_ptr<http::server::Socket> httpServer);
+	Entry(std::unique_ptr<basic::Socket> basicServer);
+	Entry(std::unique_ptr<http::Socket> httpServer);
 	Entry(std::unique_ptr<esl::object::Interface::Object> object);
 
-	std::unique_ptr<basic::server::Socket> basicServer;
-	std::unique_ptr<http::server::Socket> httpServer;
+	std::unique_ptr<basic::Socket> basicServer;
+	std::unique_ptr<http::Socket> httpServer;
 	std::unique_ptr<esl::object::Interface::Object> object;
 };
 

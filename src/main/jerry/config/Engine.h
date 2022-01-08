@@ -50,6 +50,9 @@ public:
 	void save(std::ostream& oStream) const;
 	std::unique_ptr<esl::logging::Layout> install(engine::Engine& engine, esl::logging::Appender& appender1, esl::logging::Appender& appender2);
 
+private:
+	tinyxml2::XMLDocument xmlDocument;
+
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
 	LoggerConfig loggerConfig;
@@ -57,9 +60,6 @@ public:
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	std::set<std::string> filesLoaded;
-
-private:
-	tinyxml2::XMLDocument xmlDocument;
 
 	void loadXML(const tinyxml2::XMLElement& element);
 

@@ -135,9 +135,9 @@ void Context::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void Context::install(engine::http::server::Context& engineHttpContext) const {
+void Context::install(engine::http::Context& engineHttpContext) const {
 	if(refId == "") {
-		engine::http::server::Context& newEngineHttpContext = engineHttpContext.addContext(id, inherit);
+		engine::http::Context& newEngineHttpContext = engineHttpContext.addContext(id, inherit);
 
 		/* *****************
 		 * install entries *

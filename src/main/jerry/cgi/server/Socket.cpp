@@ -22,7 +22,7 @@
 
 namespace jerry {
 namespace cgi {
-namespace server {
+
 
 namespace {
 std::string getEnvVar(std::string const & key) {
@@ -54,6 +54,6 @@ bool Socket::wait(std::uint32_t ms) {
 	return true;
 }
 
-} /* namespace server */
+
 } /* namespace cgi */
 } /* namespace jerry */

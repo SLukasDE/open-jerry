@@ -48,7 +48,7 @@ HttpContext::HttpContext(const std::string& fileName, const tinyxml2::XMLElement
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
-				throw jerry::config::XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
 			}
 			hasInherit = true;
 			if(inheritStr == "true") {
@@ -84,11 +84,8 @@ HttpContext::HttpContext(const std::string& fileName, const tinyxml2::XMLElement
 }
 
 void HttpContext::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<http-context";
+	oStream << makeSpaces(spaces) << "<http-context id=\"" << id << "\"";
 
-	if(id != "") {
-		oStream << " id=\"" << id << "\"";
-	}
 	if(inherit) {
 		oStream << " inherit=\"true\"";
 	}
@@ -110,11 +107,11 @@ void HttpContext::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</http-context>\n";
 }
 
-void HttpContext::install(engine::Engine& engine) const {
-	std::unique_ptr<engine::http::server::Context> context(new engine::http::server::Context);
+void HttpContext::install(engine::ObjectContext& engineObjectContext) const {
+	std::unique_ptr<engine::http::Context> context(new engine::http::Context);
 
 	if(inherit) {
-		context->ObjectContext::setParent(&engine);
+		context->ObjectContext::setParent(&engineObjectContext);
 	}
 
 	/* *****************
@@ -133,7 +130,7 @@ void HttpContext::install(engine::Engine& engine) const {
 
 	exceptions.install(*context);
 
-	engine.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
 }
 
 void HttpContext::parseInnerElement(const tinyxml2::XMLElement& element) {

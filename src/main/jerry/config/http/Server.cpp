@@ -20,7 +20,7 @@
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/http/server/Socket.h>
+#include <jerry/engine/http/Socket.h>
 
 #include <esl/utility/String.h>
 
@@ -124,7 +124,7 @@ void Server::install(engine::Engine& jEngine) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine::http::server::Socket& engineHttpSocket = jEngine.addHttpServer(isHttps, eslSettings, implementation);
+	engine::http::Socket& engineHttpSocket = jEngine.addHttpServer(isHttps, eslSettings, implementation);
 
 	listener->install(jEngine, engineHttpSocket);
 

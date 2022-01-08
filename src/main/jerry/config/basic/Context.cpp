@@ -131,9 +131,9 @@ void Context::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void Context::install(engine::basic::server::Context& engineBasicContext) const {
+void Context::install(engine::basic::Context& engineBasicContext) const {
 	if(refId == "") {
-		engine::basic::server::Context& newEngineContext = engineBasicContext.addContext(id, inherit);
+		engine::basic::Context& newEngineContext = engineBasicContext.addContext(id, inherit);
 
 		/* *****************
 		 * install entries *

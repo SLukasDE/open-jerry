@@ -22,7 +22,6 @@
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
-#include <esl/object/Interface.h>
 
 #include <set>
 #include <string>
@@ -43,7 +42,7 @@ public:
 
 	RequestHandler(const esl::module::Interface::Settings& settings);
 
-	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
 
 private:

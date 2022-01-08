@@ -99,8 +99,8 @@ void Endpoint::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<endpoint/>\n";
 }
 
-void Endpoint::install(engine::http::server::Context& engineHttpContext) const {
-	engine::http::server::Context& newEngineContext = engineHttpContext.addEndpoint(path, inherit);
+void Endpoint::install(engine::http::Context& engineHttpContext) const {
+	engine::http::Context& newEngineContext = engineHttpContext.addEndpoint(path, inherit);
 
 	/* *****************
 	 * install entries *

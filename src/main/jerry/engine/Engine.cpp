@@ -18,8 +18,8 @@
 
 #include <jerry/engine/Engine.h>
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/http/server/Socket.h>
+#include <jerry/engine/basic/Socket.h>
+#include <jerry/engine/http/Socket.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
@@ -75,20 +75,20 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Engine:
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
-basic::server::Socket& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+basic::Socket& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding basic server (implementation=\"" << implementation << "\")\n";
 
-	std::unique_ptr<basic::server::Socket> socketPtr(new basic::server::Socket(settings, implementation));
-	basic::server::Socket& socket = *socketPtr;
+	std::unique_ptr<basic::Socket> socketPtr(new basic::Socket(settings, implementation));
+	basic::Socket& socket = *socketPtr;
 	basicServers.push_back(std::move(socketPtr));
 	return socket;
 }
 
-const std::vector<std::unique_ptr<basic::server::Socket>>& Engine::getBasicServers() const {
+const std::vector<std::unique_ptr<basic::Socket>>& Engine::getBasicServers() const {
 	return basicServers;
 }
 
-http::server::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+http::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	if(isHttps) {
 		logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\")\n";
 	}
@@ -96,13 +96,13 @@ http::server::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std:
 		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
 	}
 
-	std::unique_ptr<http::server::Socket> socketPtr(new http::server::Socket(isHttps, settings, implementation));
-	http::server::Socket& socket = *socketPtr;
+	std::unique_ptr<http::Socket> socketPtr(new http::Socket(isHttps, settings, implementation));
+	http::Socket& socket = *socketPtr;
 	httpServers.push_back(std::move(socketPtr));
 	return socket;
 }
 
-const std::vector<std::unique_ptr<http::server::Socket>>& Engine::getHttpServers() const {
+const std::vector<std::unique_ptr<http::Socket>>& Engine::getHttpServers() const {
 	return httpServers;
 }
 

@@ -31,7 +31,7 @@
 namespace jerry {
 namespace engine {
 
-class InputProxy : public esl::object::Interface::Object {
+class InputProxy: public esl::object::Interface::Object {
 public:
 	static esl::io::Input create(esl::io::Input&& input);
 
@@ -45,7 +45,7 @@ private:
 	esl::io::Input input;
 	bool isValid;
 
-	class Consumer : public esl::io::Consumer {
+	class Consumer: public esl::io::Consumer {
 	public:
 		Consumer(esl::io::Consumer& consumer, bool& isValid);
 		bool consume(esl::io::Reader& reader) override;
@@ -55,7 +55,7 @@ private:
 		bool& isValid;
 	} consumer;
 
-	class Writer : public esl::io::Writer {
+	class Writer: public esl::io::Writer {
 	public:
 		Writer(esl::io::Writer& writer, bool& isValid);
 
@@ -72,3 +72,4 @@ private:
 } /* namespace jerry */
 
 #endif /* JERRY_ENGINE_INPUTPROXY_H_ */
+

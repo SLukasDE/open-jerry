@@ -315,7 +315,7 @@ void Daemon::initialize() {
 	/* *********************************************************** *
 	 * initialize ExceptionHandler:                                *
 	 * Load all implementations to convert 'const std::exception&' *
-	 * to esl::http::server::exception::Interface::Message         *
+	 * to esl::http::exception::Interface::Message         *
 	 * *********************************************************** */
 	if(isInitialized) {
 		return;

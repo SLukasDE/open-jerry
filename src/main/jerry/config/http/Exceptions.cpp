@@ -126,25 +126,25 @@ void Exceptions::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<exceptions/>\n";
 }
 
-void Exceptions::install(engine::http::server::Context& engineHttpContext) const {
+void Exceptions::install(engine::http::Context& engineHttpContext) const {
 	/* ********************
 	 * set showExceptions *
 	 * ********************/
 	if(showExceptions == OptionalBool::obTrue) {
-		engineHttpContext.setShowException(engine::http::server::Context::obTrue);
+		engineHttpContext.setShowException(engine::http::Context::obTrue);
 	}
 	else if(showExceptions == OptionalBool::obFalse) {
-		engineHttpContext.setShowException(engine::http::server::Context::obFalse);
+		engineHttpContext.setShowException(engine::http::Context::obFalse);
 	}
 
 	/* ********************
 	 * set showStacktrace *
 	 * ********************/
 	if(showStacktrace == OptionalBool::obTrue) {
-		engineHttpContext.setShowStacktrace(engine::http::server::Context::obTrue);
+		engineHttpContext.setShowStacktrace(engine::http::Context::obTrue);
 	}
 	else if(showStacktrace == OptionalBool::obFalse) {
-		engineHttpContext.setShowStacktrace(engine::http::server::Context::obFalse);
+		engineHttpContext.setShowStacktrace(engine::http::Context::obFalse);
 	}
 
 	/***************************

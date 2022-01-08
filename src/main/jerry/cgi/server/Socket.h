@@ -31,7 +31,7 @@
 
 namespace jerry {
 namespace cgi {
-namespace server {
+
 
 class Socket : public esl::com::http::server::Interface::Socket {
 public:
@@ -54,7 +54,7 @@ private:
 	//std::map<std::string, ObjectFactory> objectFactories;
 };
 
-} /* namespace server */
+
 } /* namespace cgi */
 } /* namespace jerry */
 

@@ -23,7 +23,7 @@
 #include <jerry/config/Setting.h>
 #include <jerry/config/http/Entry.h>
 #include <jerry/config/http/Exceptions.h>
-#include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -42,7 +42,7 @@ public:
 	Host(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::http::server::Context& engineHttpContext) const;
+	void install(engine::http::Context& engineHttpContext) const;
 
 private:
 	std::string serverName;

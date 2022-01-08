@@ -21,11 +21,11 @@
 namespace jerry {
 namespace engine {
 
-Entry::Entry(std::unique_ptr<basic::server::Socket> aBasicServer)
+Entry::Entry(std::unique_ptr<basic::Socket> aBasicServer)
 : basicServer(std::move(aBasicServer))
 { }
 
-Entry::Entry(std::unique_ptr<http::server::Socket> aHttpServer)
+Entry::Entry(std::unique_ptr<http::Socket> aHttpServer)
 : httpServer(std::move(aHttpServer))
 { }
 

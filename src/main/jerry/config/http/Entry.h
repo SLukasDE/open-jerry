@@ -20,7 +20,7 @@
 #define JERRY_CONFIG_HTTP_ENTRY_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/Context.h>
 
 #include <string>
 #include <ostream>
@@ -37,7 +37,7 @@ public:
 	using Config::Config;
 
 	virtual void save(std::ostream& oStream, std::size_t spaces) const = 0;
-	virtual void install(engine::http::server::Context& engineHttpContext) const = 0;
+	virtual void install(engine::http::Context& engineHttpContext) const = 0;
 };
 
 } /* namespace http */

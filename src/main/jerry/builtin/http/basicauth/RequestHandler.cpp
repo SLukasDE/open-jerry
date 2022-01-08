@@ -49,11 +49,11 @@ const std::string PAGE_401(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "username") {
 			username = setting.second;
@@ -70,7 +70,7 @@ RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings)
 	}
 }
 
-esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
 	if(requestContext.getRequest().getUsername() == username &&
 			requestContext.getRequest().getPassword() == password) {
 		return esl::io::Input();

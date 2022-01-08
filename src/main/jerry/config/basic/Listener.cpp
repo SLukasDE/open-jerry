@@ -21,7 +21,7 @@
 #include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/basic/server/Context.h>
+#include <jerry/engine/basic/Context.h>
 
 #include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
@@ -94,8 +94,8 @@ void Listener::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</listener>\n";
 }
 
-void Listener::install(engine::Engine& jEngine, engine::basic::server::Socket& engineBasicSocket) const {
-	engine::basic::server::Context& engineContext = engineBasicSocket.getContext();
+void Listener::install(engine::Engine& jEngine, engine::basic::Socket& engineBasicSocket) const {
+	engine::basic::Context& engineContext = engineBasicSocket.getContext();
 
 	engineContext.ObjectContext::setParent(inherit ? &jEngine : nullptr);
 

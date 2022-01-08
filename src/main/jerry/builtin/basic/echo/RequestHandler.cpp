@@ -20,6 +20,7 @@
 #include <jerry/Logger.h>
 
 #include <esl/com/basic/client/Interface.h>
+#include <esl/com/basic/client/Connection.h>
 #include <esl/io/output/String.h>
 #include <esl/io/Producer.h>
 #include <esl/io/Output.h>
@@ -60,7 +61,7 @@ public:
 				std::this_thread::sleep_for(std::chrono::milliseconds(msDelay));
 			}
 			logger.debug << "Echo - sleep done\n";
-			std::unique_ptr<esl::com::basic::client::Interface::Connection> connection = connectionFactory.createConnection();
+			std::unique_ptr<esl::com::basic::client::Connection> connection = connectionFactory.createConnection();
 			if(connection) {
 				logger.debug << "Got connection\n";
 				std::unique_ptr<esl::io::Producer> producer(new esl::io::output::String(std::move(message)));
@@ -131,7 +132,7 @@ void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& ob
 	}
 }
 
-esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
 	if(connectionFactory == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Initialization failed"));
 	}

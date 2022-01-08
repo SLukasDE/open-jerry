@@ -73,7 +73,7 @@ void RequestHandler::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</requesthandler>\n";
 }
 
-void RequestHandler::install(engine::http::server::Context& context) const {
+void RequestHandler::install(engine::http::Context& context) const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));

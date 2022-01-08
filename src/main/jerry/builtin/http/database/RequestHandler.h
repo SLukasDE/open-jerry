@@ -41,11 +41,11 @@ public:
 		return "jerry/builtin/http/database";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::object::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
 
-	RequestHandler(const esl::object::Interface::Settings& settings);
+	RequestHandler(const esl::module::Interface::Settings& settings);
 
-	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
+	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 
 	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
 

@@ -19,7 +19,7 @@
 #include <jerry/config/basic/Server.h>
 #include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/basic/server/Socket.h>
+#include <jerry/engine/basic/Socket.h>
 
 #include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
@@ -89,7 +89,7 @@ void Server::install(engine::Engine& jEngine) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine::basic::server::Socket& engineBasicSocket = jEngine.addBasicServer(eslSettings, implementation);
+	engine::basic::Socket& engineBasicSocket = jEngine.addBasicServer(eslSettings, implementation);
 
 	listener->install(jEngine, engineBasicSocket);
 }

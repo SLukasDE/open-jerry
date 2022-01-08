@@ -22,7 +22,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/basic/Entry.h>
 #include <jerry/engine/Engine.h>
-#include <jerry/engine/basic/server/Socket.h>
+#include <jerry/engine/basic/Socket.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -40,7 +40,7 @@ public:
 	Listener(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& jEngine, engine::basic::server::Socket& engineBasicSocket) const;
+	void install(engine::Engine& jEngine, engine::basic::Socket& engineBasicSocket) const;
 
 private:
 	bool inherit = true;

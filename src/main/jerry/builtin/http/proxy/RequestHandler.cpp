@@ -19,12 +19,12 @@
 #include <jerry/builtin/http/proxy/RequestHandler.h>
 #include <jerry/Logger.h>
 
+#include <esl/com/http/client/Connection.h>
 #include <esl/com/http/client/Response.h>
 #include <esl/com/http/client/Request.h>
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-//#include <esl/com/http/client/Connection.h>
 #include <esl/io/input/String.h>
 #include <esl/io/input/Closed.h>
 #include <esl/io/output/String.h>
@@ -42,11 +42,11 @@ namespace {
 Logger logger("jerry::builtin::http::proxy::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "http-client-id") {
 			httpClientId = setting.second;
@@ -57,12 +57,12 @@ RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings)
 	}
 }
 
-esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
 	if(connectionFactory == nullptr) {
         throw esl::com::http::server::exception::StatusCode(500, "Initialization failed, http-client not found with id \"" + httpClientId + "\"");
 	}
 
-	std::unique_ptr<esl::com::http::client::Interface::Connection> connection = connectionFactory->createConnection();
+	std::unique_ptr<esl::com::http::client::Connection> connection = connectionFactory->createConnection();
 	if(!connection) {
 		throw esl::com::http::server::exception::StatusCode(503, "no client connection available");
 	}

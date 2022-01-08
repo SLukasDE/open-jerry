@@ -94,8 +94,8 @@ void Host::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<endpoint/>\n";
 }
 
-void Host::install(engine::http::server::Context& engineHttpContext) const {
-	engine::http::server::Context& newEngineContext = engineHttpContext.addHost(serverName, inherit);
+void Host::install(engine::http::Context& engineHttpContext) const {
+	engine::http::Context& newEngineContext = engineHttpContext.addHost(serverName, inherit);
 
 	/* *****************
 	 * install entries *

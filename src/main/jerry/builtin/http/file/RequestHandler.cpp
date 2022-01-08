@@ -40,11 +40,11 @@ namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::object::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "path") {
 			path = setting.second;
@@ -63,7 +63,7 @@ RequestHandler::RequestHandler(const esl::object::Interface::Settings& settings)
 	}
 }
 
-esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
 	if(!boost::filesystem::is_regular_file(path)) {
 		logger.warn << "Path \"" << path << "\" is not a regular file\n";
 		throw esl::com::http::server::exception::StatusCode(404);

@@ -20,7 +20,7 @@
 #define JERRY_CONFIG_BASIC_ENTRY_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/engine/basic/server/Context.h>
+#include <jerry/engine/basic/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -37,7 +37,7 @@ public:
 	using Config::Config;
 
 	virtual void save(std::ostream& oStream, std::size_t spaces) const = 0;
-	virtual void install(engine::basic::server::Context& engineBasicContext) const = 0;
+	virtual void install(engine::basic::Context& engineBasicContext) const = 0;
 };
 
 } /* namespace basic */

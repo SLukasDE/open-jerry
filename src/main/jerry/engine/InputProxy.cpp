@@ -31,6 +31,7 @@ esl::io::Input InputProxy::create(esl::io::Input&& input) {
 	std::unique_ptr<InputProxy> inputProxy(new InputProxy(std::move(input)));
 	esl::io::Consumer& consumer = inputProxy->getConsumer();
 	esl::io::Writer& writer = inputProxy->getWriter();
+
 	return esl::io::Input(std::unique_ptr<esl::object::Interface::Object>(inputProxy.release()), consumer, writer);
 }
 
@@ -49,40 +50,36 @@ esl::io::Writer& InputProxy::getWriter() {
 	return writer;
 }
 
-InputProxy::Consumer::Consumer(esl::io::Consumer& aConsumer, bool& aIsValid)
-: consumer(aConsumer),
-  isValid(aIsValid)
-{ }
+InputProxy::Consumer::Consumer(esl::io::Consumer& aConsumer, bool& aIsValid) :
+		consumer(aConsumer), isValid(aIsValid) {
+}
 
 bool InputProxy::Consumer::consume(esl::io::Reader& reader) {
-	if(isValid) {
+	if (isValid) {
 		try {
 			return consumer.consume(reader);
-		}
-		catch(...) {
-	    	isValid = false;
+		} catch (...) {
+			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
 		}
 	}
 
 	return false;
 }
 
-InputProxy::Writer::Writer(esl::io::Writer& aWriter, bool& aIsValid)
-: writer(aWriter),
-  isValid(aIsValid)
-{ }
+InputProxy::Writer::Writer(esl::io::Writer& aWriter, bool& aIsValid) :
+		writer(aWriter), isValid(aIsValid) {
+}
 
 std::size_t InputProxy::Writer::write(const void* data, std::size_t size) {
-	if(isValid) {
+	if (isValid) {
 		try {
-	    	return writer.write(data, size);
-		}
-		catch(...) {
-	    	isValid = false;
+			return writer.write(data, size);
+		} catch (...) {
+			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
 		}
 	}
 
@@ -90,14 +87,13 @@ std::size_t InputProxy::Writer::write(const void* data, std::size_t size) {
 }
 
 std::size_t InputProxy::Writer::getSizeWritable() const {
-	if(isValid) {
+	if (isValid) {
 		try {
 			return writer.getSizeWritable();
-		}
-		catch(...) {
-	    	isValid = false;
+		} catch (...) {
+			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
 		}
 	}
 

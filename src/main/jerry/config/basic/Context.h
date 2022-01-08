@@ -21,7 +21,7 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/basic/Entry.h>
-#include <jerry/engine/basic/server/Context.h>
+#include <jerry/engine/basic/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -40,7 +40,7 @@ public:
 	Context(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::basic::server::Context& basicContext) const;
+	void install(engine::basic::Context& basicContext) const;
 
 private:
 	std::string id;

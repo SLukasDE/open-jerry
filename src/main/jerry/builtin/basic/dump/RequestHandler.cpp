@@ -113,7 +113,7 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 	}
 }
 
-esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const {
+esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
 	logger.trace << "DUMP: Check notifier...\n";
 	if(requestContext.getRequest().hasValue("topic") == false) {
 		logger.trace << "DUMP: DROP: topic name not available.\n";

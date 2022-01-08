@@ -82,7 +82,7 @@ void EntryImpl::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void EntryImpl::install(engine::basic::server::Context& engineBasicContext) const {
+void EntryImpl::install(engine::basic::Context& engineBasicContext) const {
 	if(object) {
 		object->install(engineBasicContext);
 	}

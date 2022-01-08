@@ -24,7 +24,7 @@
 #include <jerry/config/http/Entry.h>
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/engine/Engine.h>
-#include <jerry/engine/http/server/Socket.h>
+#include <jerry/engine/http/Socket.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -43,7 +43,7 @@ public:
 	Listener(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& jEngine, engine::http::server::Socket& httpSocket) const;
+	void install(engine::Engine& jEngine, engine::http::Socket& httpSocket) const;
 
 private:
 	bool inherit = true;

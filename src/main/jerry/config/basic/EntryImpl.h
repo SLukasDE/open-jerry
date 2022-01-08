@@ -28,7 +28,7 @@
 #include <jerry/config/basic/Context.h>
 #include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/http/Client.h>
-#include <jerry/engine/basic/server/Context.h>
+#include <jerry/engine/basic/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -45,7 +45,7 @@ public:
 	EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const override;
-	void install(engine::basic::server::Context& engineBasicContext) const override;
+	void install(engine::basic::Context& engineBasicContext) const override;
 
 private:
 	std::unique_ptr<config::Object> object;

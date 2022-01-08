@@ -21,8 +21,8 @@
 
 #include <jerry/engine/Entry.h>
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/basic/server/Socket.h>
-#include <jerry/engine/http/server/Socket.h>
+#include <jerry/engine/basic/Socket.h>
+#include <jerry/engine/http/Socket.h>
 
 #include <esl/object/Interface.h>
 #include <esl/processing/daemon/Interface.h>
@@ -49,11 +49,11 @@ public:
 	const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
 	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
-	basic::server::Socket& addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	const std::vector<std::unique_ptr<basic::server::Socket>>& getBasicServers() const;
+	basic::Socket& addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	const std::vector<std::unique_ptr<basic::Socket>>& getBasicServers() const;
 
-	http::server::Socket& addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
-	const std::vector<std::unique_ptr<http::server::Socket>>& getHttpServers() const;
+	http::Socket& addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	const std::vector<std::unique_ptr<http::Socket>>& getHttpServers() const;
 
 	void addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 	const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& getDaemons() const;
@@ -68,8 +68,8 @@ private:
 
 	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
 
-	std::vector<std::unique_ptr<basic::server::Socket>> basicServers;
-	std::vector<std::unique_ptr<http::server::Socket>> httpServers;
+	std::vector<std::unique_ptr<basic::Socket>> basicServers;
+	std::vector<std::unique_ptr<http::Socket>> httpServers;
 	std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>> daemons;
 
 };

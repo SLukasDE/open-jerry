@@ -47,7 +47,7 @@ public:
 
 	RequestHandler(const esl::module::Interface::Settings& settings);
 
-	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, esl::object::Interface::ObjectContext& objectContext) const override;
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
 	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
 

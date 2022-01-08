@@ -30,7 +30,7 @@
 #include <jerry/config/http/Endpoint.h>
 #include <jerry/config/http/Host.h>
 #include <jerry/config/http/RequestHandler.h>
-#include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/Context.h>
 
 #include <memory>
 #include <string>
@@ -48,7 +48,7 @@ public:
 	EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const override;
-	void install(engine::http::server::Context& engineHttpContext) const override;
+	void install(engine::http::Context& engineHttpContext) const override;
 
 private:
 	std::unique_ptr<Object> object;

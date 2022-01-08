@@ -17,10 +17,10 @@
  */
 
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/basic/server/Context.h>
-#include <jerry/engine/http/server/Context.h>
-#include <jerry/engine/http/server/Endpoint.h>
-#include <jerry/engine/http/server/Host.h>
+#include <jerry/engine/basic/Context.h>
+#include <jerry/engine/http/Context.h>
+#include <jerry/engine/http/Endpoint.h>
+#include <jerry/engine/http/Host.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/basic/client/Interface.h>
@@ -86,10 +86,10 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 		bool isReference = objects.count(entry.first) == 0;
 		std::string isReferenceStr = isReference ? " (reference)" : "";
 
-		const basic::server::Context* basicContextPtr = dynamic_cast<const basic::server::Context*>(objectPtr);
-		const http::server::Context* httpContextPtr = dynamic_cast<const http::server::Context*>(objectPtr);
-		const http::server::Endpoint* httpEndpointPtr = dynamic_cast<const http::server::Endpoint*>(objectPtr);
-		const http::server::Host* httpHostPtr = dynamic_cast<const http::server::Host*>(objectPtr);
+		const basic::Context* basicContextPtr = dynamic_cast<const basic::Context*>(objectPtr);
+		const http::Context* httpContextPtr = dynamic_cast<const http::Context*>(objectPtr);
+		const http::Endpoint* httpEndpointPtr = dynamic_cast<const http::Endpoint*>(objectPtr);
+		const http::Host* httpHostPtr = dynamic_cast<const http::Host*>(objectPtr);
 
 		const esl::processing::procedure::Interface::Procedure* procedurePtr = dynamic_cast<const esl::processing::procedure::Interface::Procedure*>(objectPtr);
 		const esl::com::basic::client::Interface::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::Interface::ConnectionFactory*>(objectPtr);

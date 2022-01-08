@@ -21,7 +21,7 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
-#include <jerry/engine/http/server/Context.h>
+#include <jerry/engine/http/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -38,7 +38,7 @@ public:
 	RequestHandler(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::http::server::Context& context) const;
+	void install(engine::http::Context& context) const;
 
 private:
 	std::string implementation;

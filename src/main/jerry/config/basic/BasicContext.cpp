@@ -22,7 +22,6 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -106,11 +105,11 @@ void BasicContext::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</basic-context>\n";
 }
 
-void BasicContext::install(engine::Engine& engine) const {
-	std::unique_ptr<engine::basic::server::Context> context(new engine::basic::server::Context);
+void BasicContext::install(engine::ObjectContext& engineObjectContext) const {
+	std::unique_ptr<engine::basic::Context> context(new engine::basic::Context);
 
 	if(inherit) {
-		context->ObjectContext::setParent(&engine);
+		context->ObjectContext::setParent(&engineObjectContext);
 	}
 
 	/* *****************
@@ -120,7 +119,7 @@ void BasicContext::install(engine::Engine& engine) const {
 		entry->install(*context);
 	}
 
-	engine.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
 }
 
 void BasicContext::parseInnerElement(const tinyxml2::XMLElement& element) {
