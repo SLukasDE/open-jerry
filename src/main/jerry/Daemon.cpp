@@ -22,11 +22,10 @@
 #include <jerry/engine/ExceptionHandler.h>
 #include <jerry/config/Engine.h>
 
+#include <esl/logging/appender/Appender.h>
+#include <esl/logging/layout/Layout.h>
 #include <esl/system/SignalHandler.h>
 #include <esl/logging/Logger.h>
-#include <esl/logging/appender/OStream.h>
-#include <esl/logging/appender/MemBuffer.h>
-#include <esl/logging/Layout.h>
 #include <esl/Module.h>
 //#include <esl/module/Library.h>
 
@@ -35,10 +34,10 @@
 namespace jerry {
 
 namespace {
-esl::logging::appender::OStream appenderCoutStream(std::cout, std::cout, std::cout, std::cerr, std::cerr);
-esl::logging::appender::OStream appenderCerrStream(std::cerr, std::cerr, std::cerr, std::cerr, std::cerr);
-esl::logging::appender::MemBuffer appenderMemBuffer(100);
-std::unique_ptr<esl::logging::Layout> layout;
+
+std::unique_ptr<esl::logging::appender::Interface::Appender> appenderCoutStream;
+std::unique_ptr<esl::logging::appender::Interface::Appender> appenderMemBuffer;
+std::unique_ptr<esl::logging::layout::Interface::Layout> layout;
 
 void printInterface(const std::string& text, const esl::module::Interface* interface) {
 	if(interface) {
@@ -95,7 +94,20 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 		Module::install(esl::getModule());
 
 		jerry::config::Engine xmlEngine(configFile);
-		layout = xmlEngine.install(getEngine(), appenderCoutStream, appenderMemBuffer);
+
+		xmlEngine.loadLibraries();
+
+		appenderCoutStream.reset(new esl::logging::appender::Appender({
+			{"trace", "out"},
+			{"info", "out"},
+			{"debug", "out"},
+			{"warn", "err"},
+			{"error", "err"}}, "eslx/ostream"));
+
+		appenderMemBuffer.reset(new esl::logging::appender::Appender({
+			{"max-lines", "100"}}, "eslx/membuffer"));
+
+		layout = xmlEngine.install(getEngine(), *appenderCoutStream, *appenderMemBuffer);
 
 		if(verbose) {
 			/* show configuration file */
@@ -140,17 +152,7 @@ bool Daemon::run() {
     	exceptionHandler.dump(std::cerr);
 
     	std::cerr << "\n\nReplay previous log messages:\n";
-        auto buffer = appenderMemBuffer.getBuffer();
-        if(layout) {
-            for(const auto& entry : buffer) {
-            	std::cerr << layout->toString(std::get<0>(entry)) << std::get<1>(entry) << "\n";
-            }
-        }
-        else {
-            for(const auto& entry : buffer) {
-            	std::cerr << std::get<1>(entry) << "\n";
-            }
-        }
+    	appenderMemBuffer->flush(std::cerr);
 
     	success = false;
 	}

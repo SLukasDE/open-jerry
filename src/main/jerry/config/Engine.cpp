@@ -23,6 +23,9 @@
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
+#include <esl/logging/appender/Appender.h>
+#include <esl/logging/layout/Layout.h>
+#include <esl/logging/Logger.h>
 
 namespace jerry {
 namespace config {
@@ -73,7 +76,8 @@ void Engine::save(std::ostream& oStream) const {
 	oStream << "</jerry>\n";
 }
 
-std::unique_ptr<esl::logging::Layout> Engine::install(engine::Engine& engine, esl::logging::Appender& appenderCoutStream, esl::logging::Appender& appenderMemBuffer) {
+
+void Engine::loadLibraries() {
 	/* ************************
 	 * load and add libraries *
 	 * ********************** */
@@ -86,18 +90,34 @@ std::unique_ptr<esl::logging::Layout> Engine::install(engine::Engine& engine, es
 		library.second = &esl::module::Library::load(library.first);
 		library.second->install(esl::getModule());
 	}
+}
 
+std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine::Engine& engine, esl::logging::appender::Interface::Appender& appenderCoutStream, esl::logging::appender::Interface::Appender& appenderMemBuffer) {
+#if 0
+	/* ************************
+	 * load and add libraries *
+	 * ********************** */
+	for(auto& library : libraries) {
+		/*
+		if(library.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
+		}
+		*/
+		library.second = &esl::module::Library::load(library.first);
+		library.second->install(esl::getModule());
+	}
+#endif
 
 	/* ************* *
 	 * create layout *
 	 * ************* */
-	esl::object::Interface::Settings settings;
+	esl::object::Interface::Settings eslSettings;
 
 	for(auto const setting : loggerConfig.layoutSettings) {
-		settings.push_back(std::make_pair(setting.key, setting.value));
+		eslSettings.push_back(std::make_pair(setting.key, setting.value));
 	}
 
-	std::unique_ptr<esl::logging::Layout> layout(new esl::logging::Layout(settings, loggerConfig.layout));
+	std::unique_ptr<esl::logging::layout::Interface::Layout> layout(new esl::logging::layout::Layout(eslSettings, loggerConfig.layout));
 
 
 	/* *********************** *
@@ -111,7 +131,7 @@ std::unique_ptr<esl::logging::Layout> Engine::install(engine::Engine& engine, es
     /* MemBuffer appender just writes output to a buffer of a fixed number of lines.
      * If number of columns is specified as well the whole memory is allocated at initialization time.
      */
-    appenderMemBuffer.setRecordLevel(esl::logging::Appender::RecordLevel::ALL);
+    appenderMemBuffer.setRecordLevel(esl::logging::appender::Interface::Appender::RecordLevel::ALL);
     appenderMemBuffer.setLayout(layout.get());
     esl::logging::addAppender(appenderMemBuffer);
 

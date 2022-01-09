@@ -13,7 +13,6 @@ build.sh
 ca-key.pem
 server.key
 server.pem
-server_empty.xml
 cp_libs.sh
 
 # Prerequisites

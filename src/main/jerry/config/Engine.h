@@ -28,8 +28,8 @@
 
 #include <jerry/engine/Engine.h>
 
-#include <esl/logging/Appender.h>
-#include <esl/logging/Layout.h>
+#include <esl/logging/appender/Interface.h>
+#include <esl/logging/layout/Interface.h>
 #include <esl/module/Library.h>
 
 #include <tinyxml2/tinyxml2.h>
@@ -48,7 +48,9 @@ public:
 	Engine(const std::string& fileName);
 
 	void save(std::ostream& oStream) const;
-	std::unique_ptr<esl::logging::Layout> install(engine::Engine& engine, esl::logging::Appender& appender1, esl::logging::Appender& appender2);
+	void loadLibraries();
+	std::unique_ptr<esl::logging::layout::Interface::Layout> install(engine::Engine& engine, esl::logging::appender::Interface::Appender& appender1, esl::logging::appender::Interface::Appender& appenderMemBuffer);
+	//void install(engine::Engine& engine);
 
 private:
 	tinyxml2::XMLDocument xmlDocument;

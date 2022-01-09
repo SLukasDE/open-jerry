@@ -59,7 +59,7 @@ ExceptionHandler::ExceptionHandler(std::exception_ptr exceptionPointer)
 void ExceptionHandler::dump(const esl::com::http::server::RequestContext& requestContext, const Context* errorHandlingContext) const {
 	initialize();
 
-	const Document* errorDocument = errorHandlingContext ? errorHandlingContext->findErrorDocument(httpStatusCode) : false;
+	const Document* errorDocument = errorHandlingContext ? errorHandlingContext->findErrorDocument(httpStatusCode) : nullptr;
 
 	if(errorDocument) {
 		esl::utility::URL url(errorDocument->getPath());

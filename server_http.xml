@@ -1,52 +1,9 @@
 <jerry>
-	<library file="./libmhd4esl.so"/>
-	<library file="./liblogbook4esl.so"/>
-	<library file="./libzsystem4esl.so"/>
-	<library file="./libcurl4esl.so"/>
+	<library file="/lib64/libeslx.so.0.3.0"/>
 	
 	<certificate domain="*" key="server.key" cert="server.pem"/>
 	
-	<!--esl-config>
-		<library file="./libmhd4esl.so"/>
-		<library file="./liblogbook4esl.so"/>
-		<library file="./libzsystem4esl.so"/>
-		
-		<default type="esl-com-http-server" implementation="mhd4esl">
-			<parameter key="threads" value="4"/>
-		</default>
-		
-		<logger>
-			<layout id="standard" implementation="esl/logging/builtin">
-				<parameter key="showTimestamp" value="true"/>
-				<parameter key="showLevel" value="true"/>
-				<parameter key="showTypeName" value="true"/>
-				<parameter key="showAddress" value="false"/>
-				<parameter key="showFile" value="false"/>
-				<parameter key="showFunction" value="false"/>
-				<parameter key="showLineNo" value="false"/>
-				<parameter key="showThreadNo" value="false"/>
-			</layout>
-			
-			<appender implementation="esl/logging/builtin/ostream" record="selected" layout="standard">
-				<parameter key="info" value="out"/>
-				<parameter key="warn" value="out"/>
-				<parameter key="error" value="err"/>
-			</appender>
-			
-			<appender implementation="esl/logging/builtin/membuffer" record="all">
-				<parameter key="lines" value="100"/>
-				<parameter key="info" value="out"/>
-				<parameter key="warn" value="out"/>
-				<parameter key="error" value="err"/>
-			</appender>
-			
-			<setting level="warn"  scope="*"/>
-			<setting level="trace" scope="jerry::*"/>
-			<setting level="info"  scope="jerrA::*"/>
-		</logger>
-	</esl-config-->
-	
-	<!--logger layout="esl/logging/builtin"-->
+	<!--logger layout="eslx/default"-->
 	<logger layout="">
 		<layout key="showTimestamp" value="true"/>
 		<layout key="showLevel" value="true"/>
