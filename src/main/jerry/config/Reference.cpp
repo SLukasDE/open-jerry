@@ -31,14 +31,20 @@ Reference::Reference(const std::string& fileName, const tinyxml2::XMLElement& el
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
+			if(!id.empty()) {
+				throw XMLException(*this, "Multiple definition of attribute 'id'.");
+			}
 			id = attribute->Value();
-			if(id == "") {
+			if(id.empty()) {
 				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
+			if(!refId.empty()) {
+				throw XMLException(*this, "Multiple definition of attribute 'ref-id'.");
+			}
 			refId = attribute->Value();
-			if(id == "") {
+			if(refId.empty()) {
 				throw XMLException(*this, "Value \"\" of attribute 'ref-id' is invalid.");
 			}
 		}
@@ -47,10 +53,10 @@ Reference::Reference(const std::string& fileName, const tinyxml2::XMLElement& el
 		}
 	}
 
-	if(id == "") {
+	if(id.empty()) {
 		throw XMLException(*this, "Missing attribute 'id'");
 	}
-	if(refId == "") {
+	if(refId.empty()) {
 		throw XMLException(*this, "Missing attribute 'ref-id'");
 	}
 }

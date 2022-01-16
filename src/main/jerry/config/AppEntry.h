@@ -16,8 +16,8 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_APPLICATION_ENTRY_H_
-#define JERRY_CONFIG_APPLICATION_ENTRY_H_
+#ifndef JERRY_CONFIG_APPENTRY_H_
+#define JERRY_CONFIG_APPENTRY_H_
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Object.h>
@@ -36,12 +36,11 @@
 
 namespace jerry {
 namespace config {
-namespace application {
 
-class Entry : public jerry::config::Config {
+class AppEntry : public Config {
 public:
-	Entry(const Entry&) = delete;
-	Entry(const std::string& fileName, const tinyxml2::XMLElement& element);
+	AppEntry(const AppEntry&) = delete;
+	AppEntry(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::ObjectContext& engineObjectContext) const;
@@ -58,8 +57,7 @@ private:
 	std::unique_ptr<config::http::HttpContext> httpContext;
 };
 
-} /* namespace application */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_APPLICATION_ENTRY_H_ */
+#endif /* JERRY_CONFIG_APPENTRY_H_ */

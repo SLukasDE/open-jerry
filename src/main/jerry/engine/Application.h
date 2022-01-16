@@ -16,33 +16,39 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_REFERENCE_H_
-#define JERRY_CONFIG_REFERENCE_H_
+#ifndef JERRY_ENGINE_APPLICATION_H_
+#define JERRY_ENGINE_APPLICATION_H_
 
-#include <jerry/config/Config.h>
 #include <jerry/engine/ObjectContext.h>
-
-#include <tinyxml2/tinyxml2.h>
+#include <jerry/engine/basic/Context.h>
+#include <jerry/engine/http/Context.h>
 
 #include <string>
-#include <ostream>
 
 namespace jerry {
-namespace config {
+namespace engine {
 
-class Reference : public Config {
+class Application : public ObjectContext {
 public:
-	Reference(const std::string& fileName, const tinyxml2::XMLElement& element);
+	Application(const std::string& name, ObjectContext& parentObjectContext);
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::ObjectContext& engineObjectContext) const;
+	const std::string& getName() const noexcept;
+
+	basic::Context& addBasicListener();
+	basic::Context* getBasicListener();
+
+	http::Context& addHttpListener();
+	http::Context* getHttpListener();
+
+	void initializeContext() override;
 
 private:
-	std::string id;
-	std::string refId;
+	const std::string name;
+	std::unique_ptr<basic::Context> basicListener;
+	std::unique_ptr<http::Context> httpListener;
 };
 
-} /* namespace config */
+} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_REFERENCE_H_ */
+#endif /* JERRY_ENGINE_APPLICATION_H_ */

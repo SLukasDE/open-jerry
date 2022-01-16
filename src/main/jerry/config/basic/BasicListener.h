@@ -16,33 +16,40 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_REFERENCE_H_
-#define JERRY_CONFIG_REFERENCE_H_
+#ifndef JERRY_CONFIG_BASIC_BASICLISTENER_H_
+#define JERRY_CONFIG_BASIC_BASICLISTENER_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/engine/ObjectContext.h>
+#include <jerry/config/basic/Entry.h>
+#include <jerry/engine/Application.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <string>
+#include <vector>
 #include <ostream>
+#include <memory>
 
 namespace jerry {
 namespace config {
+namespace basic {
 
-class Reference : public Config {
+class BasicListener : public Config {
 public:
-	Reference(const std::string& fileName, const tinyxml2::XMLElement& element);
+	BasicListener(const BasicListener&) = delete;
+	BasicListener(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::ObjectContext& engineObjectContext) const;
+	void install(engine::Application& engineApplication) const;
 
 private:
-	std::string id;
-	std::string refId;
+	bool inherit = true;
+	std::vector<std::unique_ptr<config::basic::Entry>> entries;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
+} /* namespace basic */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_REFERENCE_H_ */
+#endif /* JERRY_CONFIG_BASIC_BASICLISTENER_H_ */

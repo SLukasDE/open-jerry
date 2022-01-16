@@ -23,6 +23,7 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Procedure.h>
+#include <jerry/config/Applications.h>
 #include <jerry/config/basic/Client.h>
 #include <jerry/config/basic/BasicContext.h>
 #include <jerry/config/basic/Server.h>
@@ -52,6 +53,7 @@ private:
 	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
 	std::unique_ptr<Procedure> procedure;
+	std::unique_ptr<Applications> applications;
 
 	std::unique_ptr<basic::Client> basicClient;
 	std::unique_ptr<basic::BasicContext> basicContext;

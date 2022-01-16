@@ -66,12 +66,13 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 
 	std::unique_ptr<jerry::engine::http::RequestContext> requestContext(new jerry::engine::http::RequestContext(baseRequestContext));
 
-	for(auto& app : applications->getApplications()) {
-		if(!app) {
-			logger.error << "Current application is null\n";
+	for(auto& appsEntry : applications->getApplications()) {
+		if(!appsEntry.second) {
+			logger.error << "Application \"" << appsEntry.first << "\" is null\n";
 			continue;
 		}
-		jerry::engine::http::Context* context = app->getHttpListener();
+
+		jerry::engine::http::Context* context = appsEntry.second->getHttpListener();
 		if(context) {
 			esl::io::Input input = context->accept(*requestContext);
 			if(input) {
@@ -83,7 +84,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 }
 
 void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
-	applications = objectContext.findObject<object::application::Object>(applicationsId);
+	applications = objectContext.findObject<engine::Applications>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find application object with id \"" + applicationsId + "\"");
 	}

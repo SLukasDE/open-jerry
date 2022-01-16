@@ -50,7 +50,7 @@
 /* *************** *
  * builtin objects *
  * *************** */
-#include <jerry/builtin/object/application/Object.h>
+//#include <jerry/builtin/object/application/Object.h>
 
 /* *************** *
  * builtin daemons *
@@ -150,10 +150,11 @@ void Module::install(esl::module::Module& module) {
 	/* *************** *
 	 * builtin objects *
 	 * *************** */
+/*
 	module.addInterface(esl::object::Interface::createInterface(
 			builtin::object::application::Object::getImplementation(),
 			&builtin::object::application::Object::create));
-
+*/
 	/* *************** *
 	 * builtin daemons *
 	 * *************** */

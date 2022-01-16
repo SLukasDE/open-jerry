@@ -17,7 +17,6 @@
  */
 
 #include <jerry/config/main/Engine.h>
-#include <jerry/config/Config.h>
 #include <jerry/config/XMLException.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>

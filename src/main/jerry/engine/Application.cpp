@@ -16,29 +16,22 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/object/application/Application.h>
-
-#include <stdexcept>
+#include <jerry/engine/Application.h>
 
 namespace jerry {
-namespace builtin {
-namespace object {
-namespace application {
+namespace engine {
 
-Application::Application(esl::object::ObjectContext& parentObjectContext, const std::string& libraryFileStr)
+Application::Application(const std::string& aName, ObjectContext& parentObjectContext)
+: name(aName)
 {
 	setParent(&parentObjectContext);
-
-	if(!libraryFileStr.empty()) {
-		/* ************************
-		 * load and add libraries *
-		 * ********************** */
-		library = &esl::module::Library::load(libraryFileStr);
-		library->install(esl::getModule());
-	}
 }
 
-engine::basic::Context& Application::addBasicListener() {
+const std::string& Application::getName() const noexcept {
+	return name;
+}
+
+basic::Context& Application::addBasicListener() {
 	if(basicListener) {
 		throw std::runtime_error("Cannot add multiple basic-listeners");
 	}
@@ -46,11 +39,11 @@ engine::basic::Context& Application::addBasicListener() {
 	return *basicListener;
 }
 
-engine::basic::Context* Application::getBasicListener() {
+basic::Context* Application::getBasicListener() {
 	return basicListener.get();
 }
 
-engine::http::Context& Application::addHttpListener() {
+http::Context& Application::addHttpListener() {
 	if(httpListener) {
 		throw std::runtime_error("Cannot add multiple http-listeners");
 	}
@@ -58,7 +51,7 @@ engine::http::Context& Application::addHttpListener() {
 	return *httpListener;
 }
 
-engine::http::Context* Application::getHttpListener() {
+http::Context* Application::getHttpListener() {
 	return httpListener.get();
 }
 
@@ -74,7 +67,5 @@ void Application::initializeContext() {
 	}
 }
 
-} /* namespace application */
-} /* namespace object */
-} /* namespace builtin */
+} /* namespace engine */
 } /* namespace jerry */

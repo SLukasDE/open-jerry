@@ -16,25 +16,32 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/application/Application.h>
+#include <jerry/config/Application.h>
 #include <jerry/config/Config.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/engine/Application.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
 
 namespace jerry {
 namespace config {
-namespace application {
 
 namespace {
-Logger logger("jerry::config::application::Application");
+Logger logger("jerry::config::Application");
+
+std::string getConfigFile(const boost::filesystem::path& path) {
+	boost::filesystem::path configFile = path / "jerry.xml";
+	return configFile.generic_string();
+}
 } /* anonymous namespace */
 
-Application::Application(const std::string& fileName)
-: Config(fileName)
+Application::Application(const boost::filesystem::path& aPath)
+: Config(getConfigFile(aPath)),
+  appName(aPath.filename().generic_string()),
+  path(aPath)
 {
-	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(fileName.c_str());
+	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(getFileName().c_str());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
 		throw jerry::config::XMLException(*this, xmlError);
 	}
@@ -44,7 +51,12 @@ Application::Application(const std::string& fileName)
 		throw jerry::config::XMLException(*this, "No root element");
 	}
 
-	setXMLFile(fileName, *element);
+	boost::filesystem::path libraryFile = path / "jerry.so";
+	if(boost::filesystem::is_regular_file(libraryFile)) {
+		libraries.push_back(std::make_pair(libraryFile.generic_string(), nullptr));
+	}
+
+	setXMLFile(getFileName(), *element);
 	loadXML(*element);
 }
 
@@ -58,7 +70,11 @@ void Application::save(std::ostream& oStream) const {
 	oStream << "</jerry-app>\n";
 }
 
-void Application::install(builtin::object::application::Application& engineApplication) {
+void Application::install(engine::Applications& engineApplications) {
+	loadLibraries();
+
+	engine::Application& engineApplication = engineApplications.addApplication(appName);
+
 	for(const auto& entry : entries) {
 		entry->install(engineApplication);
 	}
@@ -111,19 +127,33 @@ void Application::parseInnerElement(const tinyxml2::XMLElement& element) {
 		if(basicListener) {
 			throw jerry::config::XMLException(*this, "Multiple definition of attribute 'basic-listener' is not allowed");
 		}
-		basicListener.reset(new BasicListener(getFileName(), element));
+		basicListener.reset(new basic::BasicListener(getFileName(), element));
 	}
 	else if(elementName == "http-listener") {
 		if(httpListener) {
 			throw jerry::config::XMLException(*this, "Multiple definition of attribute 'http-listener' is not allowed");
 		}
-		httpListener.reset(new HttpListener(getFileName(), element));
+		httpListener.reset(new http::HttpListener(getFileName(), element));
 	}
 	else {
-		entries.emplace_back(new Entry(getFileName(), element));
+		entries.emplace_back(new AppEntry(getFileName(), element));
 	}
 }
 
-} /* namespace application */
+void Application::loadLibraries() {
+	/* ************************
+	 * load and add libraries *
+	 * ********************** */
+	for(auto& library : libraries) {
+		/*
+		if(library.second) {
+			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
+		}
+		*/
+		library.second = &esl::module::Library::load(library.first);
+		library.second->install(esl::getModule());
+	}
+}
+
 } /* namespace config */
 } /* namespace jerry */

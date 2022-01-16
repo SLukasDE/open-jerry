@@ -16,21 +16,18 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/application/BasicListener.h>
-#include <jerry/config/basic/EntryImpl.h>
+#include <jerry/config/http/HttpListener.h>
+#include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/basic/Context.h>
+#include <jerry/engine/http/Context.h>
 
-#include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
-
-#include <stdexcept>
 
 namespace jerry {
 namespace config {
-namespace application {
+namespace http {
 
-BasicListener::BasicListener(const std::string& fileName, const tinyxml2::XMLElement& element)
+HttpListener::HttpListener(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -41,10 +38,10 @@ BasicListener::BasicListener(const std::string& fileName, const tinyxml2::XMLEle
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "inherit") {
+			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
 				throw jerry::config::XMLException(*this, "Multiple definition of attribute 'inherit'");
 			}
-			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			hasInherit = true;
 			if(inheritStr == "true") {
 				inherit = true;
@@ -74,8 +71,8 @@ BasicListener::BasicListener(const std::string& fileName, const tinyxml2::XMLEle
 	}
 }
 
-void BasicListener::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<basic-listener";
+void HttpListener::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<http-listener";
 
 	if(inherit) {
 		oStream << " inherit=\"true\"";
@@ -89,15 +86,21 @@ void BasicListener::save(std::ostream& oStream, std::size_t spaces) const {
 		entry->save(oStream, spaces+2);
 	}
 
-	oStream << makeSpaces(spaces) << "</basic-listener>\n";
-}
-
-void BasicListener::install(builtin::object::application::Application& engineApplication) const {
-	engine::basic::Context& engineContext = engineApplication.addBasicListener();
-	if(inherit) {
-		engineContext.setParent(&engineApplication);
+	for(const auto& entry : responseHeaders) {
+		entry.saveResponseHeader(oStream, spaces+2);
 	}
 
+	exceptions.save(oStream, spaces+2);
+
+	oStream << makeSpaces(spaces) << "</http-listener>\n";
+}
+
+void HttpListener::install(engine::Application& engineApplication) const {
+	engine::http::Context& engineContext = engineApplication.addHttpListener();
+
+	if(inherit) {
+		engineContext.ObjectContext::setParent(&engineApplication);
+	}
 
 	/* *****************
 	 * install entries *
@@ -105,12 +108,31 @@ void BasicListener::install(builtin::object::application::Application& engineApp
 	for(const auto& entry : entries) {
 		entry->install(engineContext);
 	}
+
+	/* **********************
+	 * Set response headers *
+	 * **********************/
+	for(const auto& responseHeader : responseHeaders) {
+		engineContext.addHeader(responseHeader.key, responseHeader.value);
+	}
+
+	exceptions.install(engineContext);
 }
 
-void BasicListener::parseInnerElement(const tinyxml2::XMLElement& element) {
-	entries.emplace_back(new jerry::config::basic::EntryImpl(getFileName(), element));
+void HttpListener::parseInnerElement(const tinyxml2::XMLElement& element) {
+	std::string innerElementName(element.Name());
+
+	if(innerElementName == "response-header") {
+		responseHeaders.push_back(jerry::config::Setting(getFileName(), element, false));
+	}
+	else if(innerElementName == "exceptions") {
+		exceptions = jerry::config::http::Exceptions(getFileName(), element);
+	}
+	else {
+		entries.emplace_back(new jerry::config::http::EntryImpl(getFileName(), element));
+	}
 }
 
-} /* namespace application */
+} /* namespace http */
 } /* namespace config */
 } /* namespace jerry */

@@ -16,50 +16,45 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_APPLICATION_APPLICATION_H_
-#define JERRY_CONFIG_APPLICATION_APPLICATION_H_
+#ifndef JERRY_CONFIG_HTTP_HTTPLISTENER_H_
+#define JERRY_CONFIG_HTTP_HTTPLISTENER_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/application/Entry.h>
-#include <jerry/config/application/BasicListener.h>
-#include <jerry/config/application/HttpListener.h>
-
-#include <jerry/builtin/object/application/Application.h>
-
-#include <esl/module/Library.h>
+#include <jerry/config/Setting.h>
+#include <jerry/config/http/Entry.h>
+#include <jerry/config/http/Exceptions.h>
+#include <jerry/engine/Application.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <vector>
-#include <set>
+#include <ostream>
 #include <string>
 #include <memory>
-#include <ostream>
 
 namespace jerry {
 namespace config {
-namespace application {
+namespace http {
 
-class Application : public jerry::config::Config {
+class HttpListener : public Config {
 public:
-	Application(const std::string& fileName);
+	HttpListener(const HttpListener&) = delete;
+	HttpListener(const std::string& fileName, const tinyxml2::XMLElement& element);
 
-	void save(std::ostream& oStream) const;
-	void install(builtin::object::application::Application& engineApplication);
+	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Application& engineApplication) const;
 
 private:
-	std::vector<std::unique_ptr<Entry>> entries;
-	tinyxml2::XMLDocument xmlDocument;
-	std::unique_ptr<BasicListener> basicListener;
-	std::unique_ptr<HttpListener> httpListener;
-
-	void loadXML(const tinyxml2::XMLElement& element);
+	bool inherit = true;
+	std::vector<config::Setting> responseHeaders;
+	config::http::Exceptions exceptions;
+	std::vector<std::unique_ptr<config::http::Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
-} /* namespace application */
+} /* namespace http */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_APPLICATION_APPLICATION_H_ */
+#endif /* JERRY_CONFIG_HTTP_HTTPLISTENER_H_ */

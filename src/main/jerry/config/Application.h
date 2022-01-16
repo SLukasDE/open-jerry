@@ -16,45 +16,54 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_APPLICATION_HTTPLISTENER_H_
-#define JERRY_CONFIG_APPLICATION_HTTPLISTENER_H_
+#ifndef JERRY_CONFIG_APPLICATION_H_
+#define JERRY_CONFIG_APPLICATION_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/Setting.h>
-#include <jerry/config/http/Entry.h>
-#include <jerry/config/http/Exceptions.h>
-#include <jerry/builtin/object/application/Application.h>
+#include <jerry/config/AppEntry.h>
+#include <jerry/config/basic/BasicListener.h>
+#include <jerry/config/http/HttpListener.h>
+#include <jerry/engine/Applications.h>
+
+#include <esl/module/Library.h>
 
 #include <tinyxml2/tinyxml2.h>
 
+#include <boost/filesystem.hpp>
+
 #include <vector>
-#include <ostream>
+#include <set>
 #include <string>
 #include <memory>
+#include <ostream>
 
 namespace jerry {
 namespace config {
-namespace application {
 
-class HttpListener : public Config {
+class Application : public Config {
 public:
-	HttpListener(const HttpListener&) = delete;
-	HttpListener(const std::string& fileName, const tinyxml2::XMLElement& element);
+	Application(const boost::filesystem::path& path);
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(builtin::object::application::Application& engineApplication) const;
+	void save(std::ostream& oStream) const;
+	void install(engine::Applications& engineApplications);
 
 private:
-	bool inherit = true;
-	std::vector<config::Setting> responseHeaders;
-	config::http::Exceptions exceptions;
-	std::vector<std::unique_ptr<config::http::Entry>> entries;
+	tinyxml2::XMLDocument xmlDocument;
+	std::string appName;
+	const boost::filesystem::path path;
+	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
+
+	std::vector<std::unique_ptr<AppEntry>> entries;
+	std::unique_ptr<basic::BasicListener> basicListener;
+	std::unique_ptr<http::HttpListener> httpListener;
+
+	void loadXML(const tinyxml2::XMLElement& element);
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
+	void loadLibraries();
 };
 
-} /* namespace application */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_APPLICATION_HTTPLISTENER_H_ */
+#endif /* JERRY_CONFIG_APPLICATION_H_ */

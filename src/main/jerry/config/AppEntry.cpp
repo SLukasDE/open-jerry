@@ -16,49 +16,48 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/application/Entry.h>
+#include <jerry/config/AppEntry.h>
 #include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
-namespace application {
 
-Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
+AppEntry::AppEntry(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.Name() == nullptr) {
-		throw jerry::config::XMLException(*this, "Element name is empty");
+		throw XMLException(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
 
 	if(elementName == "object") {
-		object = std::unique_ptr<jerry::config::Object>(new jerry::config::Object(getFileName(), element));
+		object = std::unique_ptr<Object>(new Object(getFileName(), element));
 	}
 	else if(elementName == "reference" || elementName == "alias") {
-		reference = std::unique_ptr<jerry::config::Reference>(new jerry::config::Reference(getFileName(), element));
+		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<jerry::config::Procedure>(new jerry::config::Procedure(getFileName(), element));
+		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
 	else if(elementName == "basic-client") {
-		basicClient = std::unique_ptr<jerry::config::basic::Client>(new jerry::config::basic::Client(getFileName(), element));
+		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
 	else if(elementName == "basic-context") {
-		basicContext = std::unique_ptr<jerry::config::basic::BasicContext>(new jerry::config::basic::BasicContext(getFileName(), element));
+		basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
 	}
 	else if(elementName == "http-client") {
-		httpClient = std::unique_ptr<jerry::config::http::Client>(new jerry::config::http::Client(getFileName(), element));
+		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
 	else if(elementName == "http-context") {
-		httpContext = std::unique_ptr<jerry::config::http::HttpContext>(new jerry::config::http::HttpContext(getFileName(), element));
+		httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
 	}
 	else {
-		throw jerry::config::XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 
-void Entry::save(std::ostream& oStream, std::size_t spaces) const {
+void AppEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(object) {
 		object->save(oStream, spaces);
 	}
@@ -82,7 +81,7 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void Entry::install(engine::ObjectContext& engineObjectContext) const {
+void AppEntry::install(engine::ObjectContext& engineObjectContext) const {
 	if(object) {
 		object->install(engineObjectContext);
 	}
@@ -106,6 +105,5 @@ void Entry::install(engine::ObjectContext& engineObjectContext) const {
 	}
 }
 
-} /* namespace application */
 } /* namespace config */
 } /* namespace jerry */

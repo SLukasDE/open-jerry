@@ -16,40 +16,38 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_APPLICATION_BASICLISTENER_H_
-#define JERRY_CONFIG_APPLICATION_BASICLISTENER_H_
+#ifndef JERRY_CONFIG_APPLICATIONS_H_
+#define JERRY_CONFIG_APPLICATIONS_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/basic/Entry.h>
-#include <jerry/builtin/object/application/Application.h>
+#include <jerry/engine/ObjectContext.h>
+#include <jerry/config/Application.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <vector>
+#include <string>
 #include <ostream>
+#include <vector>
 #include <memory>
 
 namespace jerry {
 namespace config {
-namespace application {
 
-class BasicListener : public Config {
+class Applications : public Config {
 public:
-	BasicListener(const BasicListener&) = delete;
-	BasicListener(const std::string& fileName, const tinyxml2::XMLElement& element);
+	Applications(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(builtin::object::application::Application& engineBasicSocket) const;
+	void install(engine::ObjectContext& engineObjectContext) const;
 
 private:
-	bool inherit = true;
-	std::vector<std::unique_ptr<config::basic::Entry>> entries;
+	std::string id;
+	std::string path;
 
-	void parseInnerElement(const tinyxml2::XMLElement& element);
+	std::vector<std::unique_ptr<Application>> applications;
 };
 
-} /* namespace application */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_APPLICATION_BASICLISTENER_H_ */
+#endif /* JERRY_CONFIG_APPLICATIONS_H_ */

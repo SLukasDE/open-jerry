@@ -63,8 +63,13 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
         throw std::runtime_error("Initialization failed for 'applications-id'=\"" + applicationsId + "\"");
 	}
 
-	for(auto& app : applications->getApplications()) {
-		jerry::engine::basic::Context* context = app->getBasicListener();
+	for(auto& appsEntry : applications->getApplications()) {
+		if(!appsEntry.second) {
+			logger.error << "Application \"" << appsEntry.first << "\" is null\n";
+			continue;
+		}
+
+		jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
 		if(context) {
 			esl::io::Input input = context->accept(requestContext);
 			if(input) {
@@ -80,7 +85,7 @@ std::set<std::string> RequestHandler::getNotifiers() const {
 }
 
 void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
-	applications = objectContext.findObject<object::application::Object>(applicationsId);
+	applications = objectContext.findObject<engine::Applications>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find application object with id \"" + applicationsId + "\"");
 	}

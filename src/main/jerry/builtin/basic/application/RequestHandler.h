@@ -19,7 +19,7 @@
 #ifndef JERRY_BUILTIN_BASIC_APPLICATION_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_BASIC_APPLICATION_REQUESTHANDLER_H_
 
-#include <jerry/builtin/object/application/Object.h>
+#include <jerry/engine/Applications.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/basic/server/RequestContext.h>
@@ -54,7 +54,7 @@ public:
 
 private:
 	std::string applicationsId;
-	object::application::Object* applications = nullptr;
+	engine::Applications* applications = nullptr;
 };
 
 } /* namespace application */
