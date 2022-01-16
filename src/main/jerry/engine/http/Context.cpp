@@ -22,6 +22,7 @@
 #include <jerry/engine/http/Host.h>
 #include <jerry/engine/http/RequestContext.h>
 #include <jerry/engine/http/ExceptionHandler.h>
+#include <jerry/engine/Applications.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
@@ -52,6 +53,30 @@ void Context::setParent(Context* context) {
 
 const Context* Context::getParent() const {
 	return parent;
+}
+
+void Context::addApplications(const std::string& refId) {
+	Applications* applications = findObject<Applications>(refId);
+
+	if(applications == nullptr) {
+	    throw std::runtime_error("No applications-object found with ref-id=\"" + refId + "\".");
+	}
+
+	entries.emplace_back(new EntryImpl(*applications));
+}
+
+void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
+	entries.emplace_back(new EntryImpl(std::move(procedure)));
+}
+
+void Context::addProcedure(const std::string& refId) {
+	esl::processing::procedure::Interface::Procedure* procedure = findObject<esl::processing::procedure::Interface::Procedure>(refId);
+
+	if(procedure == nullptr) {
+	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");
+	}
+
+	entries.emplace_back(new EntryImpl(*procedure));
 }
 
 Context& Context::addContext(const std::string& id, bool inheritObjects) {

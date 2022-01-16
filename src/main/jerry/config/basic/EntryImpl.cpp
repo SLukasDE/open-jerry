@@ -38,9 +38,11 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "reference" || elementName == "alias") {
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
+	/*
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
+	*/
 	else if(elementName == "context" || elementName == "basic-context") {
 		context = std::unique_ptr<Context>(new Context(getFileName(), element));
 	}
@@ -65,9 +67,11 @@ void EntryImpl::save(std::ostream& oStream, std::size_t spaces) const {
 	if(reference) {
 		reference->save(oStream, spaces);
 	}
+	/*
 	if(procedure) {
 		procedure->save(oStream, spaces);
 	}
+	*/
 	if(context) {
 		context->save(oStream, spaces);
 	}
@@ -89,9 +93,11 @@ void EntryImpl::install(engine::basic::Context& engineBasicContext) const {
 	if(reference) {
 		reference->install(engineBasicContext);
 	}
+	/*
 	if(procedure) {
 		procedure->install(engineBasicContext);
 	}
+	*/
 	if(context) {
 		context->install(engineBasicContext);
 	}

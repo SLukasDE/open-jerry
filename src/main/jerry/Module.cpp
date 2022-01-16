@@ -37,8 +37,6 @@
 #include <jerry/builtin/http/file/RequestHandler.h>
 #include <jerry/builtin/http/self/RequestHandler.h>
 #include <jerry/builtin/http/proxy/RequestHandler.h>
-#include <jerry/builtin/http/procedure/RequestHandler.h>
-#include <jerry/builtin/http/application/RequestHandler.h>
 
 /* ****************** *
  * builtin procedures *
@@ -50,7 +48,6 @@
 /* *************** *
  * builtin objects *
  * *************** */
-//#include <jerry/builtin/object/application/Object.h>
 
 /* *************** *
  * builtin daemons *
@@ -124,14 +121,6 @@ void Module::install(esl::module::Module& module) {
 			builtin::http::proxy::RequestHandler::getImplementation(),
 			&builtin::http::proxy::RequestHandler::createRequestHandler));
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::procedure::RequestHandler::getImplementation(),
-			&builtin::http::procedure::RequestHandler::createRequestHandler));
-
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::application::RequestHandler::getImplementation(),
-			&builtin::http::application::RequestHandler::createRequestHandler));
-
 	/* ****************** *
 	 * builtin procedures *
 	 * ****************** */
@@ -150,11 +139,7 @@ void Module::install(esl::module::Module& module) {
 	/* *************** *
 	 * builtin objects *
 	 * *************** */
-/*
-	module.addInterface(esl::object::Interface::createInterface(
-			builtin::object::application::Object::getImplementation(),
-			&builtin::object::application::Object::create));
-*/
+
 	/* *************** *
 	 * builtin daemons *
 	 * *************** */

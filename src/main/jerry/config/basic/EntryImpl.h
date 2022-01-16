@@ -19,11 +19,11 @@
 #ifndef JERRY_CONFIG_BASIC_ENTRYIMPL_H_
 #define JERRY_CONFIG_BASIC_ENTRYIMPL_H_
 
-//#include <jerry/config/basic/Entry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
-#include <jerry/config/Procedure.h>
 #include <jerry/config/basic/Entry.h>
+//#include <jerry/config/basic/Applications.h>
+//#include <jerry/config/basic/Procedure.h>
 #include <jerry/config/basic/Client.h>
 #include <jerry/config/basic/Context.h>
 #include <jerry/config/basic/RequestHandler.h>
@@ -50,7 +50,8 @@ public:
 private:
 	std::unique_ptr<config::Object> object;
 	std::unique_ptr<Reference> reference;
-	std::unique_ptr<Procedure> procedure;
+	//std::unique_ptr<Applications> applications;
+	//std::unique_ptr<Procedure> procedure;
 	std::unique_ptr<Context> context;
 	std::unique_ptr<RequestHandler> requestHandler;
 	std::unique_ptr<Client> basicClient;

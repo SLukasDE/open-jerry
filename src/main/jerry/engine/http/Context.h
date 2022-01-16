@@ -25,6 +25,7 @@
 
 #include <esl/io/Input.h>
 #include <esl/module/Interface.h>
+#include <esl/processing/procedure/Interface.h>
 
 #include <string>
 #include <map>
@@ -50,6 +51,11 @@ public:
 
 	void setParent(Context* context);
 	const Context* getParent() const;
+
+	void addApplications(const std::string& refId);
+
+	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
+	void addProcedure(const std::string& refId);
 
 	Context& addContext(const std::string& id, bool inheritObjects);
 	void addContext(const std::string& refId);

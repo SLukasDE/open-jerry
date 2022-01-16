@@ -30,6 +30,18 @@ namespace {
 Logger logger("jerry::engine::http::EntryImpl");
 } /* anonymous namespace */
 
+EntryImpl::EntryImpl(Applications& aRefApplications)
+: refApplications(&aRefApplications)
+{ }
+
+EntryImpl::EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure)
+: procedure(std::move(aProcedure))
+{ }
+
+EntryImpl::EntryImpl(esl::processing::procedure::Interface::Procedure& aRefProcedure)
+: refProcedure(&aRefProcedure)
+{ }
+
 EntryImpl::EntryImpl(std::unique_ptr<Context> aContext)
 : context(std::move(aContext))
 { }
@@ -51,6 +63,16 @@ EntryImpl::EntryImpl(std::unique_ptr<esl::com::http::server::requesthandler::Int
 { }
 
 void EntryImpl::initializeContext(Context& ownerContext) {
+	if(procedure) {
+		/* ******************** *
+		 * initialize procedure *
+		 * ******************** */
+		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(procedure.get());
+		if(initializeContext) {
+			initializeContext->initializeContext(ownerContext);
+		}
+	}
+
 	if(context) {
 		/* ****************** *
 		 * initialize context *
@@ -84,6 +106,36 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 }
 
 void EntryImpl::dumpTree(std::size_t depth) const {
+	if(refApplications) {
+		/* **************************** *
+		 * dump referenced applications *
+		 * **************************** */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Applications: -> " << refApplications << " (reference)\n";
+	}
+
+	if(procedure) {
+		/* ************** *
+		 * dump procedure *
+		 * ************** */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Procedure: -> " << procedure.get() << "\n";
+	}
+
+	if(refProcedure) {
+		/* ************************* *
+		 * dump referenced procedure *
+		 * ************************* */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Procedure: -> " << refProcedure << " (reference)\n";
+	}
+
 	if(context) {
 		/* ************ *
 		 * dump context *
@@ -139,6 +191,41 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 }
 
 esl::io::Input EntryImpl::accept(RequestContext& requestContext) {
+	if(refApplications) {
+		/* ****************************** *
+		 * handle referenced applications *
+		 * ****************************** */
+
+		for(auto& appsEntry : refApplications->getApplications()) {
+			if(!appsEntry.second) {
+				logger.error << "Application \"" << appsEntry.first << "\" is null\n";
+				continue;
+			}
+
+			jerry::engine::http::Context* context = appsEntry.second->getHttpListener();
+			if(context) {
+				esl::io::Input input = context->accept(requestContext);
+				if(input) {
+					return input;
+				}
+			}
+		}
+	}
+
+	if(procedure) {
+		/* **************** *
+		 * handle procedure *
+		 * **************** */
+		procedure->procedureRun(requestContext.getObjectContext());
+	}
+
+	if(refProcedure) {
+		/* *************************** *
+		 * handle referenced procedure *
+		 * *************************** */
+		refProcedure->procedureRun(requestContext.getObjectContext());
+	}
+
 	if(context) {
 		/* *************** *
 		 * handle context *

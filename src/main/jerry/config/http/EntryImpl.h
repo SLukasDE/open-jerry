@@ -22,9 +22,10 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
-#include <jerry/config/Procedure.h>
 #include <jerry/config/basic/Client.h>
 #include <jerry/config/http/Entry.h>
+#include <jerry/config/http/Applications.h>
+#include <jerry/config/http/Procedure.h>
 #include <jerry/config/http/Client.h>
 #include <jerry/config/http/Context.h>
 #include <jerry/config/http/Endpoint.h>
@@ -53,6 +54,7 @@ public:
 private:
 	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
+	std::unique_ptr<Applications> applications;
 	std::unique_ptr<Procedure> procedure;
 	std::unique_ptr<Context> context;
 	std::unique_ptr<Endpoint> endpoint;
