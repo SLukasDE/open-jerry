@@ -19,13 +19,13 @@
 #ifndef JERRY_ENGINE_HTTP_EXCEPTIONHANDLER_H_
 #define JERRY_ENGINE_HTTP_EXCEPTIONHANDLER_H_
 
-#include <jerry/engine/ExceptionHandler.h>
+#include <jerry/ExceptionHandler.h>
 #include <jerry/engine/http/RequestContext.h>
 #include <jerry/engine/http/Document.h>
 #include <jerry/engine/http/Context.h>
 #include <jerry/utility/MIME.h>
 
-#include <esl/com/http/server/RequestContext.h>
+#include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/database/exception/SqlError.h>
 
@@ -37,11 +37,11 @@ namespace engine {
 namespace http {
 
 
-class ExceptionHandler : public engine::ExceptionHandler {
+class ExceptionHandler : public jerry::ExceptionHandler {
 public:
 	ExceptionHandler(std::exception_ptr e);
 
-	void dump(const esl::com::http::server::RequestContext& requestContext, const Context* errorHandlingContext) const;
+	void dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext) const;
 
 protected:
 	void initializeMessage() const override;

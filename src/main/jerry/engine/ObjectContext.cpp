@@ -41,7 +41,7 @@ ObjectContext::ObjectContext(bool aIsGlobal)
 : isGlobal(aIsGlobal)
 { }
 
-void ObjectContext::setParent(esl::object::Interface::ObjectContext* objectContext) {
+void ObjectContext::setParent(esl::object::ObjectContext* objectContext) {
 	parent = objectContext;
 }
 

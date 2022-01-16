@@ -16,10 +16,11 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/daemon/procedures/Daemon.h>
+#include <jerry/builtin/daemon/procedure/Daemon.h>
+#include <jerry/builtin/daemon/procedure/ObjectContext.h>
+#include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/object/ObjectContext.h>
 #include <esl/processing/procedure/Interface.h>
 #include <esl/Stacktrace.h>
 
@@ -29,10 +30,10 @@
 namespace jerry {
 namespace builtin {
 namespace daemon {
-namespace procedures {
+namespace procedure {
 
 namespace {
-Logger logger("jerry::builtin::daemon::procedures::Daemon");
+Logger logger("jerry::builtin::daemon::procedure::Daemon");
 } /* anonymous namespace */
 
 std::unique_ptr<esl::processing::daemon::Interface::Daemon> Daemon::create(const esl::module::Interface::Settings& settings) {
@@ -42,16 +43,21 @@ std::unique_ptr<esl::processing::daemon::Interface::Daemon> Daemon::create(const
 Daemon::Daemon(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "procedure-id") {
-			if(setting.second.empty()) {
-				throw std::runtime_error("Value \"\" of parameter 'procedure-id' is invalid");
-
+			if(!procedureId.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'procedure-id'.");
 			}
-			logger.debug << "adding procedure-id '" << setting.second << "'\n";
-			procedureIds.push_back(setting.second);
+			procedureId = setting.second;
+			if(procedureId.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'procedure-id'.");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
+	}
+
+	if(procedureId.empty()) {
+		throw std::runtime_error("Definition of attribute 'procedure-id' is missing.");
 	}
 }
 
@@ -59,16 +65,13 @@ Daemon::~Daemon() {
 	wait(0);
 }
 
-void Daemon::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
-	logger.debug << "Initialize: Lookup " << procedureIds.size() << " procedure-ids\n";
-	for(const auto& procedureId : procedureIds) {
-		esl::processing::procedure::Interface::Procedure* procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
-		if(procedure == nullptr) {
-			throw esl::addStacktrace(std::runtime_error("Cannot find procedure with id \"" + procedureId + "\""));
-		}
-		procedures.push_back(procedure);
+void Daemon::initializeContext(esl::object::ObjectContext& objectContext) {
+	logger.debug << "Initialize: Lookup procedureId \"" << procedureId << "\"\n";
+
+	procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
+	if(procedure == nullptr) {
+		throw std::runtime_error("Cannot find procedure with id \"" + procedureId + "\"");
 	}
-	logger.debug << procedures.size() << " procedures\n";
 }
 
 bool Daemon::start(std::function<void()> aOnReleasedHandler) {
@@ -91,10 +94,16 @@ bool Daemon::start(std::function<void()> aOnReleasedHandler) {
 }
 
 void Daemon::release() {
+	/* cancel current procedure */
+	if(procedure) {
+		procedure->procedureCancel();
+	}
+
 	std::lock_guard<std::mutex> stateLock(stateMutex);
 	if(state == started) {
 		state = stopping;
 	}
+
 	if(state == stopped && onReleasedHandler) {
 		onReleasedHandler();
 		onReleasedHandler = nullptr;
@@ -129,21 +138,24 @@ bool Daemon::wait(std::uint32_t ms) {
 }
 
 void Daemon::run() {
-	esl::object::ObjectContext objectContext;
+	ObjectContext objectContext;
 
 	try {
-		for(auto procedure : procedures) {
-			{
-				std::lock_guard<std::mutex> stateLock(stateMutex);
+		bool isStopped;
+		{
+			std::lock_guard<std::mutex> stateLock(stateMutex);
 
-				if(state != started) {
-					break;
-				}
-			}
+			isStopped = (state != started);
+		}
+		if(!isStopped) {
 			procedure->procedureRun(objectContext);
 		}
 	}
-	catch(...) { }
+	catch(...) {
+		ExceptionHandler exceptionHandler(std::current_exception());
+    	exceptionHandler.dump(logger.error);
+	}
+
 	{
 		std::lock_guard<std::mutex> stateLock(stateMutex);
 		state = stopped;
@@ -155,7 +167,7 @@ void Daemon::run() {
 	stateNotifyCondVar.notify_all();
 }
 
-} /* namespace procedures */
+} /* namespace procedure */
 } /* namespace daemon */
 } /* namespace builtin */
 } /* namespace jerry */

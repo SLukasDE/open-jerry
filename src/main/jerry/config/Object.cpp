@@ -91,8 +91,11 @@ void Object::install(engine::ObjectContext& engineObjectContext) const {
 	try {
 		eslObject = esl::getModule().getInterface<esl::object::Interface>(implementation).createObject(eslSettings);
 	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
 	catch(...) {
-		throw XMLException(*this, "Could not create an object with id '" + id + "' for implementation '" + implementation + "'");
+		throw XMLException(*this, "Could not create an object with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!eslObject) {

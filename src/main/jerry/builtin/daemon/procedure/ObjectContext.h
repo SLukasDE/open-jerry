@@ -16,25 +16,35 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINE_EXCEPTIONMESSAGE_H_
-#define JERRY_ENGINE_EXCEPTIONMESSAGE_H_
+#ifndef JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_
+#define JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_
 
-#include <esl/Stacktrace.h>
+#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
 #include <string>
+#include <map>
 #include <memory>
 
 namespace jerry {
-namespace engine {
+namespace builtin {
+namespace daemon {
+namespace procedure {
 
-struct ExceptionMessage final {
-	std::string title;
-	std::string message;
+class ObjectContext final : public esl::object::ObjectContext {
+public:
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
 
-	std::unique_ptr<esl::Stacktrace> stacktrace;
+protected:
+	esl::object::Interface::Object* findRawObject(const std::string& id) const override;
+
+private:
+	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 };
 
-} /* namespace engine */
+} /* namespace procedure */
+} /* namespace daemon */
+} /* namespace builtin */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_EXCEPTIONMESSAGE_H_ */
+#endif /* JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_ */

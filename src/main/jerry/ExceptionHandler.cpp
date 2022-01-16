@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/engine/ExceptionHandler.h>
+#include <jerry/ExceptionHandler.h>
 #include <jerry/http/StatusCode.h>
 #include <jerry/Logger.h>
 
@@ -27,7 +27,6 @@
 #include <sstream>
 
 namespace jerry {
-namespace engine {
 
 namespace {
 Logger logger("jerry::engine::ExceptionHandler");
@@ -117,7 +116,7 @@ void ExceptionHandler::initializeMessage(const esl::com::http::server::exception
 		plainWhat = e.what();
 	}
 	else {
-		plainWhat = jerry::http::StatusCode::getMessage(e.getStatusCode());
+		plainWhat = http::StatusCode::getMessage(e.getStatusCode());
 	}
 }
 
@@ -158,5 +157,4 @@ const std::string& ExceptionHandler::getDetails() const {
 	return plainDetails;
 }
 
-} /* namespace engine */
 } /* namespace jerry */

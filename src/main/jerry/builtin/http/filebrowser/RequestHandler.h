@@ -36,7 +36,7 @@ namespace filebrowser {
 class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/http/filebrowser";
+		return "jerry/filebrowser";
 	}
 
 	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);

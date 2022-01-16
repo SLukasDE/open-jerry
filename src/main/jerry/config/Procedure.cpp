@@ -92,12 +92,15 @@ void Procedure::install(engine::ObjectContext& engineObjectContext) const {
 	try {
 		procedure = esl::getModule().getInterface<esl::processing::procedure::Interface>(implementation).createProcedure(eslSettings);
 	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
 	catch(...) {
-		throw XMLException(*this, "Could not create an procedure with id '" + id + "' for implementation '" + implementation + "'");
+		throw XMLException(*this, "Could not create a procedure with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!procedure) {
-		throw XMLException(*this, "Could not create an procedure with id '" + id + "' for implementation '" + implementation + "'");
+		throw XMLException(*this, "Could not create a procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
 	}
 
 	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(procedure.release()));

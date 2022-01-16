@@ -24,7 +24,7 @@
 #include <esl/com/basic/client/Interface.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
 #include <string>
 #include <memory>
@@ -40,7 +40,7 @@ namespace echo {
 class RequestHandler final : public virtual esl::com::basic::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/basic/echo";
+		return "jerry/echo";
 	}
 
 	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
@@ -49,7 +49,7 @@ public:
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
-	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
 private:
 	std::string notifier;

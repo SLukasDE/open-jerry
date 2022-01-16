@@ -36,10 +36,6 @@ std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::cre
 	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
 }
 
-std::unique_ptr<esl::object::Interface::Object> Procedure::createObject(const esl::module::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Procedure(settings));
-}
-
 Procedure::Procedure(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "sleep-ms") {
@@ -62,7 +58,7 @@ Procedure::Procedure(const esl::module::Interface::Settings& settings) {
 	}
 }
 
-void Procedure::procedureRun(esl::object::Interface::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	logger.debug << "before sleep\n";
 	std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
 	logger.debug << "after sleep\n";

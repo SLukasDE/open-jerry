@@ -20,6 +20,7 @@
 #define JERRY_ENGINE_OBJECTCONTEXT_H_
 
 #include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
 #include <string>
 #include <map>
@@ -30,11 +31,11 @@
 namespace jerry {
 namespace engine {
 
-class ObjectContext : public esl::object::Interface::ObjectContext {
+class ObjectContext : public esl::object::ObjectContext {
 public:
 	ObjectContext(bool isGlobal = false);
 
-	void setParent(esl::object::Interface::ObjectContext* objectContext);
+	void setParent(esl::object::ObjectContext* objectContext);
 
 	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
 	void addReference(const std::string& id, const std::string& refId);
@@ -51,7 +52,7 @@ protected:
 
 private:
 	bool isGlobal;
-	esl::object::Interface::ObjectContext* parent = nullptr;
+	esl::object::ObjectContext* parent = nullptr;
 	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 	std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>> objectRefsById;
 

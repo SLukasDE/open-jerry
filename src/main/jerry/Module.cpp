@@ -15,19 +15,47 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 #include <jerry/Module.h>
 #include <jerry/builtin/Properties.h>
 
+/* ****************************** *
+ * builtin basic request handlers *
+ * ****************************** */
 #include <jerry/builtin/basic/dump/RequestHandler.h>
 #include <jerry/builtin/basic/echo/RequestHandler.h>
-#include <jerry/builtin/http/basicauth/RequestHandler.h>
+#include <jerry/builtin/basic/procedure/RequestHandler.h>
+#include <jerry/builtin/basic/application/RequestHandler.h>
+
+/* ***************************** *
+ * builtin http request handlers *
+ * ***************************** */
+#include <jerry/builtin/http/basicauth/request/RequestHandler.h>
+#include <jerry/builtin/http/basicauth/response/RequestHandler.h>
 #include <jerry/builtin/http/database/RequestHandler.h>
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
 #include <jerry/builtin/http/file/RequestHandler.h>
 #include <jerry/builtin/http/self/RequestHandler.h>
 #include <jerry/builtin/http/proxy/RequestHandler.h>
+#include <jerry/builtin/http/procedure/RequestHandler.h>
+#include <jerry/builtin/http/application/RequestHandler.h>
+
+/* ****************** *
+ * builtin procedures *
+ * ****************** */
+#include <jerry/builtin/procedure/basicauth/Procedure.h>
+#include <jerry/builtin/procedure/list/Procedure.h>
 #include <jerry/builtin/procedure/sleep/Procedure.h>
-#include <jerry/builtin/daemon/procedures/Daemon.h>
+
+/* *************** *
+ * builtin objects *
+ * *************** */
+#include <jerry/builtin/object/application/Object.h>
+
+/* *************** *
+ * builtin daemons *
+ * *************** */
+#include <jerry/builtin/daemon/procedure/Daemon.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
@@ -45,6 +73,10 @@ void Module::install(esl::module::Module& module) {
 			builtin::Properties::getImplementation(),
 			&builtin::Properties::createSettings));
 
+	/* ***************************** *
+	 * builtin basic request handlers *
+	 * ***************************** */
+
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
 			builtin::basic::dump::RequestHandler::getImplementation(),
 			&builtin::basic::dump::RequestHandler::createRequestHandler));
@@ -53,9 +85,24 @@ void Module::install(esl::module::Module& module) {
 			builtin::basic::echo::RequestHandler::getImplementation(),
 			&builtin::basic::echo::RequestHandler::createRequestHandler));
 
+	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+			builtin::basic::procedure::RequestHandler::getImplementation(),
+			&builtin::basic::procedure::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+			builtin::basic::application::RequestHandler::getImplementation(),
+			&builtin::basic::application::RequestHandler::createRequestHandler));
+
+	/* ***************************** *
+	 * builtin http request handlers *
+	 * ***************************** */
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::basicauth::RequestHandler::getImplementation(),
-			&builtin::http::basicauth::RequestHandler::createRequestHandler));
+			builtin::http::basicauth::request::RequestHandler::getImplementation(),
+			&builtin::http::basicauth::request::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			builtin::http::basicauth::response::RequestHandler::getImplementation(),
+			&builtin::http::basicauth::response::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			builtin::http::database::RequestHandler::getImplementation(),
@@ -77,13 +124,42 @@ void Module::install(esl::module::Module& module) {
 			builtin::http::proxy::RequestHandler::getImplementation(),
 			&builtin::http::proxy::RequestHandler::createRequestHandler));
 
-	module.addInterface(esl::processing::daemon::Interface::createInterface(
-			builtin::daemon::procedures::Daemon::getImplementation(),
-			&builtin::daemon::procedures::Daemon::create));
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			builtin::http::procedure::RequestHandler::getImplementation(),
+			&builtin::http::procedure::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			builtin::http::application::RequestHandler::getImplementation(),
+			&builtin::http::application::RequestHandler::createRequestHandler));
+
+	/* ****************** *
+	 * builtin procedures *
+	 * ****************** */
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::basicauth::Procedure::getImplementation(),
+			&builtin::procedure::basicauth::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::list::Procedure::getImplementation(),
+			&builtin::procedure::list::Procedure::createProcedure));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
 			builtin::procedure::sleep::Procedure::getImplementation(),
 			&builtin::procedure::sleep::Procedure::createProcedure));
+
+	/* *************** *
+	 * builtin objects *
+	 * *************** */
+	module.addInterface(esl::object::Interface::createInterface(
+			builtin::object::application::Object::getImplementation(),
+			&builtin::object::application::Object::create));
+
+	/* *************** *
+	 * builtin daemons *
+	 * *************** */
+	module.addInterface(esl::processing::daemon::Interface::createInterface(
+			builtin::daemon::procedure::Daemon::getImplementation(),
+			&builtin::daemon::procedure::Daemon::create));
 }
 
 } /* namespace jerry */

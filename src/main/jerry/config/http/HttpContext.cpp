@@ -18,10 +18,8 @@
 
 #include <jerry/config/http/HttpContext.h>
 #include <jerry/config/http/EntryImpl.h>
-#include <jerry/config/http/Endpoint.h>
-#include <jerry/config/http/RequestHandler.h>
-#include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/engine/http/Context.h>
 
 #include <esl/utility/String.h>
 

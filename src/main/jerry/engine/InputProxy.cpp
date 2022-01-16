@@ -17,7 +17,7 @@
  */
 
 #include <jerry/engine/InputProxy.h>
-#include <jerry/engine/ExceptionHandler.h>
+#include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
 namespace jerry {
@@ -61,7 +61,7 @@ bool InputProxy::Consumer::consume(esl::io::Reader& reader) {
 		} catch (...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.dump(logger.warn);
 		}
 	}
 
@@ -79,7 +79,7 @@ std::size_t InputProxy::Writer::write(const void* data, std::size_t size) {
 		} catch (...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.dump(logger.warn);
 		}
 	}
 
@@ -93,7 +93,7 @@ std::size_t InputProxy::Writer::getSizeWritable() const {
 		} catch (...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-			exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
+			exceptionHandler.dump(logger.warn);
 		}
 	}
 

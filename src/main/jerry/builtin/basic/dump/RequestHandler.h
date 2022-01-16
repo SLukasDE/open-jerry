@@ -35,7 +35,7 @@ namespace dump {
 class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/basic/dump";
+		return "jerry/dump";
 	}
 
 	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);

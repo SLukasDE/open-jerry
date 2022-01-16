@@ -53,10 +53,10 @@ const std::string PAGE_301(
 } /* anonymous namespace */
 
 ExceptionHandler::ExceptionHandler(std::exception_ptr exceptionPointer)
-: engine::ExceptionHandler(exceptionPointer)
+: jerry::ExceptionHandler(exceptionPointer)
 { }
 
-void ExceptionHandler::dump(const esl::com::http::server::RequestContext& requestContext, const Context* errorHandlingContext) const {
+void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext) const {
 	initialize();
 
 	const Document* errorDocument = errorHandlingContext ? errorHandlingContext->findErrorDocument(httpStatusCode) : nullptr;
@@ -67,7 +67,7 @@ void ExceptionHandler::dump(const esl::com::http::server::RequestContext& reques
 		if(url.getScheme() == esl::utility::Protocol::http || url.getScheme() == esl::utility::Protocol::https) {
 			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
-			requestContext.getConnection().send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
+			connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
 		}
@@ -75,7 +75,7 @@ void ExceptionHandler::dump(const esl::com::http::server::RequestContext& reques
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
 				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
-				requestContext.getConnection().send(response, url.getPath());
+				connection.send(response, url.getPath());
 
 				return;
 			}
@@ -107,11 +107,11 @@ void ExceptionHandler::dump(const esl::com::http::server::RequestContext& reques
 	}
 
 	esl::com::http::server::Response response(httpStatusCode, httpContentType);
-	requestContext.getConnection().send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
+	connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
 }
 
 void ExceptionHandler::initializeMessage() const {
-	engine::ExceptionHandler::initializeMessage();
+	jerry::ExceptionHandler::initializeMessage();
 
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
@@ -120,7 +120,7 @@ void ExceptionHandler::initializeMessage() const {
 }
 
 void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
-	engine::ExceptionHandler::initializeMessage(e);
+	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = e.getStatusCode();
 	httpContentType = e.getMimeType();
@@ -134,7 +134,7 @@ void ExceptionHandler::initializeMessage(const esl::com::http::server::exception
 }
 
 void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
-	engine::ExceptionHandler::initializeMessage(e);
+	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
@@ -143,7 +143,7 @@ void ExceptionHandler::initializeMessage(const esl::database::exception::SqlErro
 }
 
 void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
-	engine::ExceptionHandler::initializeMessage(e);
+	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
@@ -152,7 +152,7 @@ void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
 }
 
 void ExceptionHandler::initializeMessage(const std::exception& e) const {
-	engine::ExceptionHandler::initializeMessage(e);
+	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);

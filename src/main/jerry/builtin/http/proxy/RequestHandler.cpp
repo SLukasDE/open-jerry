@@ -78,7 +78,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return esl::io::input::Closed::create();
 }
 
-void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
 	connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(httpClientId);
 	if(connectionFactory == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Cannot find http-client with id \"" + httpClientId + "\""));

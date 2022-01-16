@@ -32,7 +32,7 @@ struct Properties final {
 	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
 
 	static inline const char* getImplementation() {
-		return "jerry/builtin/properties";
+		return "jerry/properties";
 	}
 };
 

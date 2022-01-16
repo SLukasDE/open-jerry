@@ -17,10 +17,7 @@
  */
 
 #include <jerry/config/http/Context.h>
-#include <jerry/config/http/Endpoint.h>
-#include <jerry/config/http/RequestHandler.h>
 #include <jerry/config/http/EntryImpl.h>
-#include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
 #include <esl/utility/String.h>

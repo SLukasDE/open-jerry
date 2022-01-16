@@ -43,7 +43,6 @@ public:
 private:
 	std::string id;
 	std::string implementation;
-	std::string url;
 	std::vector<Setting> settings;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);

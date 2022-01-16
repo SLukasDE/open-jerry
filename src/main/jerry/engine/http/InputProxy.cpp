@@ -66,8 +66,8 @@ bool InputProxy::Consumer::consume(esl::io::Reader& reader) {
 		catch(...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext, requestContext.getErrorHandlingContext());
+	    	exceptionHandler.dump(logger.warn);
+			exceptionHandler.dumpHttp(requestContext.getConnection(), requestContext.getErrorHandlingContext());
 		}
 	}
 
@@ -88,8 +88,8 @@ std::size_t InputProxy::Writer::write(const void* data, std::size_t size) {
 		catch(...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext, requestContext.getErrorHandlingContext());
+	    	exceptionHandler.dump(logger.warn);
+			exceptionHandler.dumpHttp(requestContext.getConnection(), requestContext.getErrorHandlingContext());
 		}
 	}
 
@@ -104,8 +104,8 @@ std::size_t InputProxy::Writer::getSizeWritable() const {
 		catch(...) {
 			isValid = false;
 			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.engine::ExceptionHandler::dump(logger.warn);
-			exceptionHandler.dump(requestContext, requestContext.getErrorHandlingContext());
+	    	exceptionHandler.dump(logger.warn);
+			exceptionHandler.dumpHttp(requestContext.getConnection(), requestContext.getErrorHandlingContext());
 		}
 	}
 

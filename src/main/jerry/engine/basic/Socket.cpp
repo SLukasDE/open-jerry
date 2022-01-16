@@ -17,7 +17,7 @@
  */
 
 #include <jerry/engine/basic/Socket.h>
-#include <jerry/engine/ExceptionHandler.h>
+//#include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
 #include <esl/Stacktrace.h>

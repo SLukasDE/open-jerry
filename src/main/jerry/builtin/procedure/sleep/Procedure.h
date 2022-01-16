@@ -21,7 +21,7 @@
 
 #include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
-#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
 #include <memory>
 #include <chrono>
@@ -34,15 +34,14 @@ namespace sleep {
 class Procedure final : public esl::processing::procedure::Interface::Procedure {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/procedure/sleep";
+		return "jerry/sleep";
 	}
 
 	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> createProcedure(const esl::module::Interface::Settings& settings);
-	static std::unique_ptr<esl::object::Interface::Object> createObject(const esl::module::Interface::Settings& settings);
 
 	Procedure(const esl::module::Interface::Settings& settings);
 
-	void procedureRun(esl::object::Interface::ObjectContext& objectContext) override;
+	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override { };
 
 private:

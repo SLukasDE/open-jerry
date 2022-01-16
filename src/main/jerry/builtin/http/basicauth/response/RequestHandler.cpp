@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/http/basicauth/RequestHandler.h>
+#include <jerry/builtin/http/basicauth/response/RequestHandler.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/server/Response.h>
@@ -24,8 +24,9 @@
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
+#include <esl/io/Input.h>
 #include <esl/utility/MIME.h>
-#include <esl/Stacktrace.h>
+#include <esl/object/Properties.h>
 
 #include <stdexcept>
 
@@ -33,9 +34,10 @@ namespace jerry {
 namespace builtin {
 namespace http {
 namespace basicauth {
+namespace response {
 
 namespace {
-Logger logger("jerry::builtin::http::basicauth::RequestHandler");
+Logger logger("jerry::builtin::http::basicauth::response::RequestHandler");
 
 const std::string PAGE_401(
 		"<!DOCTYPE html>\n"
@@ -55,24 +57,28 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 
 RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
-		if(setting.first == "username") {
-			username = setting.second;
-		}
-		else if(setting.first == "password") {
-			password = setting.second;
-		}
-		else if(setting.first == "realmId") {
+		if(setting.first == "realm-id") {
+			if(!realmId.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'realm-id'");
+			}
 			realmId = setting.second;
+			if(realmId.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'realm-id'");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
+	}
+
+	if(realmId.empty()) {
+		throw std::runtime_error("Definition of attribute 'realm-id' is missing");
 	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
-	if(requestContext.getRequest().getUsername() == username &&
-			requestContext.getRequest().getPassword() == password) {
+	esl::object::Properties* authProperties = requestContext.getObjectContext().findObject<esl::object::Properties>("auth");
+	if(authProperties && authProperties->hasValue("identified")) {
 		return esl::io::Input();
 	}
 
@@ -82,6 +88,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return esl::io::input::Closed::create();
 }
 
+} /* namespace response */
 } /* namespace basicauth */
 } /* namespace http */
 } /* namespace builtin */

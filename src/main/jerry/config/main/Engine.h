@@ -16,13 +16,13 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_ENGINE_H_
-#define JERRY_CONFIG_ENGINE_H_
+#ifndef JERRY_CONFIG_MAIN_ENGINE_H_
+#define JERRY_CONFIG_MAIN_ENGINE_H_
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Certificate.h>
 #include <jerry/config/LoggerConfig.h>
-#include <jerry/config/Entry.h>
+#include <jerry/config/main/Entry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/OptionalBool.h>
 
@@ -42,6 +42,7 @@
 
 namespace jerry {
 namespace config {
+namespace main {
 
 class Engine : public Config {
 public:
@@ -70,7 +71,8 @@ private:
 	void parseLibrary(const tinyxml2::XMLElement& element);
 };
 
+} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_ENGINE_H_ */
+#endif /* JERRY_CONFIG_MAIN_ENGINE_H_ */

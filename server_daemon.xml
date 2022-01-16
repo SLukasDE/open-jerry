@@ -17,16 +17,20 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-	<procedure id="x" implementation="jerry/builtin/procedure/sleep">
+	<procedure id="x" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="1000"/>
 	</procedure>
 	
-	<procedure id="y" implementation="jerry/builtin/procedure/sleep">
+	<procedure id="y" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="1000"/>
 	</procedure>
 	
-	<daemon implementation="jerry/builtin/daemon/procedures">
+	<procedure id="list" implementation="jerry/list">
 		<parameter key="procedure-id" value="x"/>
 		<parameter key="procedure-id" value="y"/>
+	</procedure>
+	
+	<daemon implementation="jerry/procedure">
+		<parameter key="procedure-id" value="list"/>
 	</daemon>
 </jerry>

@@ -47,12 +47,6 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid.");
 			}
 		}
-		else if(std::string(attribute->Name()) == "url") {
-			url = attribute->Value();
-			if(url == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'url' is invalid.");
-			}
-		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
@@ -66,10 +60,6 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 
 	if(id == "") {
 		throw XMLException(*this, "Missing attribute 'id'");
-	}
-
-	if(url == "") {
-		throw XMLException(*this, "Missing attribute 'url'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -101,7 +91,7 @@ void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 }
 
 void Client::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<http-client id=\"" << id << "\" url=\"" + url + "\"";
+	oStream << makeSpaces(spaces) << "<http-client id=\"" << id << "\"";
 	if(implementation != "") {
 		oStream <<  " implementation=\"" << implementation << "\"";
 	}
@@ -123,14 +113,17 @@ void Client::install(engine::ObjectContext& engineObjectContext) const {
 	logger.trace << "Adding http-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	std::unique_ptr<esl::com::http::client::Interface::ConnectionFactory> connectionFactory;
 	try {
-		connectionFactory = esl::getModule().getInterface<esl::com::http::client::Interface>(implementation).createConnectionFactory(url, eslSettings);
+		connectionFactory = esl::getModule().getInterface<esl::com::http::client::Interface>(implementation).createConnectionFactory(eslSettings);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "'");
+		throw XMLException(*this, "Could not create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!connectionFactory) {
-		throw std::runtime_error("Cannot create an basic connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
+		throw std::runtime_error("Cannot create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
 	}
 
 	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));

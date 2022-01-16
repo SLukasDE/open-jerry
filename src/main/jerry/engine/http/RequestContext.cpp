@@ -50,7 +50,7 @@ const std::string& RequestContext::getPath() const {
 	return path;
 }
 
-esl::object::Interface::ObjectContext& RequestContext::getObjectContext() {
+esl::object::ObjectContext& RequestContext::getObjectContext() {
 	return baseRequestContext.getObjectContext();
 }
 

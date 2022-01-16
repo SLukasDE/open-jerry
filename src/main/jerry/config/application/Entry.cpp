@@ -16,53 +16,45 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/Entry.h>
+#include <jerry/config/application/Entry.h>
 #include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
+namespace application {
 
 Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw jerry::config::XMLException(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
 
 	if(elementName == "object") {
-		object = std::unique_ptr<Object>(new Object(getFileName(), element));
+		object = std::unique_ptr<jerry::config::Object>(new jerry::config::Object(getFileName(), element));
 	}
 	else if(elementName == "reference" || elementName == "alias") {
-		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
+		reference = std::unique_ptr<jerry::config::Reference>(new jerry::config::Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
+		procedure = std::unique_ptr<jerry::config::Procedure>(new jerry::config::Procedure(getFileName(), element));
 	}
 	else if(elementName == "basic-client") {
-		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
+		basicClient = std::unique_ptr<jerry::config::basic::Client>(new jerry::config::basic::Client(getFileName(), element));
 	}
 	else if(elementName == "basic-context") {
-		basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
-	}
-	else if(elementName == "basic-server") {
-		basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
+		basicContext = std::unique_ptr<jerry::config::basic::BasicContext>(new jerry::config::basic::BasicContext(getFileName(), element));
 	}
 	else if(elementName == "http-client") {
-		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
+		httpClient = std::unique_ptr<jerry::config::http::Client>(new jerry::config::http::Client(getFileName(), element));
 	}
 	else if(elementName == "http-context") {
-		httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
-	}
-	else if(elementName == "http-server") {
-		httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
-	}
-	else if(elementName == "daemon") {
-		daemon = std::unique_ptr<daemon::Daemon>(new daemon::Daemon(getFileName(), element));
+		httpContext = std::unique_ptr<jerry::config::http::HttpContext>(new jerry::config::http::HttpContext(getFileName(), element));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw jerry::config::XMLException(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 
@@ -82,55 +74,38 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(basicContext) {
 		basicContext->save(oStream, spaces);
 	}
-	if(basicServer) {
-		basicServer->save(oStream, spaces);
-	}
 	if(httpClient) {
 		httpClient->save(oStream, spaces);
 	}
 	if(httpContext) {
 		httpContext->save(oStream, spaces);
 	}
-	if(httpServer) {
-		httpServer->save(oStream, spaces);
-	}
-	if(daemon) {
-		daemon->save(oStream, spaces);
-	}
 }
 
-void Entry::install(engine::Engine& engine) const {
+void Entry::install(engine::ObjectContext& engineObjectContext) const {
 	if(object) {
-		object->install(engine);
+		object->install(engineObjectContext);
 	}
 	if(reference) {
-		reference->install(engine);
+		reference->install(engineObjectContext);
 	}
 	if(procedure) {
-		procedure->install(engine);
+		procedure->install(engineObjectContext);
 	}
 	if(basicClient) {
-		basicClient->install(engine);
+		basicClient->install(engineObjectContext);
 	}
 	if(basicContext) {
-		basicContext->install(engine);
-	}
-	if(basicServer) {
-		basicServer->install(engine);
+		basicContext->install(engineObjectContext);
 	}
 	if(httpClient) {
-		httpClient->install(engine);
+		httpClient->install(engineObjectContext);
 	}
 	if(httpContext) {
-		httpContext->install(engine);
-	}
-	if(httpServer) {
-		httpServer->install(engine);
-	}
-	if(daemon) {
-		daemon->install(engine);
+		httpContext->install(engineObjectContext);
 	}
 }
 
+} /* namespace application */
 } /* namespace config */
 } /* namespace jerry */

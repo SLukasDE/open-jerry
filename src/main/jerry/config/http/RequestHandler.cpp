@@ -79,7 +79,18 @@ void RequestHandler::install(engine::http::Context& context) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	context.addRequestHandler(implementation, eslSettings);
+	try {
+		/* ***************** *
+		 * standard handling *
+		 * ***************** */
+		context.addRequestHandler(implementation, eslSettings);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create http-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
 }
 
 void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {

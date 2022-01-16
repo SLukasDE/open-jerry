@@ -125,7 +125,7 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 	}
 }
 
-void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
 	connectionFactory = objectContext.findObject<esl::com::basic::client::Interface::ConnectionFactory>(connectionFactoryId);
 	if(connectionFactory == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));

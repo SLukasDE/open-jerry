@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/daemon/Daemon.h>
-#include <jerry/config/Engine.h>
+//#include <jerry/config/main/Engine.h>
 #include <jerry/config/XMLException.h>
 
 #include <esl/utility/String.h>
@@ -95,7 +95,15 @@ void Daemon::install(engine::Engine& engine) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine.addDaemon(eslSettings, implementation);
+	try {
+		engine.addDaemon(eslSettings, implementation);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create daemon for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
 }
 
 } /* namespace daemon */

@@ -16,10 +16,10 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINE_EXCEPTIONHANDLER_H_
-#define JERRY_ENGINE_EXCEPTIONHANDLER_H_
+#ifndef JERRY_EXCEPTIONHANDLER_H_
+#define JERRY_EXCEPTIONHANDLER_H_
 
-#include <jerry/engine/ExceptionMessage.h>
+#include <jerry/ExceptionMessage.h>
 
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/database/exception/SqlError.h>
@@ -32,7 +32,6 @@
 #include <stdexcept>
 
 namespace jerry {
-namespace engine {
 
 class ExceptionHandler {
 public:
@@ -66,7 +65,6 @@ private:
 	mutable std::string plainDetails;
 };
 
-} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINE_EXCEPTIONHANDLER_H_ */
+#endif /* JERRY_EXCEPTIONHANDLER_H_ */

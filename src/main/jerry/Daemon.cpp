@@ -19,8 +19,8 @@
 #include <jerry/Daemon.h>
 #include <jerry/Logger.h>
 #include <jerry/Module.h>
-#include <jerry/engine/ExceptionHandler.h>
-#include <jerry/config/Engine.h>
+#include <jerry/ExceptionHandler.h>
+#include <jerry/config/main/Engine.h>
 
 #include <esl/logging/appender/Appender.h>
 #include <esl/logging/layout/Layout.h>
@@ -93,7 +93,7 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 	try {
 		Module::install(esl::getModule());
 
-		jerry::config::Engine xmlEngine(configFile);
+		jerry::config::main::Engine xmlEngine(configFile);
 
 		xmlEngine.loadLibraries();
 
@@ -123,7 +123,7 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 		}
 	}
 	catch(...) {
-		jerry::engine::ExceptionHandler exceptionHandler(std::current_exception());
+		ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.dump(std::cerr);
 
 		return false;
@@ -148,7 +148,7 @@ bool Daemon::run() {
 		messageTimer.run();
 	}
 	catch(...) {
-		jerry::engine::ExceptionHandler exceptionHandler(std::current_exception());
+		ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.dump(std::cerr);
 
     	std::cerr << "\n\nReplay previous log messages:\n";

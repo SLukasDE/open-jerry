@@ -67,15 +67,34 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 
 RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
-		if(setting.first == "connectionId") {
+		if(setting.first == "connection-id") {
+			if(!connectionId.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'connection-id'");
+			}
 			connectionId = setting.second;
+			if(connectionId.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'connection-id'");
+			}
 		}
-		else if(setting.first == "SQL") {
+		else if(setting.first == "sql") {
+			if(!sql.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'sql'");
+			}
 			sql = setting.second;
+			if(sql.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'sql'");
+			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
+	}
+
+	if(connectionId.empty()) {
+		throw std::runtime_error("Missing attribute 'connection-id'");
+	}
+	if(sql.empty()) {
+		throw std::runtime_error("Missing attribute 'sql'");
 	}
 }
 
@@ -117,7 +136,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return esl::io::input::Closed::create();
 }
 
-void RequestHandler::initializeContext(esl::object::Interface::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
 	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\""));

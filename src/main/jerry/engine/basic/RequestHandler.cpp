@@ -19,7 +19,7 @@
 #include <jerry/engine/basic/RequestHandler.h>
 #include <jerry/engine/basic/Socket.h>
 #include <jerry/engine/InputProxy.h>
-#include <jerry/engine/ExceptionHandler.h>
+#include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
 #include <memory>
@@ -50,7 +50,7 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
 	}
 	catch(...) {
 		ExceptionHandler exceptionHandler(std::current_exception());
-    	exceptionHandler.engine::ExceptionHandler::dump(logger.error);
+    	exceptionHandler.dump(logger.error);
 	}
 
 	return esl::io::Input();

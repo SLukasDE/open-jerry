@@ -99,8 +99,11 @@ void Client::install(engine::ObjectContext& engineObjectContext) const {
 	try {
 		connectionFactory = esl::getModule().getInterface<esl::com::basic::client::Interface>(implementation).createConnectionFactory(eslSettings);
 	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
 	catch(...) {
-		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "'");
+		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!connectionFactory) {

@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/basic/Server.h>
-#include <jerry/config/Engine.h>
+//#include <jerry/config/main/Engine.h>
 #include <jerry/config/XMLException.h>
 #include <jerry/engine/basic/Socket.h>
 
@@ -89,9 +89,16 @@ void Server::install(engine::Engine& jEngine) const {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	engine::basic::Socket& engineBasicSocket = jEngine.addBasicServer(eslSettings, implementation);
-
-	listener->install(jEngine, engineBasicSocket);
+	try {
+		engine::basic::Socket& engineBasicSocket = jEngine.addBasicServer(eslSettings, implementation);
+		listener->install(jEngine, engineBasicSocket);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create basic-socket for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
 }
 
 void Server::parseInnerElement(const tinyxml2::XMLElement& element) {

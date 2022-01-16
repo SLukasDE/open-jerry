@@ -35,7 +35,7 @@ namespace self {
 class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/http/self";
+		return "jerry/self";
 	}
 
 	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);

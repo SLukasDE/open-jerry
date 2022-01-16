@@ -16,12 +16,12 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_DAEMON_PROCEDURES_DAEMON_H_
-#define JERRY_BUILTIN_DAEMON_PROCEDURES_DAEMON_H_
+#ifndef JERRY_BUILTIN_DAEMON_PROCEDURE_DAEMON_H_
+#define JERRY_BUILTIN_DAEMON_PROCEDURE_DAEMON_H_
 
 #include <esl/processing/daemon/Interface.h>
 #include <esl/processing/procedure/Interface.h>
-#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/module/Interface.h>
 
@@ -35,12 +35,12 @@
 namespace jerry {
 namespace builtin {
 namespace daemon {
-namespace procedures {
+namespace procedure {
 
 class Daemon final : public virtual esl::processing::daemon::Interface::Daemon, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/builtin/daemon/procedures";
+		return "jerry/procedure";
 	}
 
 	static std::unique_ptr<esl::processing::daemon::Interface::Daemon> create(const esl::module::Interface::Settings& settings);
@@ -48,15 +48,15 @@ public:
 	Daemon(const esl::module::Interface::Settings& settings);
 	~Daemon();
 
-	void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
 	bool start(std::function<void()> onReleasedHandler) override;
 	void release() override;
 	bool wait(std::uint32_t ms) override;
 
 private:
-	std::vector<std::string> procedureIds;
-	std::vector<esl::processing::procedure::Interface::Procedure*> procedures;
+	std::string procedureId;
+	esl::processing::procedure::Interface::Procedure* procedure = nullptr;
 
 	std::function<void()> onReleasedHandler;
 
@@ -73,9 +73,9 @@ private:
 	void run();
 };
 
-} /* namespace procedures */
+} /* namespace procedure */
 } /* namespace daemon */
 } /* namespace builtin */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_DAEMON_PROCEDURES_DAEMON_H_ */
+#endif /* JERRY_BUILTIN_DAEMON_PROCEDURE_DAEMON_H_ */

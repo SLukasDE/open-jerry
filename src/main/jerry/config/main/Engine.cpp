@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/Engine.h>
+#include <jerry/config/main/Engine.h>
 #include <jerry/config/Config.h>
 #include <jerry/config/XMLException.h>
 #include <jerry/utility/MIME.h>
@@ -29,9 +29,10 @@
 
 namespace jerry {
 namespace config {
+namespace main {
 
 namespace {
-Logger logger("jerry::config::Engine");
+Logger logger("jerry::config::main::Engine");
 } /* anonymous namespace */
 
 Engine::Engine(const std::string& fileName)
@@ -117,7 +118,16 @@ std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine:
 		eslSettings.push_back(std::make_pair(setting.key, setting.value));
 	}
 
-	std::unique_ptr<esl::logging::layout::Interface::Layout> layout(new esl::logging::layout::Layout(eslSettings, loggerConfig.layout));
+	std::unique_ptr<esl::logging::layout::Interface::Layout> layout;
+	try {
+		layout.reset(new esl::logging::layout::Layout(eslSettings, loggerConfig.layout));
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create logging-layout for implementation '" + loggerConfig.layout + "' because an unknown exception occurred.");
+	}
 
 
 	/* *********************** *
@@ -322,5 +332,6 @@ void Engine::parseLibrary(const tinyxml2::XMLElement& element) {
 	libraries.push_back(std::make_pair(fileName, nullptr));
 }
 
+} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */

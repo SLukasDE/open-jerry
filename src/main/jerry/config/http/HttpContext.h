@@ -49,7 +49,7 @@ private:
 
 	bool inherit = true;
 	std::vector<Setting> responseHeaders;
-	http::Exceptions exceptions;
+	Exceptions exceptions;
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);

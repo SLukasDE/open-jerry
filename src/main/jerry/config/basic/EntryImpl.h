@@ -19,7 +19,7 @@
 #ifndef JERRY_CONFIG_BASIC_ENTRYIMPL_H_
 #define JERRY_CONFIG_BASIC_ENTRYIMPL_H_
 
-#include <jerry/config/Entry.h>
+//#include <jerry/config/basic/Entry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Procedure.h>
