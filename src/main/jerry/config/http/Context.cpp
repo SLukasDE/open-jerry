@@ -140,7 +140,7 @@ void Context::install(engine::http::Context& engineHttpContext) const {
 		 * install entries *
 		 * *****************/
 		for(const auto& entry : entries) {
-			entry->install(engineHttpContext);
+			entry->install(newEngineHttpContext);
 		}
 
 		/* **********************

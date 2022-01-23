@@ -1,0 +1,189 @@
+<jerry-server>
+	<library file="/lib64/libeslx.so.1.4.0"/>
+	
+	<certificate domain="*" key="server.key" cert="server.pem"/>
+	
+	<!--logger layout="eslx/default"-->
+	<logger layout="">
+		<layout key="showTimestamp" value="true"/>
+		<layout key="showLevel" value="true"/>
+		<layout key="showTypeName" value="true"/>
+		<layout key="showAddress" value="false"/>
+		<layout key="showFile" value="false"/>
+		<layout key="showFunction" value="false"/>
+		<layout key="showLineNo" value="false"/>
+		<layout key="showThreadNo" value="false"/>
+		
+		<setting class="*" level="WARN"/>
+		<setting class="jerry::*" level="TRACE"/>
+		<setting class="jerrA::*" level="INFO"/>
+	</logger>
+	
+	<http-context id="x">
+		<requesthandler implementation="jerry/filebrowser">
+			<parameter key="browsable" value="true"/>
+			<parameter key="ignoreError" value="true"/>
+			<parameter key="path" value="/tmp/"/>
+		</requesthandler>
+	</http-context>
+	
+	<http-client id="http-client-1" implementation="curl4esl">
+		<parameter key="url" value="https://www.heise.de"/>
+	</http-client>
+	
+	<database id="my-db" implementation="sqlite4esl">
+		<parameter key="URI" value="file:my.db?mode=rw"/>
+	</database>
+	
+	<http-context id="ref-context-http">
+		<context>
+			
+			<!-- -------------- -->
+			<!-- Authentication -->
+			<!-- -------------- -->
+			
+			<procedure id="authentication-basicauth-stable" implementation="jerry/authentication-basic-stable">
+				<parameter key="credential" value="Hans1:plain:Wurst991"/>
+				<parameter key="credential" value="Hans2:plain:Wurst992"/>
+			</procedure>
+			
+			<procedure id="authentication-basicauth-dblookup" implementation="jerry/authentication-basic-dblookup">
+				<parameter key="connection-id" value="my-db"/>
+				<parameter key="sql" value="SELECT PASSWD FROM users WHERE USER_ID=?;"/>
+				<parameter key="lifetime-renew" value="true"/>
+				<parameter key="lifetime-ms" value="60000"/>
+			</procedure>
+			
+			<procedure id="authentication-jwt" implementation="jerry/authentication-jwt">
+			</procedure>
+			
+			<requesthandler implementation="jerry/authentication">
+				<parameter key="allow" value="basic"/>
+				<parameter key="allow" value="bearer"/>
+				<parameter key="authentication-procedure-id" value="authentication-basicauth-stable"/>
+				<parameter key="authentication-procedure-id" value="authentication-basicauth-dblookup"/>
+				<parameter key="authentication-procedure-id" value="authentication-jwt"/>
+				<!--parameter key="behavior" value="reply"/-->
+				<!--parameter key="behavior" value="proceed"/-->
+				<!--parameter key="behavior" value="disconnect"/-->
+			</requesthandler>
+			<response-header key="WWW-Authenticate" value="Basic realm=&quot;AuthArea&quot;"/>
+			<!--response-header key="WWW-Authenticate" value="Bearer realm=&quot;AuthArea&quot;"/-->
+			
+			<!-- ------------- -->
+			<!-- Authorization -->
+			<!-- ------------- -->
+			
+			<procedure id="get-my-roles" implementation="jerry/authorization-dblookup">
+				<parameter key="authorized-object-id" value="my-roles"/>
+				<parameter key="connection-id" value="my-db"/>
+				<parameter key="sql" value="SELECT IS_ADMIN, GRANT_USERS FROM users WHERE USER_ID=?;"/>
+			</procedure>
+			
+			<procedure implementation="jerry/authorization-cache">
+				<parameter key="authorized-object-id" value="my-roles"/>
+				<parameter key="authorizing-procedure-id" value="get-my-roles"/>
+				<parameter key="lifetime-renew" value="false"/>
+				<parameter key="lifetime-ms" value="60000"/>
+			</procedure>
+		</context>
+		
+		<procedure id="sleep" implementation="jerry/sleep">
+			<parameter key="sleep-ms" value="1000"/>
+		</procedure>
+		
+		<!--procedure ref-id="sleep"/-->
+	
+		<endpoint path="test1/log">
+			<endpoint path="mc-lukas">
+				<requesthandler implementation="jerry/filebrowser">
+					<parameter key="browsable" value="true"/>
+					<parameter key="path" value="/usr/"/>
+				</requesthandler>
+			</endpoint>
+			
+			<reference id="y" ref-id="x"/>
+			
+			<context ref-id="y"/>
+			<!--requesthandler implementation="jerry/filebrowser">
+				<parameter key="browsable" value="true"/>
+				<parameter key="ignoreError" value="true"/>
+				<parameter key="path" value="/tmp/"/>
+			</requesthandler-->
+			
+		</endpoint>
+		<endpoint path="heise">
+			<requesthandler implementation="jerry/proxy">
+				<parameter key="http-client-id" value="http-client-1"/>
+			</requesthandler>
+		</endpoint>
+	</http-context>
+	
+	<http-server implementation="mhd4esl" https="false">
+		<parameter key="threads" value="4"/>
+		<parameter key="port" value="8080"/>
+		<listener>
+			<host server-name="*">
+				<context ref-id="ref-context-http"/>
+			</host>
+		</listener>
+	</http-server>
+	
+	
+	<object id="kafka-broker-1" implementation="rdkafka4esl">
+		<parameter key="kafka.group.id" value="test"/>
+		<parameter key="kafka.bootstrap.servers" value="localhost:9092"/>
+	</object>
+	
+	<basic-client id="kafka-client-1" implementation="rdkafka4esl">
+		<parameter key="broker-id" value="kafka-broker-1"/>
+		<parameter key="topic" value="quickstart-results"/>
+	</basic-client>
+	
+	<basic-context id="ref-context-basic">
+		<requesthandler implementation="jerry/echo">
+			<parameter key="notifier" value="quickstart-events"/>
+			<!--parameter key="delay-ms" value="1000"/-->
+			<parameter key="connection-factory-id" value="kafka-client-1"/>
+		</requesthandler>
+		<requesthandler implementation="jerry/dump">
+			<parameter key="notifier" value="quickstart-results"/>
+			<parameter key="show-context" value="true"/>
+			<parameter key="show-content" value="true"/>
+		</requesthandler>
+		<!--requesthandler implementation="jerry/builtin/basic/dump">
+			<parameter key="notifier" value="quickstart-events"/>
+			<parameter key="show-context" value="true"/>
+			<parameter key="show-content" value="true"/>
+		</requesthandler-->
+	</basic-context>
+	
+	<basic-server implementation="rdkafka4esl">
+		<parameter key="threads" value="4"/>
+		<parameter key="poll-timeout-ms" value="500"/>
+		<parameter key="kafka.group.id" value="test"/>
+		<parameter key="kafka.bootstrap.servers" value="localhost:9092"/>
+	
+		<listener>
+			<context ref-id="ref-context-basic"/>
+		</listener>
+	</basic-server>
+	
+	<procedure id="sleep-1" implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</procedure>
+	
+	<procedure id="sleep-2" implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</procedure>
+	
+	<procedure id="list" implementation="jerry/list">
+		<parameter key="procedure-id" value="sleep-1"/>
+		<parameter key="procedure-id" value="sleep-2"/>
+	</procedure>
+	
+	<daemon implementation="jerry/procedure">
+		<parameter key="procedure-id" value="list"/>
+	</daemon>
+
+</jerry-server>

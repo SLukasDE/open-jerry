@@ -31,6 +31,18 @@ namespace {
 Logger logger("jerry::engine::basic::EntryImpl");
 } /* anonymous namespace */
 
+EntryImpl::EntryImpl(Applications& aRefApplications)
+: refApplications(&aRefApplications)
+{ }
+
+EntryImpl::EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure)
+: procedure(std::move(aProcedure))
+{ }
+
+EntryImpl::EntryImpl(esl::processing::procedure::Interface::Procedure& aRefProcedure)
+: refProcedure(&aRefProcedure)
+{ }
+
 EntryImpl::EntryImpl(std::unique_ptr<Context> aContext)
 : context(std::move(aContext))
 { }
@@ -44,6 +56,16 @@ EntryImpl::EntryImpl(std::unique_ptr<esl::com::basic::server::requesthandler::In
 { }
 
 void EntryImpl::initializeContext(Context& ownerContext) {
+	if(procedure) {
+		/* ******************** *
+		 * initialize procedure *
+		 * ******************** */
+		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(procedure.get());
+		if(initializeContext) {
+			initializeContext->initializeContext(ownerContext);
+		}
+	}
+
 	if(context) {
 		/* ****************** *
 		 * initialize context *
@@ -63,6 +85,27 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 }
 
 std::set<std::string> EntryImpl::getNotifiers() const {
+	if(refApplications) {
+		/* ****************************** *
+		 * handle referenced applications *
+		 * ****************************** */
+		std::set<std::string> notifiers;
+
+		for(auto& appsEntry : refApplications->getApplications()) {
+			if(!appsEntry.second) {
+				logger.warn << "Application \"" << appsEntry.first << "\" is null\n";
+				continue;
+			}
+
+			jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
+			if(context) {
+				std::set<std::string> tmpNotifiers = context->getNotifiers();
+				notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
+			}
+		}
+
+		return notifiers;
+	}
 	if(context) {
 		return context->getNotifiers();
 	}
@@ -76,6 +119,36 @@ std::set<std::string> EntryImpl::getNotifiers() const {
 }
 
 void EntryImpl::dumpTree(std::size_t depth) const {
+	if(refApplications) {
+		/* **************************** *
+		 * dump referenced applications *
+		 * **************************** */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Applications: -> " << refApplications << " (reference)\n";
+	}
+
+	if(procedure) {
+		/* ************** *
+		 * dump procedure *
+		 * ************** */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Procedure: -> " << procedure.get() << "\n";
+	}
+
+	if(refProcedure) {
+		/* ************************* *
+		 * dump referenced procedure *
+		 * ************************* */
+		for(std::size_t i=0; i<depth; ++i) {
+			logger.info << "|   ";
+		}
+		logger.info << "+-> Procedure: -> " << refProcedure << " (reference)\n";
+	}
+
 	if(context) {
 		/* ************ *
 		 * dump Context *
@@ -109,6 +182,41 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 }
 
 esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& requestContext) {
+	if(refApplications) {
+		/* ****************************** *
+		 * handle referenced applications *
+		 * ****************************** */
+
+		for(auto& appsEntry : refApplications->getApplications()) {
+			if(!appsEntry.second) {
+				logger.warn << "Application \"" << appsEntry.first << "\" is null\n";
+				continue;
+			}
+
+			jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
+			if(context) {
+				esl::io::Input input = context->accept(requestContext);
+				if(input) {
+					return input;
+				}
+			}
+		}
+	}
+
+	if(procedure) {
+		/* **************** *
+		 * handle procedure *
+		 * **************** */
+		procedure->procedureRun(requestContext.getObjectContext());
+	}
+
+	if(refProcedure) {
+		/* *************************** *
+		 * handle referenced procedure *
+		 * *************************** */
+		refProcedure->procedureRun(requestContext.getObjectContext());
+	}
+
 	if(context) {
 		/* ************** *
 		 * handle context *

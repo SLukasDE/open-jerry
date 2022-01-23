@@ -62,8 +62,13 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 }
 
 RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+	bool hasBrowsable = false;
+
 	for(const auto& setting : settings) {
 		if(setting.first == "browsable") {
+			if(hasBrowsable) {
+				throw std::runtime_error("Multiple definition of attribute 'browsable'");
+			}
 			if(setting.second == "true") {
 				browsable = true;
 			}
@@ -73,6 +78,7 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 			else {
 				throw std::runtime_error("Unknown value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Possible values are \"true\" or \"false\".");
 			}
+			hasBrowsable = true;
 		}
 		else if(setting.first == "path") {
 #if 0

@@ -22,8 +22,8 @@
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/com/http/server/Interface.h>
 #include <esl/com/http/server/Request.h>
-#include <esl/object/Values.h>
 #include <esl/object/Interface.h>
+#include <esl/module/Interface.h>
 
 #include <cstdint>
 #include <string>
@@ -39,9 +39,9 @@ public:
 		return "cgi4esl";
 	}
 
-	static std::unique_ptr<esl::com::http::server::Interface::Socket> create(uint16_t port, const esl::object::Values<std::string>& values);
+	static std::unique_ptr<esl::com::http::server::Interface::Socket> create(const esl::module::Interface::Settings& settings);
 
-	Socket(uint16_t port, const esl::object::Values<std::string>& values);
+	Socket(const esl::module::Interface::Settings& settings);
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
@@ -50,8 +50,6 @@ public:
 	bool wait(std::uint32_t ms) override;
 
 private:
-	uint16_t port;
-	//std::map<std::string, ObjectFactory> objectFactories;
 };
 
 

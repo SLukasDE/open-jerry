@@ -32,13 +32,11 @@ std::string getEnvVar(std::string const & key) {
 }
 
 
-std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(uint16_t port, const esl::object::Values<std::string>& values) {
-	return std::unique_ptr<esl::com::http::server::Interface::Socket>(new Socket(port, values));
+std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(const esl::module::Interface::Settings& settings) {
+	return std::unique_ptr<esl::com::http::server::Interface::Socket>(new Socket(settings));
 }
 
-Socket::Socket(uint16_t aPort, const esl::object::Values<std::string>& values)
-: esl::com::http::server::Interface::Socket(),
-  port(aPort)
+Socket::Socket(const esl::module::Interface::Settings& settings)
 { }
 
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {

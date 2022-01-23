@@ -17,21 +17,18 @@
  */
 
 #include <jerry/Module.h>
-#include <jerry/builtin/Properties.h>
 
 /* ****************************** *
  * builtin basic request handlers *
  * ****************************** */
 #include <jerry/builtin/basic/dump/RequestHandler.h>
 #include <jerry/builtin/basic/echo/RequestHandler.h>
-#include <jerry/builtin/basic/procedure/RequestHandler.h>
 #include <jerry/builtin/basic/application/RequestHandler.h>
 
 /* ***************************** *
  * builtin http request handlers *
  * ***************************** */
-#include <jerry/builtin/http/basicauth/request/RequestHandler.h>
-#include <jerry/builtin/http/basicauth/response/RequestHandler.h>
+#include <jerry/builtin/http/authentication/RequestHandler.h>
 #include <jerry/builtin/http/database/RequestHandler.h>
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
 #include <jerry/builtin/http/file/RequestHandler.h>
@@ -41,7 +38,12 @@
 /* ****************** *
  * builtin procedures *
  * ****************** */
-#include <jerry/builtin/procedure/basicauth/Procedure.h>
+#include <jerry/builtin/procedure/authentication/basic/dblookup/Procedure.h>
+#include <jerry/builtin/procedure/authentication/basic/stable/Procedure.h>
+#include <jerry/builtin/procedure/authentication/jwt/Procedure.h>
+#include <jerry/builtin/procedure/authorization/cache/Procedure.h>
+#include <jerry/builtin/procedure/authorization/dblookup/Procedure.h>
+#include <jerry/builtin/procedure/authorization/jwt/Procedure.h>
 #include <jerry/builtin/procedure/list/Procedure.h>
 #include <jerry/builtin/procedure/sleep/Procedure.h>
 
@@ -66,10 +68,6 @@ namespace jerry {
 void Module::install(esl::module::Module& module) {
 	esl::setModule(module);
 
-	module.addInterface(esl::object::Interface::createInterface(
-			builtin::Properties::getImplementation(),
-			&builtin::Properties::createSettings));
-
 	/* ***************************** *
 	 * builtin basic request handlers *
 	 * ***************************** */
@@ -83,10 +81,6 @@ void Module::install(esl::module::Module& module) {
 			&builtin::basic::echo::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			builtin::basic::procedure::RequestHandler::getImplementation(),
-			&builtin::basic::procedure::RequestHandler::createRequestHandler));
-
-	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
 			builtin::basic::application::RequestHandler::getImplementation(),
 			&builtin::basic::application::RequestHandler::createRequestHandler));
 
@@ -94,12 +88,8 @@ void Module::install(esl::module::Module& module) {
 	 * builtin http request handlers *
 	 * ***************************** */
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::basicauth::request::RequestHandler::getImplementation(),
-			&builtin::http::basicauth::request::RequestHandler::createRequestHandler));
-
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::basicauth::response::RequestHandler::getImplementation(),
-			&builtin::http::basicauth::response::RequestHandler::createRequestHandler));
+			builtin::http::authentication::RequestHandler::getImplementation(),
+			&builtin::http::authentication::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			builtin::http::database::RequestHandler::getImplementation(),
@@ -125,8 +115,28 @@ void Module::install(esl::module::Module& module) {
 	 * builtin procedures *
 	 * ****************** */
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::basicauth::Procedure::getImplementation(),
-			&builtin::procedure::basicauth::Procedure::createProcedure));
+			builtin::procedure::authentication::basic::dblookup::Procedure::getImplementation(),
+			&builtin::procedure::authentication::basic::dblookup::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::authentication::basic::stable::Procedure::getImplementation(),
+			&builtin::procedure::authentication::basic::stable::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::authentication::jwt::Procedure::getImplementation(),
+			&builtin::procedure::authentication::jwt::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::authorization::cache::Procedure::getImplementation(),
+			&builtin::procedure::authorization::cache::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::authorization::dblookup::Procedure::getImplementation(),
+			&builtin::procedure::authorization::dblookup::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::authorization::jwt::Procedure::getImplementation(),
+			&builtin::procedure::authorization::jwt::Procedure::createProcedure));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
 			builtin::procedure::list::Procedure::getImplementation(),

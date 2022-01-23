@@ -92,10 +92,6 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	content += "    <td>HTTP_VERSION</td>\n";
 	content += "    <td>" + requestContext.getRequest().getHTTPVersion() + "</td>\n";
 	content += "  </tr>\n";
-	content += "  <tr>\n";
-	content += "    <td>USERNAME</td>\n";
-	content += "    <td>" + requestContext.getRequest().getUsername() + "</td>\n";
-	content += "  </tr>\n";
 	content += "</table>\n";
 	content += "</body>\n";
 	content += "</html>\n";

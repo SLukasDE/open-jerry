@@ -24,8 +24,8 @@
 
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
-#include <esl/object/Interface.h>
 #include <esl/module/Interface.h>
+#include <esl/processing/procedure/Interface.h>
 
 #include <string>
 #include <set>
@@ -38,6 +38,12 @@ namespace basic {
 
 class Context : public ObjectContext {
 public:
+
+	void addApplications(const std::string& refId);
+
+	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
+	void addProcedure(const std::string& refId);
+
 	Context& addContext(const std::string& id, bool inheritObjects);
 	void addContext(const std::string& refId);
 

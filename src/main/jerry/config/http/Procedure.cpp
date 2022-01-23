@@ -17,7 +17,6 @@
  */
 
 #include <jerry/config/http/Procedure.h>
-#include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/XMLException.h>
 
 #include <esl/processing/procedure/Interface.h>

@@ -99,25 +99,25 @@ void Listener::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Listener::install(engine::Engine& jEngine, engine::http::Socket& engineHttpSocket) const {
-	engine::http::Context& engineContext = engineHttpSocket.getContext();
+	engine::http::Context& newEngineContext = engineHttpSocket.getContext();
 
-	engineContext.ObjectContext::setParent(inherit ? &jEngine : nullptr);
+	newEngineContext.ObjectContext::setParent(inherit ? &jEngine : nullptr);
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(engineContext);
+		entry->install(newEngineContext);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		engineContext.addHeader(responseHeader.key, responseHeader.value);
+		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(engineContext);
+	exceptions.install(newEngineContext);
 }
 
 void Listener::parseInnerElement(const tinyxml2::XMLElement& element) {

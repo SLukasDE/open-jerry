@@ -56,7 +56,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 	catch(...) {
 		ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.dump(logger.error);
-		exceptionHandler.dumpHttp(requestContext->getConnection(), requestContext->getErrorHandlingContext());
+		exceptionHandler.dumpHttp(requestContext->getConnection(), requestContext->getErrorHandlingContext(), requestContext->getHeadersContext());
 	}
 
 	return esl::io::Input();

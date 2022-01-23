@@ -40,6 +40,9 @@ AppEntry::AppEntry(const std::string& fileName, const tinyxml2::XMLElement& elem
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
+	else if(elementName == "database") {
+		database = std::unique_ptr<Database>(new Database(getFileName(), element));
+	}
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
@@ -67,6 +70,9 @@ void AppEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(procedure) {
 		procedure->save(oStream, spaces);
 	}
+	if(database) {
+		database->save(oStream, spaces);
+	}
 	if(basicClient) {
 		basicClient->save(oStream, spaces);
 	}
@@ -90,6 +96,9 @@ void AppEntry::install(engine::ObjectContext& engineObjectContext) const {
 	}
 	if(procedure) {
 		procedure->install(engineObjectContext);
+	}
+	if(database) {
+		database->install(engineObjectContext);
 	}
 	if(basicClient) {
 		basicClient->install(engineObjectContext);

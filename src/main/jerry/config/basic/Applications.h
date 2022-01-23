@@ -16,27 +16,39 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_PROPERTIES_H_
-#define JERRY_BUILTIN_PROPERTIES_H_
+#ifndef JERRY_CONFIG_BASIC_APPLICATIONS_H_
+#define JERRY_CONFIG_BASIC_APPLICATIONS_H_
 
-#include <esl/object/Interface.h>
+#include <jerry/config/Config.h>
+#include <jerry/engine/basic/Context.h>
 
+#include <tinyxml2/tinyxml2.h>
+
+#include <vector>
+#include <ostream>
+#include <string>
 #include <memory>
 
 namespace jerry {
-namespace builtin {
+namespace config {
+namespace basic {
 
-struct Properties final {
-	Properties() = delete;
+class Applications : public Config {
+public:
+	Applications(const Applications&) = delete;
+	Applications(const std::string& fileName, const tinyxml2::XMLElement& element);
 
-	static std::unique_ptr<esl::object::Interface::Object> createSettings(const esl::object::Interface::Settings& settings);
+	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::basic::Context& engineBasicContext) const;
 
-	static inline const char* getImplementation() {
-		return "jerry/properties";
-	}
+private:
+	std::string refId;
+
+	bool inherit = true;
 };
 
-} /* namespace builtin */
+} /* namespace basic */
+} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_PROPERTIES_H_ */
+#endif /* JERRY_CONFIG_BASIC_APPLICATIONS_H_ */

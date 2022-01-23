@@ -331,6 +331,7 @@ esl::io::Input Context::accept(RequestContext& requestContext) {
 	for(auto& entry : entries) {
 		requestContext.setHeadersContext(this);
 		requestContext.setErrorHandlingContext(this);
+
 		esl::io::Input input = entry->accept(requestContext);
 		if(input) {
 			return input;

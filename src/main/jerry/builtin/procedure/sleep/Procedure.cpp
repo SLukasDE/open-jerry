@@ -39,11 +39,18 @@ std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::cre
 Procedure::Procedure(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "sleep-ms") {
-			if(setting.second.empty()) {
-				throw std::runtime_error("Value \"\" of parameter 'sleep-ms' is invalid");
-
+			if(sleepMs != std::chrono::milliseconds(0)) {
+				throw std::runtime_error("Multiple definition of attribute 'sleep-ms'");
 			}
-			sleepMs = std::chrono::milliseconds(std::stoul(setting.second));
+			try {
+				sleepMs = std::chrono::milliseconds(std::stoul(setting.second));
+			}
+			catch(const std::exception& e) {
+				throw std::runtime_error("Value \"" + setting.second + "\" of parameter 'sleep-ms' is invalid. " + e.what());
+			}
+			catch(...) {
+				throw std::runtime_error("Value \"" + setting.second + "\" of parameter 'sleep-ms' is invalid.");
+			}
 			if(sleepMs == std::chrono::milliseconds(0)) {
 				throw std::runtime_error("Value \"0\" of parameter 'sleep-ms' is invalid");
 			}

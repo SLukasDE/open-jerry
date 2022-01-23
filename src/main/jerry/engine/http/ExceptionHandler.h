@@ -27,6 +27,7 @@
 
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/com/http/server/Response.h>
 #include <esl/database/exception/SqlError.h>
 
 #include <exception>
@@ -41,7 +42,7 @@ class ExceptionHandler : public jerry::ExceptionHandler {
 public:
 	ExceptionHandler(std::exception_ptr e);
 
-	void dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext) const;
+	void dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext, const Context* headersContext) const;
 
 protected:
 	void initializeMessage() const override;
@@ -51,15 +52,16 @@ protected:
 	void initializeMessage(const std::exception& e) const override;
 
 private:
-	std::string getHTMLContent(bool showException, bool showStacktrace) const;
-	std::string getTextContent(bool showException, bool showStacktrace) const;
-
-	//std::function<const http::Document*(unsigned short statusCode)> findDocument;
 
 	mutable unsigned short httpStatusCode = 500;
 	mutable esl::utility::MIME httpContentType = esl::utility::MIME::textHtml;
 	mutable std::string httpTitle;
 	mutable std::string httpMessage;
+
+	//std::function<const http::Document*(unsigned short statusCode)> findDocument;
+	std::string getHTMLContent(bool showException, bool showStacktrace) const;
+	std::string getTextContent(bool showException, bool showStacktrace) const;
+	void addHeaders(esl::com::http::server::Response& response, const Context* headersContext) const;
 };
 
 

@@ -54,7 +54,7 @@ Engine::Engine(const std::string& fileName)
 }
 
 void Engine::save(std::ostream& oStream) const {
-	oStream << "\n<jerry>\n";
+	oStream << "\n<jerry-server>\n";
 	for(const auto& entry : libraries) {
 		oStream << "  <library file=\"" << entry.first << "\"/>\n";
 	}
@@ -73,7 +73,7 @@ void Engine::save(std::ostream& oStream) const {
 		entry->save(oStream, 2);
 	}
 
-	oStream << "</jerry>\n";
+	oStream << "</jerry-server>\n";
 }
 
 
@@ -188,8 +188,8 @@ void Engine::loadXML(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Name of XML root element is empty");
 	}
-	if(std::string(element.Name()) != "jerry") {
-		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
+	if(std::string(element.Name()) != "jerry-server") {
+		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-server\"");
 	}
 	if(element.GetUserData() != nullptr) {
 		throw XMLException(*this, "Node has user data but it should be empty");

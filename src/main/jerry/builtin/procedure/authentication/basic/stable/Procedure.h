@@ -16,13 +16,16 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_PROCEDURE_BASICAUTH_PROCEDURE_H_
-#define JERRY_BUILTIN_PROCEDURE_BASICAUTH_PROCEDURE_H_
+#ifndef JERRY_BUILTIN_PROCEDURE_AUTHENTICATION_BASIC_STABLE_PROCEDURE_H_
+#define JERRY_BUILTIN_PROCEDURE_AUTHENTICATION_BASIC_STABLE_PROCEDURE_H_
 
 #include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
+#include <esl/database/Interface.h>
 #include <esl/object/ObjectContext.h>
+#include <esl/object/Value.h>
 
+#include <map>
 #include <string>
 #include <vector>
 #include <tuple>
@@ -31,12 +34,14 @@
 namespace jerry {
 namespace builtin {
 namespace procedure {
-namespace basicauth {
+namespace authentication {
+namespace basic {
+namespace stable {
 
 class Procedure final : public esl::processing::procedure::Interface::Procedure {
 public:
 	static inline const char* getImplementation() {
-		return "jerry/basicauth";
+		return "jerry/authentication-basic-stable";
 	}
 
 	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> createProcedure(const esl::module::Interface::Settings& settings);
@@ -47,15 +52,22 @@ public:
 	void procedureCancel() override;
 
 private:
+	using Properties = esl::object::Value<std::map<std::string, std::string>>;
+
+	esl::database::Interface::ConnectionFactory* connectionFactory = nullptr;
 	enum Type {
 		plain
 	};
 	std::vector<std::tuple<std::string, Type, std::string>> credentials;
+
+	static std::tuple<std::string, Type, std::string> parseCredential(const std::string& credential);
 };
 
-} /* namespace basicauth */
+} /* namespace stable */
+} /* namespace basic */
+} /* namespace authentication */
 } /* namespace procedure */
 } /* namespace builtin */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_PROCEDURE_BASICAUTH_PROCEDURE_H_ */
+#endif /* JERRY_BUILTIN_PROCEDURE_AUTHENTICATION_BASIC_STABLE_PROCEDURE_H_ */

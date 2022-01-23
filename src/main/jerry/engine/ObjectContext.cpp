@@ -163,7 +163,20 @@ const std::map<std::string, std::reference_wrapper<esl::object::Interface::Objec
 	return objectRefsById;
 }
 
-esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
+esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {
+	// check if ID exist in objectsById
+	auto iter = objectRefsById.find(id);
+	if(iter != std::end(objectRefsById)) {
+		return &iter->second.get();
+		//const esl::object::ObjectContext* objectContext = &iter->second.get();
+		//return objectContext ? objectContext->findObject<esl::object::Interface::Object>(id) : nullptr;
+	}
+
+	// if id NOT exist in objectsById, then find object in parent ObjectContext
+	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
+}
+
+const esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
 	// check if ID exist in objectsById
 	auto iter = objectRefsById.find(id);
 	if(iter != std::end(objectRefsById)) {

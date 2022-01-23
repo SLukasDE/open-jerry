@@ -38,11 +38,14 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "reference" || elementName == "alias") {
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
-	else if(elementName == "applications") {
-		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
-	}
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
+	}
+	else if(elementName == "database") {
+		database = std::unique_ptr<Database>(new Database(getFileName(), element));
+	}
+	else if(elementName == "applications") {
+		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
 	}
 	else if(elementName == "context" || elementName == "http-context") {
 		context = std::unique_ptr<Context>(new Context(getFileName(), element));//, Context::context));
@@ -59,7 +62,7 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
-	else if(elementName == "client" || elementName == "http-client") {
+	else if(elementName == "http-client" || elementName == "client") {
 		httpClient = std::unique_ptr<Client>(new Client(getFileName(), element));
 	}
 	else {
@@ -74,11 +77,14 @@ void EntryImpl::save(std::ostream& oStream, std::size_t spaces) const {
 	if(reference) {
 		reference->save(oStream, spaces);
 	}
-	if(applications) {
-		applications->save(oStream, spaces);
-	}
 	if(procedure) {
 		procedure->save(oStream, spaces);
+	}
+	if(database) {
+		database->save(oStream, spaces);
+	}
+	if(applications) {
+		applications->save(oStream, spaces);
 	}
 	if(context) {
 		context->save(oStream, spaces);
@@ -107,11 +113,14 @@ void EntryImpl::install(engine::http::Context& engineHttpContext) const {
 	if(reference) {
 		reference->install(engineHttpContext);
 	}
-	if(applications) {
-		applications->install(engineHttpContext);
-	}
 	if(procedure) {
 		procedure->install(engineHttpContext);
+	}
+	if(database) {
+		database->install(engineHttpContext);
+	}
+	if(applications) {
+		applications->install(engineHttpContext);
 	}
 	if(context) {
 		context->install(engineHttpContext);

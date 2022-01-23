@@ -198,7 +198,7 @@ esl::io::Input EntryImpl::accept(RequestContext& requestContext) {
 
 		for(auto& appsEntry : refApplications->getApplications()) {
 			if(!appsEntry.second) {
-				logger.error << "Application \"" << appsEntry.first << "\" is null\n";
+				logger.warn << "Application \"" << appsEntry.first << "\" is null\n";
 				continue;
 			}
 

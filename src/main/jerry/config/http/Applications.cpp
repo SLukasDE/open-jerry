@@ -17,7 +17,6 @@
  */
 
 #include <jerry/config/http/Applications.h>
-#include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/XMLException.h>
 
 #include <esl/utility/String.h>

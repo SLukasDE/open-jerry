@@ -16,16 +16,38 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/Properties.h>
+#ifndef JERRY_CONFIG_DATABASE_H_
+#define JERRY_CONFIG_DATABASE_H_
 
-#include <esl/object/Properties.h>
+#include <jerry/config/Config.h>
+#include <jerry/config/Setting.h>
+#include <jerry/engine/ObjectContext.h>
+
+#include <tinyxml2/tinyxml2.h>
+
+#include <string>
+#include <vector>
+#include <ostream>
 
 namespace jerry {
-namespace builtin {
+namespace config {
 
-std::unique_ptr<esl::object::Interface::Object> Properties::createSettings(const esl::object::Interface::Settings& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new esl::object::Properties(settings));
-}
+class Database : public Config {
+public:
+	Database(const std::string& fileName, const tinyxml2::XMLElement& element);
 
-} /* namespace builtin */
+	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::ObjectContext& engineObjectContext) const;
+
+private:
+	std::string id;
+	std::string implementation;
+	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
+};
+
+} /* namespace config */
 } /* namespace jerry */
+
+#endif /* JERRY_CONFIG_DATABASE_H_ */

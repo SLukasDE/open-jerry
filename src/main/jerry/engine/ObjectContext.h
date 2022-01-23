@@ -48,7 +48,8 @@ public:
 	const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& getObjects() const;
 
 protected:
-	esl::object::Interface::Object* findRawObject(const std::string& id) const override;
+	esl::object::Interface::Object* findRawObject(const std::string& id) override;
+	const esl::object::Interface::Object* findRawObject(const std::string& id) const override;
 
 private:
 	bool isGlobal;

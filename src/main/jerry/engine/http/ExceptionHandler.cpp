@@ -22,7 +22,6 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <esl/com/http/server/Response.h>
 #include <esl/io/output/Memory.h>
 #include <esl/io/output/String.h>
 #include <esl/utility/URL.h>
@@ -56,7 +55,7 @@ ExceptionHandler::ExceptionHandler(std::exception_ptr exceptionPointer)
 : jerry::ExceptionHandler(exceptionPointer)
 { }
 
-void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext) const {
+void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext, const Context* headersContext) const {
 	initialize();
 
 	const Document* errorDocument = errorHandlingContext ? errorHandlingContext->findErrorDocument(httpStatusCode) : nullptr;
@@ -67,6 +66,7 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 		if(url.getScheme() == esl::utility::Protocol::http || url.getScheme() == esl::utility::Protocol::https) {
 			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
+			addHeaders(response, headersContext);
 			connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
@@ -75,6 +75,7 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
 				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
+				addHeaders(response, headersContext);
 				connection.send(response, url.getPath());
 
 				return;
@@ -107,6 +108,7 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 	}
 
 	esl::com::http::server::Response response(httpStatusCode, httpContentType);
+	addHeaders(response, headersContext);
 	connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
 }
 
@@ -195,7 +197,7 @@ std::string ExceptionHandler::getHTMLContent(bool showException, bool showStackt
 		}
 	}
 
-	outputContent += "<hr><center>jerry/0.1.0</center>\n";
+	outputContent += "<hr><center>jerry/1.4.0</center>\n";
 	outputContent += "</body>\n"
 			"</html>\n";
 
@@ -205,7 +207,7 @@ std::string ExceptionHandler::getHTMLContent(bool showException, bool showStackt
 std::string ExceptionHandler::getTextContent(bool showException, bool showStacktrace) const {
 	std::string content;
 
-	content = "jerry/0.1.0: " + httpTitle + "\n";
+	content = "jerry/1.4.0: " + httpTitle + "\n";
 	content += "Status code: " + std::to_string(httpStatusCode) + "\n";
 
 	/* print excpetion message, if enabled */
@@ -232,6 +234,15 @@ std::string ExceptionHandler::getTextContent(bool showException, bool showStackt
 	}
 
 	return content;
+}
+
+void ExceptionHandler::addHeaders(esl::com::http::server::Response& response, const Context* headersContext) const {
+	if(headersContext) {
+		const std::map<std::string, std::string>& headers = headersContext->getEffectiveHeaders();
+		for(const auto& header : headers) {
+			response.addHeader(header.first, header.second);
+		}
+	}
 }
 
 

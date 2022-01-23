@@ -41,6 +41,9 @@ Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
+	else if(elementName == "database") {
+		database = std::unique_ptr<Database>(new Database(getFileName(), element));
+	}
 	else if(elementName == "applications") {
 		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
 	}
@@ -80,6 +83,9 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(procedure) {
 		procedure->save(oStream, spaces);
 	}
+	if(database) {
+		database->save(oStream, spaces);
+	}
 	if(applications) {
 		applications->save(oStream, spaces);
 	}
@@ -115,6 +121,9 @@ void Entry::install(engine::Engine& engine) const {
 	}
 	if(procedure) {
 		procedure->install(engine);
+	}
+	if(database) {
+		database->install(engine);
 	}
 	if(applications) {
 		applications->install(engine);

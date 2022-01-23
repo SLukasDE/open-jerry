@@ -106,29 +106,29 @@ void HttpContext::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void HttpContext::install(engine::ObjectContext& engineObjectContext) const {
-	std::unique_ptr<engine::http::Context> context(new engine::http::Context);
+	std::unique_ptr<engine::http::Context> newEngineContext(new engine::http::Context);
 
 	if(inherit) {
-		context->ObjectContext::setParent(&engineObjectContext);
+		newEngineContext->ObjectContext::setParent(&engineObjectContext);
 	}
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(*context);
+		entry->install(*newEngineContext);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		context->addHeader(responseHeader.key, responseHeader.value);
+		newEngineContext->addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(*context);
+	exceptions.install(*newEngineContext);
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(newEngineContext.release()));
 }
 
 void HttpContext::parseInnerElement(const tinyxml2::XMLElement& element) {
