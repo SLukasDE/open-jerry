@@ -25,6 +25,7 @@
 #include <esl/object/Value.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include <tuple>
@@ -51,6 +52,8 @@ public:
 
 private:
 	using Properties = esl::object::Value<std::map<std::string, std::string>>;
+	std::set<std::string> dropFields;
+	std::map<std::string, std::string> overrideFields;
 };
 
 } /* namespace jwt */

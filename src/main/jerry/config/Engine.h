@@ -16,13 +16,14 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_MAIN_ENGINE_H_
-#define JERRY_CONFIG_MAIN_ENGINE_H_
+#ifndef JERRY_CONFIG_ENGINE_H_
+#define JERRY_CONFIG_ENGINE_H_
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Certificate.h>
 #include <jerry/config/LoggerConfig.h>
-#include <jerry/config/main/Entry.h>
+#include <jerry/EngineMode.h>
+#include <jerry/config/EngineEntry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/OptionalBool.h>
 
@@ -42,11 +43,12 @@
 
 namespace jerry {
 namespace config {
-namespace main {
 
 class Engine : public Config {
 public:
 	Engine(const std::string& fileName);
+
+	EngineMode getEngineMode() const;
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();
@@ -56,11 +58,15 @@ public:
 private:
 	tinyxml2::XMLDocument xmlDocument;
 
+	bool hasEngineType = false;
+	EngineMode engineMode = EngineMode::isServer;
+
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
 	LoggerConfig loggerConfig;
+	bool hasAnonymousProcedure = false;
 
-	std::vector<std::unique_ptr<Entry>> entries;
+	std::vector<std::unique_ptr<EngineEntry>> entries;
 
 	std::set<std::string> filesLoaded;
 
@@ -71,8 +77,7 @@ private:
 	void parseLibrary(const tinyxml2::XMLElement& element);
 };
 
-} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_MAIN_ENGINE_H_ */
+#endif /* JERRY_CONFIG_ENGINE_H_ */

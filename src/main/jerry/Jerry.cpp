@@ -16,24 +16,25 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/Daemon.h>
+#include <jerry/Jerry.h>
 #include <jerry/Logger.h>
 #include <jerry/Module.h>
 #include <jerry/ExceptionHandler.h>
-#include <jerry/config/main/Engine.h>
+#include <jerry/config/Engine.h>
 
 #include <esl/logging/appender/Appender.h>
 #include <esl/logging/layout/Layout.h>
 #include <esl/system/SignalHandler.h>
 #include <esl/logging/Logger.h>
+#include <esl/object/Value.h>
 #include <esl/Module.h>
-//#include <esl/module/Library.h>
 
 #include <iostream>
 
 namespace jerry {
 
 namespace {
+using ReturnCodeObject = esl::object::Value<int>;
 
 std::unique_ptr<esl::logging::appender::Interface::Appender> appenderCoutStream;
 std::unique_ptr<esl::logging::appender::Interface::Appender> appenderMemBuffer;
@@ -68,10 +69,10 @@ void printModules() {
 	std::cout << "\n";
 }
 
-Logger logger("jerry::Daemon");
+Logger logger("jerry::Jerry");
 } /* anonymous namespace */
 
-Daemon::Daemon()
+Jerry::Jerry()
 : messageTimer([this](const State& messageState) {
 	if(messageState == started) {
 		start(nullptr);
@@ -85,17 +86,17 @@ Daemon::Daemon()
 })
 { }
 
-Daemon::~Daemon() {
+Jerry::~Jerry() {
 	wait(0);
 }
 
-bool Daemon::setupXML(const std::string& configFile, bool verbose) {
+bool Jerry::setupXML(const std::string& configFile, bool verbose) {
 	try {
 		Module::install(esl::getModule());
 
-		jerry::config::main::Engine xmlEngine(configFile);
+		jerry::config::Engine configEngine(configFile);
 
-		xmlEngine.loadLibraries();
+		configEngine.loadLibraries();
 
 		appenderCoutStream.reset(new esl::logging::appender::Appender({
 			{"trace", "out"},
@@ -107,11 +108,12 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 		appenderMemBuffer.reset(new esl::logging::appender::Appender({
 			{"max-lines", "100"}}, "eslx/membuffer"));
 
-		layout = xmlEngine.install(getEngine(), *appenderCoutStream, *appenderMemBuffer);
+		jEngine.reset(new engine::Engine(configEngine.getEngineMode()));
+		layout = configEngine.install(*jEngine, *appenderCoutStream, *appenderMemBuffer);
 
 		if(verbose) {
 			/* show configuration file */
-			xmlEngine.save(std::cout);
+			configEngine.save(std::cout);
 
 			std::cout << "\n\n";
 
@@ -119,7 +121,7 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 			printModules();
 
 			/* show configuration file */
-			getEngine().dumpTree(0);
+			jEngine->dumpTree(0);
 		}
 	}
 	catch(...) {
@@ -132,58 +134,97 @@ bool Daemon::setupXML(const std::string& configFile, bool verbose) {
 	return true;
 }
 
-bool Daemon::run() {
-	bool success = true;
+int Jerry::run() {
+	int rc = 0;
 
-	auto stopFunction = [this]() {
-		stopSignal();
-	};
+	if(!isInitialized) {
+		/* *********************************************************** *
+		 * add certificates to socket if http-server is used for https *
+		 * *********************************************************** */
+		for(const auto& httpServer: jEngine->getHttpServers()) {
+			if(httpServer->isHttps()) {
+				if(jEngine->getCertificates().empty()) {
+					throw std::runtime_error("No certificates are available.");
+				}
+				for(const auto& certificate : jEngine->getCertificates()) {
+					httpServer->addTLSHost(certificate.first, certificate.second.first, certificate.second.second);
+				}
+			}
+		}
 
-	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
-	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
-	esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
+		/* ************************* *
+		 * initialize global objects *
+		 * ************************* */
+		logger.info << "Initialize objects ...\n";
+		jEngine->initializeContext();
+		logger.info << "Initialization done.\n";
 
-	try {
-		messageTimer.addMessage(0, started, std::chrono::milliseconds(0), false);
-		messageTimer.run();
+		isInitialized = true;
 	}
-	catch(...) {
-		ExceptionHandler exceptionHandler(std::current_exception());
-    	exceptionHandler.dump(std::cerr);
 
-    	std::cerr << "\n\nReplay previous log messages:\n";
-    	appenderMemBuffer->flush(std::cerr);
+	switch(jEngine->getEngineMode()) {
+	case EngineMode::isBatch:
+		if(jEngine->getBatchProcedure()) {
+			esl::processing::procedure::Interface::Procedure& procedure = *jEngine->getBatchProcedure();
+			procedure.procedureRun(*jEngine);
+			ReturnCodeObject* returnCode = jEngine->findObject<ReturnCodeObject>("return-code");
+			if(returnCode) {
+				rc = returnCode->get();
+			}
+		}
+		break;
+	case EngineMode::isServer:
+		{
+			auto stopFunction = [this]() {
+				stopSignal();
+			};
 
-    	success = false;
+			esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
+			esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::terminate, stopFunction);
+			esl::system::SignalHandler::install(esl::system::SignalHandler::SignalType::pipe, stopFunction);
+
+			try {
+				messageTimer.addMessage(0, started, std::chrono::milliseconds(0), false);
+				messageTimer.run();
+			}
+			catch(...) {
+				ExceptionHandler exceptionHandler(std::current_exception());
+				exceptionHandler.dump(std::cerr);
+
+				std::cerr << "\n\nReplay previous log messages:\n";
+				appenderMemBuffer->flush(std::cerr);
+
+				rc = -1;
+			}
+
+			esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::pipe, stopFunction);
+			esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
+			esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
+		}
+		break;
 	}
 
-	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::pipe, stopFunction);
-	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::terminate, stopFunction);
-	esl::system::SignalHandler::remove(esl::system::SignalHandler::SignalType::interrupt, stopFunction);
-
-	return success;
+	return rc;
 }
-
-engine::Engine& Daemon::getEngine() {
-	return jEngine;
+/*
+engine::Engine& Jerry::getEngine() {
+	return *jEngine;
 }
-
-bool Daemon::start(std::function<void()> aOnReleasedHandler) {
+*/
+bool Jerry::start(std::function<void()> aOnReleasedHandler) {
 	std::lock_guard<std::mutex> stateLock(stateMutex);
 	if(state != stopped) {
 		messageTimer.stop();
 		return false;
 	}
 
-	initialize();
-
 	onReleasedHandler = aOnReleasedHandler;
 
-	const std::size_t processesTotal = jEngine.getBasicServers().size() + jEngine.getHttpServers().size() + jEngine.getDaemons().size();
+	const std::size_t processesTotal = jEngine->getBasicServers().size() + jEngine->getHttpServers().size() + jEngine->getDaemons().size();
 	std::size_t processesCurrent = 0;
 	logger.debug << "Starting " << processesTotal << " processes ...\n";
 
-	for(const auto& socket: jEngine.getBasicServers()) {
+	for(const auto& socket: jEngine->getBasicServers()) {
 		if(logger.debug) {
 			std::set<std::string> notifiers = socket->getNotifiers();
 			for(const auto& notifier : notifiers) {
@@ -197,7 +238,7 @@ bool Daemon::start(std::function<void()> aOnReleasedHandler) {
 		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Basic server started\n";
 	}
 
-	for(const auto& socket: jEngine.getHttpServers()) {
+	for(const auto& socket: jEngine->getHttpServers()) {
 		socket->listen([this]() {
 			onReleased();
 		});
@@ -205,7 +246,7 @@ bool Daemon::start(std::function<void()> aOnReleasedHandler) {
 		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] HTTP/HTTPS server started\n";
 	}
 
-	for(const auto& daemon: jEngine.getDaemons()) {
+	for(const auto& daemon: jEngine->getDaemons()) {
 		daemon->start([this]() {
 			onReleased();
 		});
@@ -225,7 +266,7 @@ bool Daemon::start(std::function<void()> aOnReleasedHandler) {
 	return true;
 }
 
-void Daemon::release() {
+void Jerry::release() {
 	{
 		std::lock_guard<std::mutex> stateLock(stateMutex);
 		if(state != started) {
@@ -234,21 +275,21 @@ void Daemon::release() {
 		state = stopping;
 	}
 
-	const std::size_t processesTotal = jEngine.getBasicServers().size() + jEngine.getHttpServers().size() + jEngine.getDaemons().size();
+	const std::size_t processesTotal = jEngine->getBasicServers().size() + jEngine->getHttpServers().size() + jEngine->getDaemons().size();
 	std::size_t processesCurrent = 0;
 	logger.debug << "Shutdown " << processesTotal << " processes ...\n";
 
-	for(const auto& socket: jEngine.getBasicServers()) {
+	for(const auto& socket: jEngine->getBasicServers()) {
 		socket->release();
 		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Basic server shutdown initiated\n";
 	}
 
-	for(const auto& socket: jEngine.getHttpServers()) {
+	for(const auto& socket: jEngine->getHttpServers()) {
 		socket->release();
 		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] HTTP/HTTPS server shutdown initiated\n";
 	}
 
-	for(const auto& daemon: jEngine.getDaemons()) {
+	for(const auto& daemon: jEngine->getDaemons()) {
 		daemon->release();
 		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Daemon shutdown initiated\n";
 	}
@@ -256,7 +297,7 @@ void Daemon::release() {
 	logger.debug << "Shutdown for all processes initiated.\n";
 }
 
-bool Daemon::wait(std::uint32_t ms) {
+bool Jerry::wait(std::uint32_t ms) {
 	{
 		std::lock_guard<std::mutex> stateLock(stateMutex);
 		if(state == stopped) {
@@ -283,7 +324,7 @@ bool Daemon::wait(std::uint32_t ms) {
 	return true;
 }
 
-void Daemon::onReleased() {
+void Jerry::onReleased() {
 	logger.debug << "something has been stopped\n";
 	{
 		std::lock_guard<std::mutex> stateLock(stateMutex);
@@ -302,7 +343,7 @@ void Daemon::onReleased() {
 	stateNotifyCondVar.notify_all();
 }
 
-void Daemon::stopSignal() {
+void Jerry::stopSignal() {
 	if(stopSignalCounter == 0) {
 		std::terminate();
 	}
@@ -311,40 +352,6 @@ void Daemon::stopSignal() {
 	}
 	logger.info << "stopping engine\n";
 	messageTimer.addMessage(0, stopping, std::chrono::milliseconds(0), false);
-}
-
-void Daemon::initialize() {
-	/* *********************************************************** *
-	 * initialize ExceptionHandler:                                *
-	 * Load all implementations to convert 'const std::exception&' *
-	 * to esl::http::exception::Interface::Message         *
-	 * *********************************************************** */
-	if(isInitialized) {
-		return;
-	}
-
-	/* *********************************************************** *
-	 * add certificates to socket if http-server is used for https *
-	 * *********************************************************** */
-	for(const auto& httpServer: jEngine.getHttpServers()) {
-		if(httpServer->isHttps()) {
-			if(jEngine.getCertificates().empty()) {
-				throw std::runtime_error("No certificates are available.");
-			}
-			for(const auto& certificate : jEngine.getCertificates()) {
-				httpServer->addTLSHost(certificate.first, certificate.second.first, certificate.second.second);
-			}
-		}
-	}
-
-	/* ************************* *
-	 * initialize global objects *
-	 * ************************* */
-	logger.info << "Initialize objects ...\n";
-	jEngine.initializeContext();
-	logger.info << "Initialization done.\n";
-
-	isInitialized = true;
 }
 
 } /* namespace jerry */

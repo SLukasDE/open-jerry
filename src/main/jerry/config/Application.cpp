@@ -43,17 +43,12 @@ Application::Application(const boost::filesystem::path& aPath)
 {
 	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(getFileName().c_str());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
-		throw jerry::config::XMLException(*this, xmlError);
+		throw XMLException(*this, xmlError);
 	}
 
 	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
 	if(element == nullptr) {
-		throw jerry::config::XMLException(*this, "No root element");
-	}
-
-	boost::filesystem::path libraryFile = path / "jerry.so";
-	if(boost::filesystem::is_regular_file(libraryFile)) {
-		libraries.push_back(std::make_pair(libraryFile.generic_string(), nullptr));
+		throw XMLException(*this, "No root element");
 	}
 
 	setXMLFile(getFileName(), *element);
@@ -90,17 +85,17 @@ void Application::install(engine::Applications& engineApplications) {
 
 void Application::loadXML(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw jerry::config::XMLException(*this, "Name of XML root element is empty");
+		throw XMLException(*this, "Name of XML root element is empty");
 	}
 	if(std::string(element.Name()) != "jerry-app") {
-		throw jerry::config::XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-app\"");
+		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-app\"");
 	}
 	if(element.GetUserData() != nullptr) {
-		throw jerry::config::XMLException(*this, "Node has user data but it should be empty");
+		throw XMLException(*this, "Node has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		throw jerry::config::XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+		throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -118,25 +113,65 @@ void Application::loadXML(const tinyxml2::XMLElement& element) {
 
 void Application::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw jerry::config::XMLException(*this, "Element name is empty");
+		throw XMLException(*this, "Element name is empty");
 	}
 
-	std::string elementName(element.Name());
+	const std::string elementName(element.Name());
 
 	if(elementName == "basic-listener") {
 		if(basicListener) {
-			throw jerry::config::XMLException(*this, "Multiple definition of attribute 'basic-listener' is not allowed");
+			throw XMLException(*this, "Multiple definition of attribute 'basic-listener' is not allowed");
 		}
 		basicListener.reset(new basic::BasicListener(getFileName(), element));
 	}
 	else if(elementName == "http-listener") {
 		if(httpListener) {
-			throw jerry::config::XMLException(*this, "Multiple definition of attribute 'http-listener' is not allowed");
+			throw XMLException(*this, "Multiple definition of attribute 'http-listener' is not allowed");
 		}
 		httpListener.reset(new http::HttpListener(getFileName(), element));
 	}
+	else if(elementName == "library") {
+		parseLibrary(element);
+	}
 	else {
-		entries.emplace_back(new AppEntry(getFileName(), element));
+		entries.emplace_back(new ApplicationEntry(getFileName(), element));
+	}
+}
+
+void Application::parseLibrary(const tinyxml2::XMLElement& element) {
+	std::string fileName;
+
+	if(element.GetUserData() != nullptr) {
+		throw XMLException(*this, "Element has user data but it should be empty");
+	}
+
+	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+		if(std::string(attribute->Name()) == "file") {
+			fileName = attribute->Value();
+			if(fileName == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+			}
+		}
+		else {
+			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+		}
+	}
+
+	if(fileName == "") {
+		throw XMLException(*this, "Missing attribute 'file'");
+	}
+
+	boost::filesystem::path libraryFileInside = path / fileName;
+	boost::filesystem::path libraryFileOutside = fileName;
+
+	if(boost::filesystem::is_regular_file(libraryFileInside)) {
+		libraries.push_back(std::make_pair(libraryFileInside.generic_string(), nullptr));
+	}
+	else if(boost::filesystem::is_regular_file(libraryFileOutside)) {
+		libraries.push_back(std::make_pair(libraryFileOutside.generic_string(), nullptr));
+	}
+	else {
+		throw XMLException(*this, "Cannot find library-file '" + fileName + "'");
 	}
 }
 

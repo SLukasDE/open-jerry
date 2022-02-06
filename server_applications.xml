@@ -1,5 +1,5 @@
-<jerry>
-	<library file="/lib64/libeslx.so.0.3.0"/>
+<jerry-server>
+	<!--library file="/lib64/libeslx.so.1.4.0"/-->
 	
 	<certificate domain="*" key="server.key" cert="server.pem"/>
 	
@@ -19,64 +19,17 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-	<http-context id="x">
-		<requesthandler implementation="jerry/filebrowser">
-			<parameter key="browsable" value="true"/>
-			<parameter key="ignoreError" value="true"/>
-			<parameter key="path" value="/tmp/"/>
-		</requesthandler>
-	</http-context>
+	<applications id="apps" path="apps"/>
 	
 	<http-client id="http-client-1" implementation="curl4esl">
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<http-context id="ref-context">
-		<procedure id="basicauth" implementation="jerry/basicauth">
-			<parameter key="credential" value="Hans1:plain:Wurst1"/>
-			<parameter key="credential" value="Hans2:plain:Wurst2"/>
-		</procedure>
-		
-		<requesthandler implementation="jerry/basicauth-request">
-			<parameter key="procedure-id" value="basicauth"/>
-		</requesthandler>
-		
-		<requesthandler implementation="jerry/basicauth-response">
-			<parameter key="realm-id" value="AuthArea3453458"/>
-		</requesthandler>
-		
-		<endpoint path="test1/log">
-			<endpoint path="mc-lukas">
-				<requesthandler implementation="jerry/filebrowser">
-					<parameter key="browsable" value="true"/>
-					<parameter key="path" value="/usr/"/>
-				</requesthandler>
-			</endpoint>
-			
-			<reference id="y" ref-id="x"/>
-			
-			<context ref-id="y"/>
-			<!--requesthandler implementation="jerry/filebrowser">
-				<parameter key="browsable" value="true"/>
-				<parameter key="ignoreError" value="true"/>
-				<parameter key="path" value="/tmp/"/>
-			</requesthandler-->
-			
-		</endpoint>
-		<endpoint path="heise">
-			<requesthandler implementation="jerry/proxy">
-				<parameter key="http-client-id" value="http-client-1"/>
-			</requesthandler>
-		</endpoint>
-	</http-context>
-	
 	<http-server implementation="mhd4esl" https="false">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 		<listener>
-			<host server-name="*">
-				<context ref-id="ref-context"/>
-			</host>
+			<applications ref-id="apps"/>
 		</listener>
 	</http-server>
-</jerry>
+</jerry-server>

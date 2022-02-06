@@ -96,27 +96,30 @@ void HttpListener::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void HttpListener::install(engine::Application& engineApplication) const {
-	engine::http::Context& newEngineContext = engineApplication.addHttpListener();
+	engine::http::Context& engineContext = engineApplication.addHttpListener();
 
 	if(inherit) {
-		newEngineContext.ObjectContext::setParent(&engineApplication);
+		engineContext.ObjectContext::setParent(&engineApplication);
+	}
+	else {
+		engineContext.ObjectContext::setParent(&engineApplication.getLocalObjectContext());
 	}
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(newEngineContext);
+		entry->install(engineContext);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
+		engineContext.addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(newEngineContext);
+	exceptions.install(engineContext);
 }
 
 void HttpListener::parseInnerElement(const tinyxml2::XMLElement& element) {

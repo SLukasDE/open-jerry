@@ -75,21 +75,6 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 	}
 }
 
-void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
-	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
-	}
-
-	std::string elementName(element.Name());
-
-	if(elementName == "parameter") {
-		settings.push_back(Setting(getFileName(), element, true));
-	}
-	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
-	}
-}
-
 void Client::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<http-client id=\"" << id << "\"";
 	if(implementation != "") {
@@ -105,6 +90,16 @@ void Client::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Client::install(engine::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addObject(id, install());
+}
+
+void Client::install(engine::Application& engineApplication) const {
+	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
+}
+
+std::unique_ptr<esl::object::Interface::Object> Client::install() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
@@ -126,7 +121,22 @@ void Client::install(engine::ObjectContext& engineObjectContext) const {
 		throw std::runtime_error("Cannot create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
 	}
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
+	return std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release());
+}
+
+void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(element.Name() == nullptr) {
+		throw XMLException(*this, "Element name is empty");
+	}
+
+	std::string elementName(element.Name());
+
+	if(elementName == "parameter") {
+		settings.push_back(Setting(getFileName(), element, true));
+	}
+	else {
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+	}
 }
 
 } /* namespace http */

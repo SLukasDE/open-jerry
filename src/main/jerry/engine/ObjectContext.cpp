@@ -56,13 +56,14 @@ void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object
 	objects[id] = std::move(object);
 }
 
-void ObjectContext::addReference(const std::string& id, const std::string& refId) {
-	esl::object::Interface::Object* objectPtr = findRawObject(refId);
-	if(objectPtr == nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because it's reference id '" + refId + "' does not exists.");
+void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {
+	logger.trace << "Adding object reference with id=\"" << id << "\"\n";
+
+	if(objectRefsById.count(id) != 0) {
+        throw std::runtime_error("Cannot add an object reference with id '" + id + "' because there exists already a object reference with same id.");
 	}
 
-	addReference(id, *objectPtr);
+	objectRefsById.insert(std::make_pair(id, std::ref(object)));
 }
 
 void ObjectContext::initializeContext() {
@@ -154,11 +155,6 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 	}
 }
 
-esl::object::Interface::Object* ObjectContext::getObject() const {
-	auto iter = objectRefsById.find("");
-	return iter == std::end(objectRefsById) ? nullptr : &iter->second.get();
-}
-
 const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& ObjectContext::getObjects() const {
 	return objectRefsById;
 }
@@ -168,8 +164,6 @@ esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& 
 	auto iter = objectRefsById.find(id);
 	if(iter != std::end(objectRefsById)) {
 		return &iter->second.get();
-		//const esl::object::ObjectContext* objectContext = &iter->second.get();
-		//return objectContext ? objectContext->findObject<esl::object::Interface::Object>(id) : nullptr;
 	}
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
@@ -181,23 +175,10 @@ const esl::object::Interface::Object* ObjectContext::findRawObject(const std::st
 	auto iter = objectRefsById.find(id);
 	if(iter != std::end(objectRefsById)) {
 		return &iter->second.get();
-		//const esl::object::ObjectContext* objectContext = &iter->second.get();
-		//return objectContext ? objectContext->findObject<esl::object::Interface::Object>(id) : nullptr;
 	}
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
 	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
-}
-
-void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {
-	logger.trace << "Adding object reference with id=\"" << id << "\"\n";
-
-	if(objectRefsById.count(id) != 0) {
-        throw std::runtime_error("Cannot add an object reference with id '" + id + "' because there exists already a object reference with same id.");
-	}
-
-	objectRefsById.insert(std::make_pair(id, std::ref(object)));
-	//objectRefsById[id] = std::ref(object);
 }
 
 } /* namespace engine */

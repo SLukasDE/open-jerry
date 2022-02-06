@@ -33,6 +33,7 @@ public:
 	Application(const std::string& name, ObjectContext& parentObjectContext);
 
 	const std::string& getName() const noexcept;
+	ObjectContext& getLocalObjectContext() noexcept;
 
 	basic::Context& addBasicListener();
 	basic::Context* getBasicListener();
@@ -44,6 +45,8 @@ public:
 
 private:
 	const std::string name;
+	ObjectContext localObjectContext;
+
 	std::unique_ptr<basic::Context> basicListener;
 	std::unique_ptr<http::Context> httpListener;
 };

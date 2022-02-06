@@ -20,7 +20,7 @@
 #define JERRY_CONFIG_APPLICATION_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/AppEntry.h>
+#include <jerry/config/ApplicationEntry.h>
 #include <jerry/config/basic/BasicListener.h>
 #include <jerry/config/http/HttpListener.h>
 #include <jerry/engine/Applications.h>
@@ -53,13 +53,14 @@ private:
 	const boost::filesystem::path path;
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 
-	std::vector<std::unique_ptr<AppEntry>> entries;
+	std::vector<std::unique_ptr<ApplicationEntry>> entries;
 	std::unique_ptr<basic::BasicListener> basicListener;
 	std::unique_ptr<http::HttpListener> httpListener;
 
 	void loadXML(const tinyxml2::XMLElement& element);
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
+	void parseLibrary(const tinyxml2::XMLElement& element);
 	void loadLibraries();
 };
 

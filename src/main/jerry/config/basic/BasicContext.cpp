@@ -107,10 +107,27 @@ void BasicContext::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void BasicContext::install(engine::ObjectContext& engineObjectContext) const {
+	std::unique_ptr<engine::basic::Context> engineContext(new engine::basic::Context);
+
+	if(inherit) {
+		engineContext->ObjectContext::setParent(&engineObjectContext);
+	}
+
+	/* *****************
+	 * install entries *
+	 * *****************/
+	for(const auto& entry : entries) {
+		entry->install(*engineContext);
+	}
+
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(engineContext.release()));
+}
+
+void BasicContext::install(engine::Application& engineApplication) const {
 	std::unique_ptr<engine::basic::Context> context(new engine::basic::Context);
 
 	if(inherit) {
-		context->ObjectContext::setParent(&engineObjectContext);
+		context->ObjectContext::setParent(&engineApplication);
 	}
 
 	/* *****************
@@ -120,7 +137,9 @@ void BasicContext::install(engine::ObjectContext& engineObjectContext) const {
 		entry->install(*context);
 	}
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	std::unique_ptr<esl::object::Interface::Object> eslObject(context.release());
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
 }
 
 void BasicContext::parseInnerElement(const tinyxml2::XMLElement& element) {

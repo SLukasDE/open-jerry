@@ -81,8 +81,7 @@ Applications::Applications(const std::string& fileName, const tinyxml2::XMLEleme
 			continue;
 		}
 
-		std::unique_ptr<Application> application(new Application(iter->path()));
-		applications.push_back(std::move(application));
+		applications.emplace_back(new Application(iter->path()));
 	}
 }
 
@@ -91,14 +90,13 @@ void Applications::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Applications::install(engine::ObjectContext& engineObjectContext) const {
-	std::unique_ptr<engine::Applications> applicationsPtr(new engine::Applications(engineObjectContext));
-	engine::Applications& engineApplications = *applicationsPtr;
+	std::unique_ptr<engine::Applications> engineApplications(new engine::Applications(engineObjectContext));
 
 	for(auto& applicationPtr : applications) {
-		applicationPtr->install(engineApplications);
+		applicationPtr->install(*engineApplications);
 	}
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(applicationsPtr.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(engineApplications.release()));
 }
 
 } /* namespace config */

@@ -42,7 +42,23 @@ std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::cre
 
 Procedure::Procedure(const esl::module::Interface::Settings& settings) {
 	for(const auto& setting : settings) {
-		throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
+		if(setting.first == "drop-field") {
+			if(setting.second.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'drop-field'");
+			}
+			dropFields.insert(setting.second);
+		}
+		else if(setting.first == "override-field") {
+			std::size_t pos = setting.second.find(':');
+			if(pos==std::string::npos) {
+				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'override-field'. Value should look like <field>:<value>");
+			}
+
+			overrideFields.insert(std::make_pair(setting.second.substr(0, pos), setting.second.substr(pos+1)));
+		}
+		else {
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
+		}
 	}
 }
 
@@ -86,33 +102,114 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	 * nbf  Not Before       Die Unixzeit, ab der das Token gültig ist.
 	 * iat  Issued At        Die Unixzeit, zu der das Token ausgestellt wurde.
 	 */
+#if 1
+	if(dropFields.count("aud") == 0) {
+		auto iter = overrideFields.find("aud");
+		if(iter == overrideFields.end()) {
+			if(document.HasMember("aud") && document["aud"].IsString()) {
+				if(jwtAudStr != document["aud"].GetString()) {
+					logger.warn << "Web-Token is issued for \"" << document["aud"].GetString() << "\" but used for \"" << jwtAudStr << "\".\n";
+					return;
+				}
+			}
+		}
+		else if(jwtAudStr != iter->second) {
+			logger.warn << "Web-Token is issued for \"" << iter->second << "\" but used for \"" << jwtAudStr << "\".\n";
+			return;
+		}
+	}
+#else
 	if(document.HasMember("aud") && document["aud"].IsString()) {
 		if(jwtAudStr != document["aud"].GetString()) {
 			logger.warn << "Web-Token is issued for \"" << document["aud"].GetString() << "\" but used for \"" << jwtAudStr << "\".\n";
 			return;
 		}
 	}
+#endif
+
     std::time_t currentTime = std::time(nullptr);
+
+#if 1
+	if(dropFields.count("exp") == 0) {
+		auto iter = overrideFields.find("exp");
+		if(iter == overrideFields.end()) {
+			if(document.HasMember("exp") && document["exp"].IsUint64()) {
+				if(currentTime > document["exp"].GetInt64()) {
+					logger.warn << "Web-Token is expired. Token is valid to timestamp " << document["exp"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
+					return;
+				}
+			}
+		}
+		else {
+			long value = std::stol(iter->second);
+			if(currentTime > value) {
+				logger.warn << "Web-Token is expired. Token is valid to timestamp " << value << " but current timestamp is " << currentTime << ".\n";
+				return;
+			}
+		}
+	}
+#else
 	if(document.HasMember("exp") && document["exp"].IsUint64()) {
 		if(currentTime > document["exp"].GetInt64()) {
 			logger.warn << "Web-Token is expired. Token is valid to timestamp " << document["exp"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
 			return;
 		}
 	}
+#endif
+#if 1
+	if(dropFields.count("nbf") == 0) {
+		auto iter = overrideFields.find("nbf");
+		if(iter == overrideFields.end()) {
+			if(document.HasMember("nbf") && document["nbf"].IsUint64()) {
+				if(currentTime < document["nbf"].GetInt64()) {
+					logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << document["nbf"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
+					return;
+				}
+			}
+		}
+		else {
+			long value = std::stol(iter->second);
+			if(currentTime < value) {
+				logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << value << " but current timestamp is " << currentTime << ".\n";
+				return;
+			}
+		}
+	}
+#else
 	if(document.HasMember("nbf") && document["nbf"].IsUint64()) {
 		if(currentTime < document["nbf"].GetInt64()) {
 			logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << document["nbf"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
 			return;
 		}
 	}
+#endif
 
+#if 1
+	if(dropFields.count("sub") == 0) {
+		auto iter = overrideFields.find("sub");
+		if(iter == overrideFields.end()) {
+			if(!document.HasMember("sub") || !document["sub"].IsString()) {
+				authProperties->get()["identified"] = "";
+			}
+			else {
+				authProperties->get()["identified"] = document["sub"].GetString();
+			}
+		}
+		else {
+			authProperties->get()["identified"] = iter->second;
+		}
+	}
+	else {
+		authProperties->get()["identified"] = "";
+	}
+#else
 	if(!document.HasMember("sub") || !document["sub"].IsString()) {
 		authProperties->get()["identified"] = "";
 	}
 	else {
 		authProperties->get()["identified"] = document["sub"].GetString();
 	}
-
+#endif
 }
 
 void Procedure::procedureCancel() {

@@ -76,7 +76,6 @@ BasicListener::BasicListener(const std::string& fileName, const tinyxml2::XMLEle
 
 void BasicListener::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<basic-listener";
-
 	if(inherit) {
 		oStream << " inherit=\"true\"";
 	}
@@ -96,6 +95,9 @@ void BasicListener::install(engine::Application& engineApplication) const {
 	engine::basic::Context& engineContext = engineApplication.addBasicListener();
 	if(inherit) {
 		engineContext.setParent(&engineApplication);
+	}
+	else {
+		engineContext.setParent(&engineApplication.getLocalObjectContext());
 	}
 
 

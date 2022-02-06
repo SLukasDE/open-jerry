@@ -4,13 +4,12 @@
 
 Summary: Jerry application server
 Name: jerry
-Version: 1.4.0
+Version: 1.4.1
 Release: 1
 License: Freeware
 URL: http://www.sven-lukas.de
 Group: System
 Packager: Sven Lukas
-Requires: libeslx = 1.4.0
 BuildRoot: ./rpmbuild/
 
 %description
@@ -20,7 +19,7 @@ Jerry application server is a reference application server for C++ apps using ES
 #echo "BUILDROOT = $RPM_BUILD_ROOT"
 
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-cp -a ../../build/jerry/1.4.0/default/architecture/linux-gcc/link-executable/jerry $RPM_BUILD_ROOT/usr/bin
+cp -a ../../build/jerry/1.4.1/default/architecture/linux-gcc/link-executable/jerry $RPM_BUILD_ROOT/usr/bin
 
 exit
 
@@ -36,5 +35,9 @@ exit
 %clean
 
 %changelog
+* Sun Feb 6 2022 Sven Lukas <sven.lukas@gmail.com>
+  - Added private context usage for apps
+  - Allow apps to specify their libraries to load
+  - Added eslx, so there is no external esl-library needed anymore
 * Sun Jan 16 2022 Sven Lukas <sven.lukas@gmail.com>
   - First prebuild RPM

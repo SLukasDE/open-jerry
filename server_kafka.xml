@@ -1,5 +1,5 @@
-<jerry>
-	<library file="/lib64/libeslx.so.0.3.0"/>
+<jerry-server>
+	<!--library file="/lib64/libeslx.so.1.4.0"/-->
 	
 	<certificate domain="*" key="server.key" cert="server.pem"/>
 	
@@ -30,17 +30,17 @@
 	</basic-client>
 	
 	<basic-context id="ref-context">
-		<requesthandler implementation="jerry/builtin/basic/echo">
+		<requesthandler implementation="jerry/echo">
 			<parameter key="notifier" value="quickstart-events"/>
 			<!--parameter key="delay-ms" value="1000"/-->
 			<parameter key="connection-factory-id" value="kafka-client-1"/>
 		</requesthandler>
-		<requesthandler implementation="jerry/builtin/basic/dump">
+		<requesthandler implementation="jerry/dump">
 			<parameter key="notifier" value="quickstart-results"/>
 			<parameter key="show-context" value="true"/>
 			<parameter key="show-content" value="true"/>
 		</requesthandler>
-		<!--requesthandler implementation="jerry/builtin/basic/dump">
+		<!--requesthandler implementation="jerry/dump">
 			<parameter key="notifier" value="quickstart-events"/>
 			<parameter key="show-context" value="true"/>
 			<parameter key="show-content" value="true"/>
@@ -57,4 +57,4 @@
 			<context ref-id="ref-context"/>
 		</listener>
 	</basic-server>
-</jerry>
+</jerry-server>

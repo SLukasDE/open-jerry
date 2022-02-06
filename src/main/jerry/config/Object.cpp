@@ -20,7 +20,6 @@
 #include <jerry/config/XMLException.h>
 
 #include <esl/module/Interface.h>
-#include <esl/object/Interface.h>
 
 #include <memory>
 
@@ -82,6 +81,16 @@ void Object::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Object::install(engine::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addObject(id, install());
+}
+
+void Object::install(engine::Application& engineApplication) const {
+	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
+}
+
+std::unique_ptr<esl::object::Interface::Object> Object::install() const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
@@ -102,7 +111,7 @@ void Object::install(engine::ObjectContext& engineObjectContext) const {
 		throw XMLException(*this, "Could not create an object with id '" + id + "' for implementation '" + implementation + "'");
 	}
 
-	engineObjectContext.addObject(id, std::move(eslObject));
+	return eslObject;
 }
 
 void Object::parseInnerElement(const tinyxml2::XMLElement& element) {

@@ -1,5 +1,5 @@
 <jerry-server>
-	<library file="/lib64/libeslx.so.1.4.0"/>
+	<!--library file="/lib64/libeslx.so.1.4.0"/-->
 	
 	<certificate domain="*" key="server.key" cert="server.pem"/>
 	

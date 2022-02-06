@@ -20,15 +20,12 @@
 #include <jerry/config/XMLException.h>
 
 #include <esl/processing/procedure/Interface.h>
-#include <esl/object/Interface.h>
 #include <esl/module/Interface.h>
-
-#include <memory>
 
 namespace jerry {
 namespace config {
 
-Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& element)
+Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& element, EngineMode engineMode, bool& hasAnonymousProcedure)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -38,8 +35,20 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
-			if(id == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
+			switch(engineMode) {
+			case EngineMode::isBatch:
+				if(id == "") {
+					if(hasAnonymousProcedure) {
+						throw XMLException(*this, "Multiple definitions of anonymous procedures are not allowed.");
+					}
+					hasAnonymousProcedure = true;
+				}
+				break;
+			case EngineMode::isServer:
+				if(id == "") {
+					throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
+				}
+				break;
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
@@ -53,7 +62,7 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 		}
 	}
 
-	if(id == "") {
+	if(id == "" && engineMode == EngineMode::isServer) {
 		throw XMLException(*this, "Missing attribute 'id'");
 	}
 	if(implementation == "") {
@@ -83,6 +92,16 @@ void Procedure::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Procedure::install(engine::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addObject(id, install());
+}
+
+void Procedure::install(engine::Application& engineApplication) const {
+	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
+}
+
+std::unique_ptr<esl::object::Interface::Object> Procedure::install() const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
@@ -96,14 +115,14 @@ void Procedure::install(engine::ObjectContext& engineObjectContext) const {
 		throw XMLException(*this, e.what());
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create a procedure with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw XMLException(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!procedure) {
-		throw XMLException(*this, "Could not create a procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
+		throw XMLException(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
 	}
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(procedure.release()));
+	return std::unique_ptr<esl::object::Interface::Object>(procedure.release());
 }
 
 void Procedure::parseInnerElement(const tinyxml2::XMLElement& element) {

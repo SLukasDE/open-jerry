@@ -31,6 +31,10 @@ const std::string& Application::getName() const noexcept {
 	return name;
 }
 
+ObjectContext& Application::getLocalObjectContext() noexcept {
+	return localObjectContext;
+}
+
 basic::Context& Application::addBasicListener() {
 	if(basicListener) {
 		throw std::runtime_error("Cannot add multiple basic-listeners");

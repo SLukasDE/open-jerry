@@ -106,29 +106,57 @@ void HttpContext::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void HttpContext::install(engine::ObjectContext& engineObjectContext) const {
-	std::unique_ptr<engine::http::Context> newEngineContext(new engine::http::Context);
+	std::unique_ptr<engine::http::Context> engineContext(new engine::http::Context);
 
 	if(inherit) {
-		newEngineContext->ObjectContext::setParent(&engineObjectContext);
+		engineContext->ObjectContext::setParent(&engineObjectContext);
 	}
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(*newEngineContext);
+		entry->install(*engineContext);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		newEngineContext->addHeader(responseHeader.key, responseHeader.value);
+		engineContext->addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(*newEngineContext);
+	exceptions.install(*engineContext);
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(newEngineContext.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(engineContext.release()));
+}
+
+void HttpContext::install(engine::Application& engineApplication) const {
+	std::unique_ptr<engine::http::Context> engineContext(new engine::http::Context);
+
+	if(inherit) {
+		engineContext->ObjectContext::setParent(&engineApplication);
+	}
+
+	/* *****************
+	 * install entries *
+	 * *****************/
+	for(const auto& entry : entries) {
+		entry->install(*engineContext);
+	}
+
+	/* **********************
+	 * Set response headers *
+	 * **********************/
+	for(const auto& responseHeader : responseHeaders) {
+		engineContext->addHeader(responseHeader.key, responseHeader.value);
+	}
+
+	exceptions.install(*engineContext);
+
+	std::unique_ptr<esl::object::Interface::Object> eslObject(engineContext.release());
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
 }
 
 void HttpContext::parseInnerElement(const tinyxml2::XMLElement& element) {

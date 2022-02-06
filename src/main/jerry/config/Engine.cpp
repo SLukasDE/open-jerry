@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/main/Engine.h>
+#include <jerry/config/Engine.h>
 #include <jerry/config/XMLException.h>
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
@@ -26,12 +26,13 @@
 #include <esl/logging/layout/Layout.h>
 #include <esl/logging/Logger.h>
 
+#include <stdexcept>
+
 namespace jerry {
 namespace config {
-namespace main {
 
 namespace {
-Logger logger("jerry::config::main::Engine");
+Logger logger("jerry::config::Engine");
 } /* anonymous namespace */
 
 Engine::Engine(const std::string& fileName)
@@ -53,8 +54,24 @@ Engine::Engine(const std::string& fileName)
 	loadXML(*element);
 }
 
+EngineMode Engine::getEngineMode() const {
+	if(!hasEngineType) {
+		throw std::runtime_error("Unspecified engine mode");
+	}
+
+	return engineMode;
+}
+
 void Engine::save(std::ostream& oStream) const {
-	oStream << "\n<jerry-server>\n";
+	switch(engineMode) {
+	case EngineMode::isBatch:
+		oStream << "\n<jerry-batch>\n";
+		break;
+	case EngineMode::isServer:
+		oStream << "\n<jerry-server>\n";
+		break;
+	}
+
 	for(const auto& entry : libraries) {
 		oStream << "  <library file=\"" << entry.first << "\"/>\n";
 	}
@@ -73,7 +90,14 @@ void Engine::save(std::ostream& oStream) const {
 		entry->save(oStream, 2);
 	}
 
-	oStream << "</jerry-server>\n";
+	switch(engineMode) {
+	case EngineMode::isBatch:
+		oStream << "</jerry-batch>\n";
+		break;
+	case EngineMode::isServer:
+		oStream << "</jerry-server>\n";
+		break;
+	}
 }
 
 
@@ -93,21 +117,6 @@ void Engine::loadLibraries() {
 }
 
 std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine::Engine& engine, esl::logging::appender::Interface::Appender& appenderCoutStream, esl::logging::appender::Interface::Appender& appenderMemBuffer) {
-#if 0
-	/* ************************
-	 * load and add libraries *
-	 * ********************** */
-	for(auto& library : libraries) {
-		/*
-		if(library.second) {
-			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
-		}
-		*/
-		library.second = &esl::module::Library::load(library.first);
-		library.second->install(esl::getModule());
-	}
-#endif
-
 	/* ************* *
 	 * create layout *
 	 * ************* */
@@ -188,9 +197,36 @@ void Engine::loadXML(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Name of XML root element is empty");
 	}
-	if(std::string(element.Name()) != "jerry-server") {
-		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-server\"");
+
+	const std::string elementName(element.Name());
+
+	if(hasEngineType) {
+		switch(engineMode) {
+		case EngineMode::isBatch:
+			if(elementName != "jerry-batch" && elementName != "jerry") {
+				throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\" or \"jerry-batch\"");
+			}
+			break;
+		case EngineMode::isServer:
+			if(elementName != "jerry-server" && elementName != "jerry") {
+				throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\" or \"jerry-server\"");
+			}
+			break;
+		}
 	}
+	else {
+		if(elementName == "jerry-batch") {
+			engineMode = EngineMode::isBatch;
+		}
+		else if(elementName == "jerry-server") {
+			engineMode = EngineMode::isServer;
+		}
+		else {
+			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-batch\" or \"jerry-server\"");
+		}
+		hasEngineType = true;
+	}
+
 	if(element.GetUserData() != nullptr) {
 		throw XMLException(*this, "Node has user data but it should be empty");
 	}
@@ -217,7 +253,7 @@ void Engine::parseInnerElement(const tinyxml2::XMLElement& element) {
 		throw XMLException(*this, "Element name is empty");
 	}
 
-	std::string elementName(element.Name());
+	const std::string elementName(element.Name());
 
 	if(elementName == "include") {
 		parseInclude(element);
@@ -257,7 +293,7 @@ void Engine::parseInnerElement(const tinyxml2::XMLElement& element) {
 		loggerConfig = LoggerConfig(getFileName(), element);
 	}
 	else {
-		entries.emplace_back(new Entry(getFileName(), element));
+		entries.emplace_back(new EngineEntry(getFileName(), element, engineMode, hasAnonymousProcedure));
 	}
 }
 
@@ -331,6 +367,5 @@ void Engine::parseLibrary(const tinyxml2::XMLElement& element) {
 	libraries.push_back(std::make_pair(fileName, nullptr));
 }
 
-} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */

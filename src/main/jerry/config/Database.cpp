@@ -20,10 +20,7 @@
 #include <jerry/config/XMLException.h>
 
 #include <esl/database/Interface.h>
-#include <esl/object/Interface.h>
 #include <esl/module/Interface.h>
-
-#include <memory>
 
 namespace jerry {
 namespace config {
@@ -82,7 +79,18 @@ void Database::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</database>\n";
 }
 
+
 void Database::install(engine::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addObject(id, install());
+}
+
+void Database::install(engine::Application& engineApplication) const {
+	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
+	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
+	engineApplication.addObject(id, std::move(eslObject));
+}
+
+std::unique_ptr<esl::object::Interface::Object> Database::install() const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
@@ -103,7 +111,7 @@ void Database::install(engine::ObjectContext& engineObjectContext) const {
 		throw XMLException(*this, "Could not create a database connection factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
 	}
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release()));
+	return std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release());
 }
 
 void Database::parseInnerElement(const tinyxml2::XMLElement& element) {

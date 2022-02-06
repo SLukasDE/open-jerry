@@ -1,5 +1,5 @@
-<jerry>
-	<library file="/lib64/libeslx.so.0.3.0"/>
+<jerry-server>
+	<!--library file="/lib64/libeslx.so.1.4.0"/-->
 	
 	<!--logger layout="eslx/default"-->
 	<logger layout="">
@@ -17,4 +17,4 @@
 		<setting class="jerrA::*" level="INFO"/>
 	</logger>
 	
-</jerry>
+</jerry-server>

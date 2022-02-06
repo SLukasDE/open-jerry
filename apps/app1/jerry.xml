@@ -1,0 +1,55 @@
+<jerry-app>
+	<http-context id="x">
+		<requesthandler implementation="jerry/filebrowser">
+			<parameter key="browsable" value="true"/>
+			<parameter key="ignoreError" value="true"/>
+			<parameter key="path" value="/tmp/"/>
+		</requesthandler>
+	</http-context>
+	
+	<http-client id="http-client-1" implementation="curl4esl">
+		<parameter key="url" value="https://www.heise.de"/>
+	</http-client>
+	
+	<http-listener inherit="false">
+		<endpoint path="heise">
+			<requesthandler implementation="jerry/proxy">
+				<parameter key="http-client-id" value="http-client-1"/>
+			</requesthandler>
+		</endpoint>
+		
+		<context>
+			<procedure id="authentication-basicauth-stable" implementation="jerry/authentication-basic-stable">
+				<parameter key="credential" value="Hans1:plain:Wurst991"/>
+				<parameter key="credential" value="Hans2:plain:Wurst992"/>
+			</procedure>
+			<requesthandler implementation="jerry/authentication">
+				<parameter key="allow" value="basic"/>
+				<parameter key="authentication-procedure-id" value="authentication-basicauth-stable"/>
+				<!--parameter key="behavior" value="reply"/-->
+				<!--parameter key="behavior" value="proceed"/-->
+				<!--parameter key="behavior" value="disconnect"/-->
+			</requesthandler>
+			<response-header key="WWW-Authenticate" value="Basic realm=&quot;AuthArea&quot;"/>
+		</context>
+		
+		<endpoint path="test1/log">
+			<endpoint path="mc-lukas">
+				<requesthandler implementation="jerry/filebrowser">
+					<parameter key="browsable" value="true"/>
+					<parameter key="path" value="/usr/"/>
+				</requesthandler>
+			</endpoint>
+			
+			<reference id="y" ref-id="x"/>
+			
+			<context ref-id="y"/>
+			<!--requesthandler implementation="jerry/filebrowser">
+				<parameter key="browsable" value="true"/>
+				<parameter key="ignoreError" value="true"/>
+				<parameter key="path" value="/tmp/"/>
+			</requesthandler-->
+			
+		</endpoint>
+	</http-listener>
+</jerry-app>

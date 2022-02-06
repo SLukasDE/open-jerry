@@ -16,14 +16,13 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/main/Entry.h>
+#include <jerry/config/EngineEntry.h>
 #include <jerry/config/XMLException.h>
 
 namespace jerry {
 namespace config {
-namespace main {
 
-Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
+EngineEntry::EngineEntry(const std::string& fileName, const tinyxml2::XMLElement& element, EngineMode engineMode, bool& hasAnonymousProcedure)
 : Config(fileName, element)
 {
 	if(element.Name() == nullptr) {
@@ -39,41 +38,46 @@ Entry::Entry(const std::string& fileName, const tinyxml2::XMLElement& element)
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
+		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element, engineMode, hasAnonymousProcedure));
 	}
 	else if(elementName == "database") {
 		database = std::unique_ptr<Database>(new Database(getFileName(), element));
 	}
-	else if(elementName == "applications") {
-		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
-	}
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
-	}
-	else if(elementName == "basic-context") {
-		basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
-	}
-	else if(elementName == "basic-server") {
-		basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
 	}
 	else if(elementName == "http-client") {
 		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
-	else if(elementName == "http-context") {
-		httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
-	}
-	else if(elementName == "http-server") {
-		httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
-	}
-	else if(elementName == "daemon") {
-		daemon = std::unique_ptr<daemon::Daemon>(new daemon::Daemon(getFileName(), element));
+	else if(engineMode == EngineMode::isServer) {
+		if(elementName == "applications") {
+			applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
+		}
+		else if(elementName == "basic-context") {
+			basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
+		}
+		else if(elementName == "basic-server") {
+			basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
+		}
+		else if(elementName == "http-context") {
+			httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
+		}
+		else if(elementName == "http-server") {
+			httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
+		}
+		else if(elementName == "daemon") {
+			daemon = std::unique_ptr<daemon::Daemon>(new daemon::Daemon(getFileName(), element));
+		}
+		else {
+			throw XMLException(*this, "Unknown element name \"" + elementName + "\".");
+		}
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\". Maybe element is allowed for server-mode, but configuration is used for batch-mode.");
 	}
 }
 
-void Entry::save(std::ostream& oStream, std::size_t spaces) const {
+void EngineEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(object) {
 		object->save(oStream, spaces);
 	}
@@ -112,7 +116,7 @@ void Entry::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void Entry::install(engine::Engine& engine) const {
+void EngineEntry::install(engine::Engine& engine) const {
 	if(object) {
 		object->install(engine);
 	}
@@ -151,6 +155,5 @@ void Entry::install(engine::Engine& engine) const {
 	}
 }
 
-} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */

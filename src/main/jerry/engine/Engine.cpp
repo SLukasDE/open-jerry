@@ -42,9 +42,14 @@ Logger logger("jerry::engine::Engine");
 } /* anonymous namespace */
 
 
-Engine::Engine()
-: ObjectContext(true)
+Engine::Engine(EngineMode aEngineMode)
+: ObjectContext(true),
+  engineMode(aEngineMode)
 { }
+
+EngineMode Engine::getEngineMode() const noexcept {
+	return engineMode;
+}
 
 void Engine::addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate) {
 	std::pair<std::vector<unsigned char>, std::vector<unsigned char>>& certPair = certsByHostname[hostname];
@@ -75,9 +80,41 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Engine:
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
+void Engine::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	if(engineMode == EngineMode::isBatch && id.empty() && dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get()) != nullptr) {
+		std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure(static_cast<esl::processing::procedure::Interface::Procedure*>(object.release()));
+
+		logger.trace << "Set batch procedure\n";
+
+		if(engineMode != EngineMode::isBatch) {
+			throw std::runtime_error("Setting batch procedure is only allowed in batch-mode.");
+		}
+
+		if(!aProcedure) {
+			throw std::runtime_error("Removing batch procedure is not allowed.");
+		}
+
+		if(procedure) {
+			throw std::runtime_error("Multiple definitions of batch procedures are not allowed.");
+		}
+
+		procedure = std::move(aProcedure);
+	}
+	else {
+		ObjectContext::addObject(id, std::move(object));
+	}
+}
+
+esl::processing::procedure::Interface::Procedure* Engine::getBatchProcedure() const {
+	return procedure.get();
+}
+
 basic::Socket& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding basic server (implementation=\"" << implementation << "\")\n";
 
+	if(engineMode != EngineMode::isServer) {
+		throw std::runtime_error("Adding basic-server is only allowed in server-mode.");
+	}
 	std::unique_ptr<basic::Socket> socketPtr(new basic::Socket(settings, implementation));
 	basic::Socket& socket = *socketPtr;
 	basicServers.push_back(std::move(socketPtr));
@@ -96,6 +133,10 @@ http::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<st
 		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
 	}
 
+	if(engineMode != EngineMode::isServer) {
+		throw std::runtime_error("Adding http-server is only allowed in server-mode.");
+	}
+
 	std::unique_ptr<http::Socket> socketPtr(new http::Socket(isHttps, settings, implementation));
 	http::Socket& socket = *socketPtr;
 	httpServers.push_back(std::move(socketPtr));
@@ -108,6 +149,11 @@ const std::vector<std::unique_ptr<http::Socket>>& Engine::getHttpServers() const
 
 void Engine::addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding daemon (implementation=\"" << implementation << "\")\n";
+
+	if(engineMode != EngineMode::isServer) {
+		throw std::runtime_error("Adding daemon is only allowed in server-mode.");
+	}
+
 	std::unique_ptr<esl::processing::daemon::Interface::Daemon> daemon = esl::getModule().getInterface<esl::processing::daemon::Interface>(implementation).createDaemon(settings);
 	if(!daemon) {
 		throw std::runtime_error("Cannot create an daemon for implementation '" + implementation + "' because interface method createDaemon() returns nullptr.");
@@ -122,6 +168,13 @@ const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& 
 
 void Engine::initializeContext() {
 	ObjectContext::initializeContext();
+
+	if(procedure) {
+		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(procedure.get());
+		if(initializeContext) {
+			initializeContext->initializeContext(*this);
+		}
+	}
 
 	for(const auto& socket: basicServers) {
 		socket->initializeContext();

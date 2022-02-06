@@ -16,6 +16,7 @@ server.pem
 cp_libs.sh
 my.db
 src/main/rapidjson
+jerry-test-1.4.0-1.x86_64.rpm
 
 # Prerequisites
 *.d

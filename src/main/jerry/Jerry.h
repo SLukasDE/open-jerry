@@ -16,8 +16,8 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_DAEMON_H_
-#define JERRY_DAEMON_H_
+#ifndef JERRY_JERRY_H_
+#define JERRY_JERRY_H_
 
 #include <jerry/engine/Engine.h>
 
@@ -29,18 +29,19 @@
 #include <mutex>
 #include <condition_variable>
 #include <string>
+#include <memory>
 
 namespace jerry {
 
-class Daemon : public esl::processing::daemon::Interface::Daemon {
+class Jerry : public esl::processing::daemon::Interface::Daemon {
 public:
-	Daemon();
-	~Daemon();
+	Jerry();
+	~Jerry();
 
 	bool setupXML(const std::string& configFile, bool dumpXML);
 
-	bool run();
-	engine::Engine& getEngine();
+	int run();
+	//engine::Engine& getEngine();
 
 	bool start(std::function<void()> onReleasedHandler) override;
 	void release() override;
@@ -53,11 +54,12 @@ private:
 		stopping
 	};
 
-	engine::Engine jEngine;
+	std::unique_ptr<engine::Engine> jEngine;
 	bool isInitialized = false;
+	// MessageTimer is used to make signal handler slim and move the huge load to stop daemons to the thread of the message timer
     esl::utility::MessageTimer<int, State> messageTimer;
     int stopSignalCounter = -1;
-    std::function<void()> onReleasedHandler;
+    std::function<void()> onReleasedHandler = nullptr;
 
 	std::mutex stateMutex;
 	State state = stopped;
@@ -68,9 +70,8 @@ private:
 
 	void onReleased();
 	void stopSignal();
-	void initialize();
 };
 
 } /* namespace jerry */
 
-#endif /* JERRY_DAEMON_H_ */
+#endif /* JERRY_JERRY_H_ */

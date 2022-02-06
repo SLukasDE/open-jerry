@@ -38,13 +38,10 @@ public:
 	void setParent(esl::object::ObjectContext* objectContext);
 
 	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
-	void addReference(const std::string& id, const std::string& refId);
+	void addReference(const std::string& id, esl::object::Interface::Object& object);
 
-
-	//void initializeContext(esl::object::Interface::ObjectContext& objectContext) override;
 	virtual void initializeContext();
 	virtual void dumpTree(std::size_t depth) const;
-	esl::object::Interface::Object* getObject() const;
 	const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& getObjects() const;
 
 protected:
@@ -56,8 +53,6 @@ private:
 	esl::object::ObjectContext* parent = nullptr;
 	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 	std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>> objectRefsById;
-
-	void addReference(const std::string& id, esl::object::Interface::Object& object);
 };
 
 } /* namespace engine */

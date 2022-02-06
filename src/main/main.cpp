@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/Daemon.h>
+#include <jerry/Jerry.h>
 
 #include <iostream>
 
@@ -98,12 +98,16 @@ int main(int argc, const char *argv[]) {
 		return -1;
 	}
 
-	jerry::Daemon daemon;
-	bool success = daemon.setupXML(configFile, isVerbose);
-
-	if(success && !isDryRun) {
-		success = daemon.run();
+	jerry::Jerry jerryDaemon;
+	if(!jerryDaemon.setupXML(configFile, isVerbose)) {
+		return -1;
 	}
 
-	return success ? 0 : -1;
+	int rc = 0;
+
+	if(!isDryRun) {
+		rc = jerryDaemon.run();
+	}
+
+	return rc;
 }

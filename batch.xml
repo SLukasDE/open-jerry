@@ -1,5 +1,5 @@
-<jerry-server>
-	<!--library file="/lib64/libeslx.so.1.4.0"/-->
+<jerry-batch>
+	<library file="/lib64/libeslx.so.1.4.0"/>
 	
 	<!--logger layout="eslx/default"-->
 	<logger layout="">
@@ -25,12 +25,8 @@
 		<parameter key="sleep-ms" value="1000"/>
 	</procedure>
 	
-	<procedure id="list" implementation="jerry/list">
+	<procedure implementation="jerry/list">
 		<parameter key="procedure-id" value="x"/>
 		<parameter key="procedure-id" value="y"/>
 	</procedure>
-	
-	<daemon implementation="jerry/procedure">
-		<parameter key="procedure-id" value="list"/>
-	</daemon>
-</jerry-server>
+</jerry-batch>

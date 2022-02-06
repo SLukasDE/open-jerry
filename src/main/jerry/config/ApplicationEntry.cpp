@@ -16,15 +16,18 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/AppEntry.h>
+#include <jerry/config/ApplicationEntry.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/EngineMode.h>
 
 namespace jerry {
 namespace config {
 
-AppEntry::AppEntry(const std::string& fileName, const tinyxml2::XMLElement& element)
+ApplicationEntry::ApplicationEntry(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
+	static bool dummyHasAnonymousProcedure = false;
+
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
@@ -38,7 +41,7 @@ AppEntry::AppEntry(const std::string& fileName, const tinyxml2::XMLElement& elem
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
+		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element, EngineMode::isServer, dummyHasAnonymousProcedure));
 	}
 	else if(elementName == "database") {
 		database = std::unique_ptr<Database>(new Database(getFileName(), element));
@@ -60,7 +63,7 @@ AppEntry::AppEntry(const std::string& fileName, const tinyxml2::XMLElement& elem
 	}
 }
 
-void AppEntry::save(std::ostream& oStream, std::size_t spaces) const {
+void ApplicationEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(object) {
 		object->save(oStream, spaces);
 	}
@@ -87,30 +90,30 @@ void AppEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-void AppEntry::install(engine::ObjectContext& engineObjectContext) const {
+void ApplicationEntry::install(engine::Application& engineApplication) const {
 	if(object) {
-		object->install(engineObjectContext);
+		object->install(engineApplication);
 	}
 	if(reference) {
-		reference->install(engineObjectContext);
+		reference->install(engineApplication);
 	}
 	if(procedure) {
-		procedure->install(engineObjectContext);
+		procedure->install(engineApplication);
 	}
 	if(database) {
-		database->install(engineObjectContext);
+		database->install(engineApplication);
 	}
 	if(basicClient) {
-		basicClient->install(engineObjectContext);
+		basicClient->install(engineApplication);
 	}
 	if(basicContext) {
-		basicContext->install(engineObjectContext);
+		basicContext->install(engineApplication);
 	}
 	if(httpClient) {
-		httpClient->install(engineObjectContext);
+		httpClient->install(engineApplication);
 	}
 	if(httpContext) {
-		httpContext->install(engineObjectContext);
+		httpContext->install(engineApplication);
 	}
 }
 

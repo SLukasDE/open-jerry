@@ -56,6 +56,8 @@
  * *************** */
 #include <jerry/builtin/daemon/procedure/Daemon.h>
 
+#include <eslx/Module.h>
+
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/processing/procedure/Interface.h>
@@ -67,6 +69,8 @@ namespace jerry {
 
 void Module::install(esl::module::Module& module) {
 	esl::setModule(module);
+
+	eslx::Module::install(module);
 
 	/* ***************************** *
 	 * builtin basic request handlers *

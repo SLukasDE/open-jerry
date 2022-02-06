@@ -16,35 +16,16 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_REFERENCE_H_
-#define JERRY_CONFIG_REFERENCE_H_
-
-#include <jerry/config/Config.h>
-#include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/Application.h>
-
-#include <tinyxml2/tinyxml2.h>
-
-#include <string>
-#include <ostream>
+#ifndef JERRY_ENGINEMODE_H_
+#define JERRY_ENGINEMODE_H_
 
 namespace jerry {
-namespace config {
 
-class Reference : public Config {
-public:
-	Reference(const std::string& fileName, const tinyxml2::XMLElement& element);
-
-	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::ObjectContext& engineObjectContext) const;
-	void install(engine::Application& engineApplication) const;
-
-private:
-	std::string id;
-	std::string refId;
+enum class EngineMode {
+	isBatch,
+	isServer
 };
 
-} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_REFERENCE_H_ */
+#endif /* JERRY_ENGINEMODE_H_ */

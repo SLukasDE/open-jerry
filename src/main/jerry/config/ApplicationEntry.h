@@ -16,23 +16,19 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_MAIN_ENTRY_H_
-#define JERRY_CONFIG_MAIN_ENTRY_H_
+#ifndef JERRY_CONFIG_APPLICATIONENTRY_H_
+#define JERRY_CONFIG_APPLICATIONENTRY_H_
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Procedure.h>
 #include <jerry/config/Database.h>
-#include <jerry/config/Applications.h>
 #include <jerry/config/basic/Client.h>
 #include <jerry/config/basic/BasicContext.h>
-#include <jerry/config/basic/Server.h>
-#include <jerry/config/http/HttpContext.h>
 #include <jerry/config/http/Client.h>
-#include <jerry/config/http/Server.h>
-#include <jerry/config/daemon/Daemon.h>
-#include <jerry/engine/Engine.h>
+#include <jerry/config/http/HttpContext.h>
+#include <jerry/engine/Application.h>
 
 #include <memory>
 #include <ostream>
@@ -41,35 +37,29 @@
 
 namespace jerry {
 namespace config {
-namespace main {
 
-class Entry : public Config {
+class ApplicationEntry : public Config {
 public:
-	Entry(const std::string& fileName, const tinyxml2::XMLElement& element);
+	ApplicationEntry(const ApplicationEntry&) = delete;
+	ApplicationEntry(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
+	void install(engine::Application& engineApplication) const;
 
 private:
 	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
 	std::unique_ptr<Procedure> procedure;
 	std::unique_ptr<Database> database;
-	std::unique_ptr<Applications> applications;
 
-	std::unique_ptr<basic::Client> basicClient;
-	std::unique_ptr<basic::BasicContext> basicContext;
-	std::unique_ptr<basic::Server> basicServer;
+	std::unique_ptr<config::basic::Client> basicClient;
+	std::unique_ptr<config::basic::BasicContext> basicContext;
 
-	std::unique_ptr<http::Client> httpClient;
-	std::unique_ptr<http::HttpContext> httpContext;
-	std::unique_ptr<http::Server> httpServer;
-
-	std::unique_ptr<daemon::Daemon> daemon;
+	std::unique_ptr<config::http::Client> httpClient;
+	std::unique_ptr<config::http::HttpContext> httpContext;
 };
 
-} /* namespace main */
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_MAIN_ENTRY_H_ */
+#endif /* JERRY_CONFIG_APPLICATIONENTRY_H_ */
