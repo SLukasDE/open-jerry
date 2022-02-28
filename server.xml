@@ -1,23 +1,7 @@
-<jerry-server>
-	<library file="/lib64/libeslx.so.1.4.0"/>
+<jerry>
+	<include file="logger.xml"/>
 	
 	<certificate domain="*" key="server.key" cert="server.pem"/>
-	
-	<!--logger layout="eslx/default"-->
-	<logger layout="">
-		<layout key="showTimestamp" value="true"/>
-		<layout key="showLevel" value="true"/>
-		<layout key="showTypeName" value="true"/>
-		<layout key="showAddress" value="false"/>
-		<layout key="showFile" value="false"/>
-		<layout key="showFunction" value="false"/>
-		<layout key="showLineNo" value="false"/>
-		<layout key="showThreadNo" value="false"/>
-		
-		<setting class="*" level="WARN"/>
-		<setting class="jerry::*" level="TRACE"/>
-		<setting class="jerrA::*" level="INFO"/>
-	</logger>
 	
 	<http-context id="x">
 		<requesthandler implementation="jerry/filebrowser">
@@ -119,7 +103,7 @@
 		</endpoint>
 	</http-context>
 	
-	<http-server implementation="mhd4esl" https="false">
+	<http-server implementation="mhd4esl" https="true">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 		<listener>
@@ -182,8 +166,12 @@
 		<parameter key="procedure-id" value="sleep-2"/>
 	</procedure>
 	
-	<daemon implementation="jerry/procedure">
+	<daemon-procedure implementation="jerry/list">
 		<parameter key="procedure-id" value="list"/>
-	</daemon>
+	</daemon-procedure>
+	
+	<!--batch-procedure implementation="jerry/list">
+		<parameter key="procedure-id" value="list"/>
+	</batch-procedure-->
 
-</jerry-server>
+</jerry>

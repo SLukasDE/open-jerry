@@ -35,15 +35,21 @@ Object::Object(const std::string& fileName, const tinyxml2::XMLElement& element)
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
+			if(!id.empty()) {
+				throw XMLException(*this, "Multiple definitions of attribute 'id'.");
+			}
 			id = attribute->Value();
-			if(id == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
+			if(id.empty()) {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
+			if(!implementation.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
+			}
 			implementation = attribute->Value();
-			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+			if(implementation.empty()) {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else {
@@ -51,10 +57,10 @@ Object::Object(const std::string& fileName, const tinyxml2::XMLElement& element)
 		}
 	}
 
-	if(id == "") {
+	if(id.empty()) {
 		throw XMLException(*this, "Missing attribute 'id'");
 	}
-	if(implementation == "") {
+	if(implementation.empty()) {
 		throw XMLException(*this, "Missing attribute 'implementation'");
 	}
 

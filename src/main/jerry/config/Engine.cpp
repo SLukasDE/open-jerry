@@ -54,23 +54,25 @@ Engine::Engine(const std::string& fileName)
 	loadXML(*element);
 }
 
-EngineMode Engine::getEngineMode() const {
-	if(!hasEngineType) {
-		throw std::runtime_error("Unspecified engine mode");
+Engine::Engine(const char* xml, std::size_t size)
+: Config("{mem}")
+{
+	tinyxml2::XMLError xmlError = xmlDocument.Parse(xml, size);
+	if(xmlError != tinyxml2::XML_SUCCESS) {
+		throw XMLException(*this, xmlError);
 	}
 
-	return engineMode;
+	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
+	if(element == nullptr) {
+		throw XMLException(*this, "No root element");
+	}
+
+	setXMLFile(getFileName(), *element);
+	loadXML(*element);
 }
 
 void Engine::save(std::ostream& oStream) const {
-	switch(engineMode) {
-	case EngineMode::isBatch:
-		oStream << "\n<jerry-batch>\n";
-		break;
-	case EngineMode::isServer:
-		oStream << "\n<jerry-server>\n";
-		break;
-	}
+	oStream << "\n<jerry>\n";
 
 	for(const auto& entry : libraries) {
 		oStream << "  <library file=\"" << entry.first << "\"/>\n";
@@ -86,18 +88,15 @@ void Engine::save(std::ostream& oStream) const {
 
 	loggerConfig.save(oStream, 2);
 
+	if(batchProcedure) {
+		batchProcedure->save(oStream, 2);
+	}
+
 	for(const auto& entry : entries) {
 		entry->save(oStream, 2);
 	}
 
-	switch(engineMode) {
-	case EngineMode::isBatch:
-		oStream << "</jerry-batch>\n";
-		break;
-	case EngineMode::isServer:
-		oStream << "</jerry-server>\n";
-		break;
-	}
+	oStream << "</jerry>\n";
 }
 
 
@@ -116,7 +115,7 @@ void Engine::loadLibraries() {
 	}
 }
 
-std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine::Engine& engine, esl::logging::appender::Interface::Appender& appenderCoutStream, esl::logging::appender::Interface::Appender& appenderMemBuffer) {
+std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::installLogging() {
 	/* ************* *
 	 * create layout *
 	 * ************* */
@@ -136,22 +135,6 @@ std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine:
 	catch(...) {
 		throw XMLException(*this, "Could not create logging-layout for implementation '" + loggerConfig.layout + "' because an unknown exception occurred.");
 	}
-
-
-	/* *********************** *
-	 * set layout to appenders *
-	 * *********************** */
-
-    appenderCoutStream.setRecordLevel();
-    appenderCoutStream.setLayout(layout.get());
-    esl::logging::addAppender(appenderCoutStream);
-
-    /* MemBuffer appender just writes output to a buffer of a fixed number of lines.
-     * If number of columns is specified as well the whole memory is allocated at initialization time.
-     */
-    appenderMemBuffer.setRecordLevel(esl::logging::appender::Interface::Appender::RecordLevel::ALL);
-    appenderMemBuffer.setLayout(layout.get());
-    esl::logging::addAppender(appenderMemBuffer);
 
 
     /* ************** *
@@ -181,16 +164,21 @@ std::unique_ptr<esl::logging::layout::Interface::Layout> Engine::install(engine:
 		}
 	}
 
+	return layout;
+}
 
+void Engine::installEngine(engine::Engine& jEngine) {
 	for(const auto& configCertificate : certificates) {
-		engine.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
+		jEngine.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
+	}
+
+	if(batchProcedure) {
+		batchProcedure->install(jEngine);
 	}
 
 	for(const auto& entry : entries) {
-		entry->install(engine);
+		entry->install(jEngine);
 	}
-
-	return layout;
 }
 
 void Engine::loadXML(const tinyxml2::XMLElement& element) {
@@ -200,31 +188,8 @@ void Engine::loadXML(const tinyxml2::XMLElement& element) {
 
 	const std::string elementName(element.Name());
 
-	if(hasEngineType) {
-		switch(engineMode) {
-		case EngineMode::isBatch:
-			if(elementName != "jerry-batch" && elementName != "jerry") {
-				throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\" or \"jerry-batch\"");
-			}
-			break;
-		case EngineMode::isServer:
-			if(elementName != "jerry-server" && elementName != "jerry") {
-				throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\" or \"jerry-server\"");
-			}
-			break;
-		}
-	}
-	else {
-		if(elementName == "jerry-batch") {
-			engineMode = EngineMode::isBatch;
-		}
-		else if(elementName == "jerry-server") {
-			engineMode = EngineMode::isServer;
-		}
-		else {
-			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-batch\" or \"jerry-server\"");
-		}
-		hasEngineType = true;
+	if(elementName != "jerry" && elementName != "jerry-batch" && elementName != "jerry-server") {
+		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-batch\" or \"jerry-server\"");
 	}
 
 	if(element.GetUserData() != nullptr) {
@@ -292,8 +257,14 @@ void Engine::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else if(elementName == "logger") {
 		loggerConfig = LoggerConfig(getFileName(), element);
 	}
+	else if(elementName == "batch-procedure") {
+		if(batchProcedure) {
+			throw XMLException(*this, "Multiple definition of batch-procedure");
+		}
+		batchProcedure = std::unique_ptr<BatchProcedure>(new BatchProcedure(getFileName(), element));
+	}
 	else {
-		entries.emplace_back(new EngineEntry(getFileName(), element, engineMode, hasAnonymousProcedure));
+		entries.emplace_back(new EngineEntry(getFileName(), element));
 	}
 }
 

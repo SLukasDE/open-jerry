@@ -20,7 +20,6 @@
 #define JERRY_CONFIG_ENGINEENTRY_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/EngineMode.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Procedure.h>
@@ -32,7 +31,7 @@
 #include <jerry/config/http/HttpContext.h>
 #include <jerry/config/http/Client.h>
 #include <jerry/config/http/Server.h>
-#include <jerry/config/daemon/Daemon.h>
+#include <jerry/config/DaemonProcedure.h>
 #include <jerry/engine/Engine.h>
 
 #include <memory>
@@ -45,7 +44,7 @@ namespace config {
 
 class EngineEntry : public Config {
 public:
-	EngineEntry(const std::string& fileName, const tinyxml2::XMLElement& element, EngineMode engineMode, bool& hasAnonymousProcedure);
+	EngineEntry(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::Engine& engine) const;
@@ -57,6 +56,8 @@ private:
 	std::unique_ptr<Database> database;
 	std::unique_ptr<Applications> applications;
 
+	std::unique_ptr<DaemonProcedure> daemonProcedure;
+
 	std::unique_ptr<basic::Client> basicClient;
 	std::unique_ptr<basic::BasicContext> basicContext;
 	std::unique_ptr<basic::Server> basicServer;
@@ -64,8 +65,6 @@ private:
 	std::unique_ptr<http::Client> httpClient;
 	std::unique_ptr<http::HttpContext> httpContext;
 	std::unique_ptr<http::Server> httpServer;
-
-	std::unique_ptr<daemon::Daemon> daemon;
 };
 
 } /* namespace config */

@@ -16,16 +16,37 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_ENGINEMODE_H_
-#define JERRY_ENGINEMODE_H_
+#ifndef JERRY_CONFIG_BATCHPROCEDURE_H_
+#define JERRY_CONFIG_BATCHPROCEDURE_H_
+
+#include <jerry/config/Config.h>
+#include <jerry/config/Setting.h>
+#include <jerry/engine/Engine.h>
+
+#include <tinyxml2/tinyxml2.h>
+
+#include <string>
+#include <vector>
+#include <ostream>
 
 namespace jerry {
+namespace config {
 
-enum class EngineMode {
-	isBatch,
-	isServer
+class BatchProcedure : public Config {
+public:
+	BatchProcedure(const std::string& fileName, const tinyxml2::XMLElement& element);
+
+	void save(std::ostream& oStream, std::size_t spaces) const;
+	void install(engine::Engine& engine) const;
+
+private:
+	std::string implementation;
+	std::vector<Setting> settings;
+
+	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
+} /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_ENGINEMODE_H_ */
+#endif /* JERRY_CONFIG_BATCHPROCEDURE_H_ */

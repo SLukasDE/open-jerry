@@ -18,6 +18,11 @@
 
 #include <jerry/Module.h>
 
+/* *************** *
+ * jerry procedure *
+ * *************** */
+#include <jerry/Procedure.h>
+
 /* ****************************** *
  * builtin basic request handlers *
  * ****************************** */
@@ -45,16 +50,12 @@
 #include <jerry/builtin/procedure/authorization/dblookup/Procedure.h>
 #include <jerry/builtin/procedure/authorization/jwt/Procedure.h>
 #include <jerry/builtin/procedure/list/Procedure.h>
+#include <jerry/builtin/procedure/returncode/Procedure.h>
 #include <jerry/builtin/procedure/sleep/Procedure.h>
 
 /* *************** *
  * builtin objects *
  * *************** */
-
-/* *************** *
- * builtin daemons *
- * *************** */
-#include <jerry/builtin/daemon/procedure/Daemon.h>
 
 #include <eslx/Module.h>
 
@@ -147,6 +148,10 @@ void Module::install(esl::module::Module& module) {
 			&builtin::procedure::list::Procedure::createProcedure));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			builtin::procedure::returncode::Procedure::getImplementation(),
+			&builtin::procedure::returncode::Procedure::createProcedure));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
 			builtin::procedure::sleep::Procedure::getImplementation(),
 			&builtin::procedure::sleep::Procedure::createProcedure));
 
@@ -155,11 +160,11 @@ void Module::install(esl::module::Module& module) {
 	 * *************** */
 
 	/* *************** *
-	 * builtin daemons *
+	 * jerry procedure *
 	 * *************** */
-	module.addInterface(esl::processing::daemon::Interface::createInterface(
-			builtin::daemon::procedure::Daemon::getImplementation(),
-			&builtin::daemon::procedure::Daemon::create));
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			Procedure::getImplementation(),
+			&Procedure::create));
 }
 
 } /* namespace jerry */

@@ -1,21 +1,5 @@
-<jerry-server>
-	<!--library file="/lib64/libeslx.so.1.4.0"/-->
-	
-	<!--logger layout="eslx/default"-->
-	<logger layout="">
-		<layout key="showTimestamp" value="true"/>
-		<layout key="showLevel" value="true"/>
-		<layout key="showTypeName" value="true"/>
-		<layout key="showAddress" value="false"/>
-		<layout key="showFile" value="false"/>
-		<layout key="showFunction" value="false"/>
-		<layout key="showLineNo" value="false"/>
-		<layout key="showThreadNo" value="false"/>
-		
-		<setting class="*" level="WARN"/>
-		<setting class="jerry::*" level="TRACE"/>
-		<setting class="jerrA::*" level="INFO"/>
-	</logger>
+<jerry>
+	<include file="logger.xml"/>
 	
 	<procedure id="x" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="1000"/>
@@ -30,7 +14,8 @@
 		<parameter key="procedure-id" value="y"/>
 	</procedure>
 	
-	<daemon implementation="jerry/procedure">
-		<parameter key="procedure-id" value="list"/>
-	</daemon>
-</jerry-server>
+	<daemon-procedure implementation="jerry/list">
+		<parameter key="procedure-id" value="x"/>
+		<parameter key="procedure-id" value="y"/>
+	</daemon-procedure>
+</jerry>

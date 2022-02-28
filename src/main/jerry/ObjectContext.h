@@ -16,28 +16,30 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/builtin/daemon/procedure/ObjectContext.h>
+#ifndef JERRY_OBJECTCONTEXT_H_
+#define JERRY_OBJECTCONTEXT_H_
+
+#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
+
+#include <string>
+#include <map>
+#include <memory>
 
 namespace jerry {
-namespace builtin {
-namespace daemon {
-namespace procedure {
 
-void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
-	objects[id] = std::move(object);
-}
+class ObjectContext final : public esl::object::ObjectContext {
+public:
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
 
-esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {
-	auto iter = objects.find(id);
-	return iter == std::end(objects) ? nullptr : iter->second.get();
-}
+protected:
+	esl::object::Interface::Object* findRawObject(const std::string& id) override;
+	const esl::object::Interface::Object* findRawObject(const std::string& id) const override;
 
-const esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
-	auto iter = objects.find(id);
-	return iter == std::end(objects) ? nullptr : iter->second.get();
-}
+private:
+	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
+};
 
-} /* namespace procedure */
-} /* namespace daemon */
-} /* namespace builtin */
 } /* namespace jerry */
+
+#endif /* JERRY_OBJECTCONTEXT_H_ */

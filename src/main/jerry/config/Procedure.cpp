@@ -25,7 +25,7 @@
 namespace jerry {
 namespace config {
 
-Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& element, EngineMode engineMode, bool& hasAnonymousProcedure)
+Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -34,27 +34,21 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
+			if(!id.empty()) {
+				throw XMLException(*this, "Multiple definitions of attribute 'id'.");
+			}
 			id = attribute->Value();
-			switch(engineMode) {
-			case EngineMode::isBatch:
-				if(id == "") {
-					if(hasAnonymousProcedure) {
-						throw XMLException(*this, "Multiple definitions of anonymous procedures are not allowed.");
-					}
-					hasAnonymousProcedure = true;
-				}
-				break;
-			case EngineMode::isServer:
-				if(id == "") {
-					throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
-				}
-				break;
+			if(id.empty()) {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
+			if(!implementation.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
+			}
 			implementation = attribute->Value();
-			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+			if(implementation.empty()) {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else {
@@ -62,10 +56,10 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 		}
 	}
 
-	if(id == "" && engineMode == EngineMode::isServer) {
+	if(id.empty()) {
 		throw XMLException(*this, "Missing attribute 'id'");
 	}
-	if(implementation == "") {
+	if(implementation.empty()) {
 		throw XMLException(*this, "Missing attribute 'implementation'");
 	}
 

@@ -42,13 +42,67 @@ Logger logger("jerry::engine::Engine");
 } /* anonymous namespace */
 
 
-Engine::Engine(EngineMode aEngineMode)
+Engine::Engine(std::function<void()> aOnProcessRegister, std::function<void()> aOnProcessUnregister)
 : ObjectContext(true),
-  engineMode(aEngineMode)
+  onProcessRegister(aOnProcessRegister),
+  onProcessUnregister(aOnProcessUnregister)
 { }
 
-EngineMode Engine::getEngineMode() const noexcept {
-	return engineMode;
+void Engine::startServers() {
+	const std::size_t processesTotal = basicServers.size() + httpServers.size() + daemons.size();
+	logger.debug << "Starting " << processesTotal << " server processes ...\n";
+
+	std::size_t processesCurrent = 0;
+
+	for(const auto& socket: basicServers) {
+		if(logger.debug) {
+			std::set<std::string> notifiers = socket->getNotifiers();
+			for(const auto& notifier : notifiers) {
+				logger.debug << "   - \"" << notifier << "\"\n";
+			}
+		}
+		socket->listen(onProcessUnregister);
+		onProcessRegister();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Basic server started\n";
+	}
+
+	for(const auto& socket: httpServers) {
+		socket->listen(onProcessUnregister);
+		onProcessRegister();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] HTTP/HTTPS server started\n";
+	}
+
+	for(const auto& daemon: daemons) {
+		daemon->start(onProcessUnregister);
+		onProcessRegister();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Daemon started\n";
+	}
+
+	logger.debug << "All server processes started.\n";
+}
+
+void Engine::stopServers() {
+	const std::size_t processesTotal = basicServers.size() + httpServers.size() + daemons.size();
+	logger.debug << "Stopping " << processesTotal << " server processes ...\n";
+
+	std::size_t processesCurrent = 0;
+
+	for(const auto& socket: basicServers) {
+		socket->release();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Stopping basic server initiated\n";
+	}
+
+	for(const auto& socket: httpServers) {
+		socket->release();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Stopping HTTP/HTTPS server initiated\n";
+	}
+
+	for(const auto& daemon: daemons) {
+		daemon->release();
+		logger.debug << "[" << ++processesCurrent << "/" << processesTotal << "] Stopping daemon initiated\n";
+	}
+
+	logger.debug << "Stopping initiated for all server processes.\n";
 }
 
 void Engine::addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate) {
@@ -58,15 +112,24 @@ void Engine::addCertificate(const std::string& hostname, std::vector<unsigned ch
 }
 
 void Engine::addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile) {
-    std::ifstream keyIFStream(keyFile, std::ios::binary );
-    std::ifstream certificateIFStream(certificateFile, std::ios::binary );
+	std::vector<unsigned char> key;
+	std::vector<unsigned char> certificate;
 
-    // copies all data into buffer
-    auto key = std::vector<unsigned char>(std::istreambuf_iterator<char>(keyIFStream), {});
-    auto certificate = std::vector<unsigned char>(std::istreambuf_iterator<char>(certificateIFStream), {});
+	if(!keyFile.empty()) {
+		std::ifstream ifStream(keyFile, std::ios::binary );
+		if(!ifStream.good()) {
+			throw std::runtime_error("Cannot open key file \"" + keyFile + "\"");
+		}
+	    key = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
+	}
 
-//    logger.info << "Key size: " << key.size() << "\n";
-//    logger.info << "Certificate size: " << certificate.size() << "\n";
+	if(!certificateFile.empty()) {
+		std::ifstream ifStream(certificateFile, std::ios::binary );
+		if(!ifStream.good()) {
+			throw std::runtime_error("Cannot open certificate file \"" + certificateFile + "\"");
+		}
+		certificate = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
+	}
 
     addCertificate(hostname, std::move(key), std::move(certificate));
 }
@@ -81,48 +144,52 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Engine:
 }
 
 void Engine::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
-	if(engineMode == EngineMode::isBatch && id.empty() && dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get()) != nullptr) {
-		std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure(static_cast<esl::processing::procedure::Interface::Procedure*>(object.release()));
-
-		logger.trace << "Set batch procedure\n";
-
-		if(engineMode != EngineMode::isBatch) {
-			throw std::runtime_error("Setting batch procedure is only allowed in batch-mode.");
-		}
-
-		if(!aProcedure) {
-			throw std::runtime_error("Removing batch procedure is not allowed.");
-		}
-
-		if(procedure) {
-			throw std::runtime_error("Multiple definitions of batch procedures are not allowed.");
-		}
-
-		procedure = std::move(aProcedure);
+	if(id.empty()) {
+		throw std::runtime_error("Multiple anonymous object is not allowed.");
 	}
-	else {
-		ObjectContext::addObject(id, std::move(object));
-	}
+	ObjectContext::addObject(id, std::move(object));
 }
 
-esl::processing::procedure::Interface::Procedure* Engine::getBatchProcedure() const {
-	return procedure.get();
+void Engine::addBatchProcedure(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding batch procedure (implementation=\"" << implementation << "\")\n";
+
+	if(batchProcedure) {
+		throw std::runtime_error("Multiple definitions of batch procedures are not allowed.");
+	}
+	batchProcedure = esl::getModule().getInterface<esl::processing::procedure::Interface>(implementation).createProcedure(settings);
+	if(!batchProcedure) {
+		throw std::runtime_error("Cannot create a batch procedure for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
+	}
+	batchProcedurePtr = batchProcedure.get();
+}
+
+void Engine::setBatchProcedure(esl::processing::procedure::Interface::Procedure* aBatchProcedure) {
+	batchProcedurePtr = aBatchProcedure;
+}
+
+esl::processing::procedure::Interface::Procedure* Engine::getBatchProcedure() const noexcept {
+	return batchProcedurePtr;
+}
+
+void Engine::addDaemonProcedure(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
+	logger.trace << "Adding daemon procedure (implementation=\"" << implementation << "\")\n";
+
+	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure = esl::getModule().getInterface<esl::processing::procedure::Interface>(implementation).createProcedure(settings);
+	if(!procedure) {
+		throw std::runtime_error("Cannot create a Procedure for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
+	}
+
+	std::unique_ptr<Daemon> daemon(new Daemon(std::move(procedure)));
+	daemons.push_back(std::move(daemon));
 }
 
 basic::Socket& Engine::addBasicServer(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
 	logger.trace << "Adding basic server (implementation=\"" << implementation << "\")\n";
 
-	if(engineMode != EngineMode::isServer) {
-		throw std::runtime_error("Adding basic-server is only allowed in server-mode.");
-	}
 	std::unique_ptr<basic::Socket> socketPtr(new basic::Socket(settings, implementation));
 	basic::Socket& socket = *socketPtr;
 	basicServers.push_back(std::move(socketPtr));
 	return socket;
-}
-
-const std::vector<std::unique_ptr<basic::Socket>>& Engine::getBasicServers() const {
-	return basicServers;
 }
 
 http::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
@@ -133,44 +200,32 @@ http::Socket& Engine::addHttpServer(bool isHttps, const std::vector<std::pair<st
 		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
 	}
 
-	if(engineMode != EngineMode::isServer) {
-		throw std::runtime_error("Adding http-server is only allowed in server-mode.");
-	}
-
 	std::unique_ptr<http::Socket> socketPtr(new http::Socket(isHttps, settings, implementation));
 	http::Socket& socket = *socketPtr;
 	httpServers.push_back(std::move(socketPtr));
 	return socket;
 }
 
-const std::vector<std::unique_ptr<http::Socket>>& Engine::getHttpServers() const {
-	return httpServers;
-}
-
-void Engine::addDaemon(const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation) {
-	logger.trace << "Adding daemon (implementation=\"" << implementation << "\")\n";
-
-	if(engineMode != EngineMode::isServer) {
-		throw std::runtime_error("Adding daemon is only allowed in server-mode.");
-	}
-
-	std::unique_ptr<esl::processing::daemon::Interface::Daemon> daemon = esl::getModule().getInterface<esl::processing::daemon::Interface>(implementation).createDaemon(settings);
-	if(!daemon) {
-		throw std::runtime_error("Cannot create an daemon for implementation '" + implementation + "' because interface method createDaemon() returns nullptr.");
-	}
-
-	daemons.push_back(std::move(daemon));
-}
-
-const std::vector<std::unique_ptr<esl::processing::daemon::Interface::Daemon>>& Engine::getDaemons() const {
-	return daemons;
-}
-
 void Engine::initializeContext() {
+	/* *********************************************************** *
+	 * add certificates to socket if http-server is used for https *
+	 * *********************************************************** */
+	for(const auto& httpSocket: httpServers) {
+		if(httpSocket->isHttps()) {
+			if(getCertificates().empty()) {
+				throw std::runtime_error("No certificates are available.");
+			}
+			for(const auto& certificate : getCertificates()) {
+				httpSocket->addTLSHost(certificate.first, certificate.second.first, certificate.second.second);
+			}
+		}
+	}
+
+
 	ObjectContext::initializeContext();
 
-	if(procedure) {
-		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(procedure.get());
+	if(batchProcedurePtr) {
+		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(batchProcedurePtr);
 		if(initializeContext) {
 			initializeContext->initializeContext(*this);
 		}
@@ -185,10 +240,7 @@ void Engine::initializeContext() {
 	}
 
 	for(const auto& daemon: daemons) {
-		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(daemon.get());
-		if(initializeContext) {
-			initializeContext->initializeContext(*this);
-		}
+		daemon->initializeContext(*this);
 	}
 }
 

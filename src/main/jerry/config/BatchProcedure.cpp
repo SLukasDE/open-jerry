@@ -16,18 +16,16 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/basic/RequestHandler.h>
+#include <jerry/config/BatchProcedure.h>
+//#include <jerry/config/main/Engine.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
-
-#include <stdexcept>
+#include <esl/utility/String.h>
 
 namespace jerry {
 namespace config {
-namespace basic {
 
-RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLElement& element)
+BatchProcedure::BatchProcedure(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -35,13 +33,14 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
+		// 	<batch-procedure implementation="...">
 		if(std::string(attribute->Name()) == "implementation") {
 			if(!implementation.empty()) {
 				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
 			}
 			implementation = attribute->Value();
 			if(implementation.empty()) {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
 			}
 		}
 		else {
@@ -50,7 +49,7 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 	}
 
 	if(implementation.empty()) {
-		throw XMLException(*this, "Attribute 'implementation' is missing");
+		throw XMLException(*this, "Missing attribute 'implementation");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -66,34 +65,7 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 	}
 }
 
-void RequestHandler::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<requesthandler implementation=\"" << implementation << "\">\n";
-
-	for(const auto& entry : settings) {
-		entry.saveParameter(oStream, spaces+2);
-	}
-
-	oStream << makeSpaces(spaces) << "</requesthandler>\n";
-}
-
-void RequestHandler::install(engine::basic::Context& context) const {
-	esl::module::Interface::Settings eslSettings;
-	for(const auto& setting : settings) {
-		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
-	}
-
-	try {
-		context.addRequestHandler(implementation, eslSettings);
-	}
-	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
-	}
-	catch(...) {
-		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
-	}
-}
-
-void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
+void BatchProcedure::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
@@ -108,6 +80,37 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 	}
 }
 
-} /* namespace basic */
+void BatchProcedure::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<batch-procedure";
+	if(implementation != "") {
+		oStream <<  " implementation=\"" << implementation << "\"";
+	}
+	oStream << ">\n";
+
+	for(const auto& entry : settings) {
+		entry.saveParameter(oStream, spaces+2);
+	}
+
+	oStream << makeSpaces(spaces) << "</batch-procedure>\n";
+}
+
+void BatchProcedure::install(engine::Engine& engine) const {
+	std::vector<std::pair<std::string, std::string>> eslSettings;
+
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	try {
+		engine.addBatchProcedure(eslSettings, implementation);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create daemon for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
+}
+
 } /* namespace config */
 } /* namespace jerry */

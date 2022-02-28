@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/daemon/Daemon.h>
+#include <jerry/config/DaemonProcedure.h>
 //#include <jerry/config/main/Engine.h>
 #include <jerry/config/XMLException.h>
 
@@ -24,9 +24,8 @@
 
 namespace jerry {
 namespace config {
-namespace daemon {
 
-Daemon::Daemon(const std::string& fileName, const tinyxml2::XMLElement& element)
+DaemonProcedure::DaemonProcedure(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
@@ -34,16 +33,23 @@ Daemon::Daemon(const std::string& fileName, const tinyxml2::XMLElement& element)
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		// 	<daemon implementation="...">
+		// 	<daemon-procedure implementation="...">
 		if(std::string(attribute->Name()) == "implementation") {
+			if(!implementation.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
+			}
 			implementation = attribute->Value();
-			if(implementation == "") {
+			if(implementation.empty()) {
 				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
 			}
 		}
 		else {
 			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
+	}
+
+	if(implementation.empty()) {
+		throw XMLException(*this, "Missing attribute 'implementation");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -59,7 +65,7 @@ Daemon::Daemon(const std::string& fileName, const tinyxml2::XMLElement& element)
 	}
 }
 
-void Daemon::parseInnerElement(const tinyxml2::XMLElement& element) {
+void DaemonProcedure::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
@@ -74,8 +80,8 @@ void Daemon::parseInnerElement(const tinyxml2::XMLElement& element) {
 	}
 }
 
-void Daemon::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<daemon";
+void DaemonProcedure::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<daemon-procedure";
 	if(implementation != "") {
 		oStream <<  " implementation=\"" << implementation << "\"";
 	}
@@ -85,10 +91,10 @@ void Daemon::save(std::ostream& oStream, std::size_t spaces) const {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
-	oStream << makeSpaces(spaces) << "</daemon>\n";
+	oStream << makeSpaces(spaces) << "</daemon-procedure>\n";
 }
 
-void Daemon::install(engine::Engine& engine) const {
+void DaemonProcedure::install(engine::Engine& engine) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 
 	for(const auto& setting : settings) {
@@ -96,7 +102,7 @@ void Daemon::install(engine::Engine& engine) const {
 	}
 
 	try {
-		engine.addDaemon(eslSettings, implementation);
+		engine.addDaemonProcedure(eslSettings, implementation);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());
@@ -106,6 +112,5 @@ void Daemon::install(engine::Engine& engine) const {
 	}
 }
 
-} /* namespace daemon */
 } /* namespace config */
 } /* namespace jerry */

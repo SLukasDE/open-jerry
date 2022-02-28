@@ -16,44 +16,37 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_PROCEDURE_H_
-#define JERRY_CONFIG_PROCEDURE_H_
+#ifndef JERRY_CONFIG_DAEMONPROCEDURE_H_
+#define JERRY_CONFIG_DAEMONPROCEDURE_H_
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
-#include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/Application.h>
-
-#include <esl/object/Interface.h>
+#include <jerry/engine/Engine.h>
 
 #include <tinyxml2/tinyxml2.h>
 
 #include <string>
 #include <vector>
 #include <ostream>
-#include <memory>
 
 namespace jerry {
 namespace config {
 
-class Procedure : public Config {
+class DaemonProcedure : public Config {
 public:
-	Procedure(const std::string& fileName, const tinyxml2::XMLElement& element);
+	DaemonProcedure(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::ObjectContext& engineObjectContext) const;
-	void install(engine::Application& engineApplication) const;
+	void install(engine::Engine& engine) const;
 
 private:
-	std::string id;
 	std::string implementation;
 	std::vector<Setting> settings;
 
-	std::unique_ptr<esl::object::Interface::Object> install() const;
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_PROCEDURE_H_ */
+#endif /* JERRY_CONFIG_DAEMONPROCEDURE_H_ */

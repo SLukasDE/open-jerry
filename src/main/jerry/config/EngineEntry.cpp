@@ -22,7 +22,7 @@
 namespace jerry {
 namespace config {
 
-EngineEntry::EngineEntry(const std::string& fileName, const tinyxml2::XMLElement& element, EngineMode engineMode, bool& hasAnonymousProcedure)
+EngineEntry::EngineEntry(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.Name() == nullptr) {
@@ -38,42 +38,39 @@ EngineEntry::EngineEntry(const std::string& fileName, const tinyxml2::XMLElement
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element, engineMode, hasAnonymousProcedure));
+		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
 	else if(elementName == "database") {
 		database = std::unique_ptr<Database>(new Database(getFileName(), element));
 	}
+	else if(elementName == "applications") {
+		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
+	}
+	else if(elementName == "daemon-procedure") {
+		daemonProcedure = std::unique_ptr<DaemonProcedure>(new DaemonProcedure(getFileName(), element));
+	}
+
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
+	else if(elementName == "basic-context") {
+		basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
+	}
+	else if(elementName == "basic-server") {
+		basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
+	}
+
 	else if(elementName == "http-client") {
 		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
-	else if(engineMode == EngineMode::isServer) {
-		if(elementName == "applications") {
-			applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
-		}
-		else if(elementName == "basic-context") {
-			basicContext = std::unique_ptr<basic::BasicContext>(new basic::BasicContext(getFileName(), element));
-		}
-		else if(elementName == "basic-server") {
-			basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
-		}
-		else if(elementName == "http-context") {
-			httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
-		}
-		else if(elementName == "http-server") {
-			httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
-		}
-		else if(elementName == "daemon") {
-			daemon = std::unique_ptr<daemon::Daemon>(new daemon::Daemon(getFileName(), element));
-		}
-		else {
-			throw XMLException(*this, "Unknown element name \"" + elementName + "\".");
-		}
+	else if(elementName == "http-context") {
+		httpContext = std::unique_ptr<http::HttpContext>(new http::HttpContext(getFileName(), element));
+	}
+	else if(elementName == "http-server") {
+		httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\". Maybe element is allowed for server-mode, but configuration is used for batch-mode.");
+		throw XMLException(*this, "Unknown element name \"" + elementName + "\".");
 	}
 }
 
@@ -93,6 +90,9 @@ void EngineEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	if(applications) {
 		applications->save(oStream, spaces);
 	}
+	if(daemonProcedure) {
+		daemonProcedure->save(oStream, spaces);
+	}
 	if(basicClient) {
 		basicClient->save(oStream, spaces);
 	}
@@ -110,9 +110,6 @@ void EngineEntry::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 	if(httpServer) {
 		httpServer->save(oStream, spaces);
-	}
-	if(daemon) {
-		daemon->save(oStream, spaces);
 	}
 }
 
@@ -132,6 +129,9 @@ void EngineEntry::install(engine::Engine& engine) const {
 	if(applications) {
 		applications->install(engine);
 	}
+	if(daemonProcedure) {
+		daemonProcedure->install(engine);
+	}
 	if(basicClient) {
 		basicClient->install(engine);
 	}
@@ -149,9 +149,6 @@ void EngineEntry::install(engine::Engine& engine) const {
 	}
 	if(httpServer) {
 		httpServer->install(engine);
-	}
-	if(daemon) {
-		daemon->install(engine);
 	}
 }
 

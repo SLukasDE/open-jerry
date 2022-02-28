@@ -36,8 +36,11 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "implementation") {
+			if(!implementation.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
+			}
 			implementation = attribute->Value();
-			if(implementation == "") {
+			if(implementation.empty()) {
 				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
@@ -46,7 +49,7 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 		}
 	}
 
-	if(implementation == "") {
+	if(implementation.empty()) {
 		throw XMLException(*this, "Missing attribute 'implementation");
 	}
 

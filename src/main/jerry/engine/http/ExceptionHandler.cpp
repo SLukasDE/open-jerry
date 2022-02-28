@@ -31,6 +31,9 @@
 
 #include <sstream>
 
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+
 namespace jerry {
 namespace engine {
 namespace http {
@@ -38,6 +41,8 @@ namespace http {
 
 namespace {
 Logger logger("jerry::engine::http::ExceptionHandler");
+
+const std::string jerryVersionStr = STRINGIFY(TRANSFORMER_ARTEFACT_VERSION);
 
 const std::string PAGE_301(
 		"<!DOCTYPE html>\n"
@@ -197,9 +202,7 @@ std::string ExceptionHandler::getHTMLContent(bool showException, bool showStackt
 		}
 	}
 
-	outputContent += "<hr><center>jerry/1.4.0</center>\n";
-	outputContent += "</body>\n"
-			"</html>\n";
+	outputContent += "<hr><center>jerry/" + jerryVersionStr + "</center>\n</body>\n</html>\n";
 
     return outputContent;
 }
@@ -207,7 +210,7 @@ std::string ExceptionHandler::getHTMLContent(bool showException, bool showStackt
 std::string ExceptionHandler::getTextContent(bool showException, bool showStacktrace) const {
 	std::string content;
 
-	content = "jerry/1.4.0: " + httpTitle + "\n";
+	content = "jerry/" + jerryVersionStr + ": " + httpTitle + "\n";
 	content += "Status code: " + std::to_string(httpStatusCode) + "\n";
 
 	/* print excpetion message, if enabled */

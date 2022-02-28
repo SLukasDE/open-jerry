@@ -16,39 +16,22 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_DAEMON_DAEMON_H_
-#define JERRY_CONFIG_DAEMON_DAEMON_H_
-
-#include <jerry/config/Config.h>
-#include <jerry/config/Setting.h>
-#include <jerry/engine/Engine.h>
-
-#include <tinyxml2/tinyxml2.h>
-
-#include <string>
-#include <vector>
-#include <ostream>
+#include <jerry/ObjectContext.h>
 
 namespace jerry {
-namespace config {
-namespace daemon {
 
-class Daemon : public Config {
-public:
-	Daemon(const std::string& fileName, const tinyxml2::XMLElement& element);
+void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	objects[id] = std::move(object);
+}
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
+esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {
+	auto iter = objects.find(id);
+	return iter == std::end(objects) ? nullptr : iter->second.get();
+}
 
-private:
-	std::string implementation;
-	std::vector<Setting> settings;
+const esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
+	auto iter = objects.find(id);
+	return iter == std::end(objects) ? nullptr : iter->second.get();
+}
 
-	void parseInnerElement(const tinyxml2::XMLElement& element);
-};
-
-} /* namespace daemon */
-} /* namespace config */
 } /* namespace jerry */
-
-#endif /* JERRY_CONFIG_DAEMON_DAEMON_H_ */

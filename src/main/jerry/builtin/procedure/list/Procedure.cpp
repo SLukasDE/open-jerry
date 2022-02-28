@@ -76,6 +76,7 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 			if(currentProcedureCancel) {
 				break;
 			}
+
 			currentProcedure = procedure;
 		}
 		procedure->procedureRun(objectContext);

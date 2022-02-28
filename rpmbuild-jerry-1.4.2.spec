@@ -1,10 +1,10 @@
-###############################################################################
-# Spec file for Jerry application server
-################################################################################
+##########################################
+# Spec file for Jerry application server #
+##########################################
 
 Summary: Jerry application server
 Name: jerry
-Version: 1.4.1
+Version: 1.4.2
 Release: 1
 License: Freeware
 URL: http://www.sven-lukas.de
@@ -19,7 +19,7 @@ Jerry application server is a reference application server for C++ apps using ES
 #echo "BUILDROOT = $RPM_BUILD_ROOT"
 
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-cp -a ../../build/jerry/1.4.1/default/architecture/linux-gcc/link-executable/jerry $RPM_BUILD_ROOT/usr/bin
+cp -a ../../build/jerry/1.4.2/default/architecture/linux-gcc/link-executable/jerry $RPM_BUILD_ROOT/usr/bin
 
 exit
 
@@ -35,6 +35,9 @@ exit
 %clean
 
 %changelog
+* Sun Feb 27 2022 Sven Lukas <sven.lukas@gmail.com>
+  - Added support for batch execution
+  - Changed Deamon-Support from esl::processing::Daemon to esl::processing::Procedure
 * Sun Feb 6 2022 Sven Lukas <sven.lukas@gmail.com>
   - Added private context usage for apps
   - Allow apps to specify their libraries to load

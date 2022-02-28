@@ -18,7 +18,6 @@
 
 #include <jerry/config/ApplicationEntry.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/EngineMode.h>
 
 namespace jerry {
 namespace config {
@@ -26,8 +25,6 @@ namespace config {
 ApplicationEntry::ApplicationEntry(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
-	static bool dummyHasAnonymousProcedure = false;
-
 	if(element.Name() == nullptr) {
 		throw XMLException(*this, "Element name is empty");
 	}
@@ -41,7 +38,7 @@ ApplicationEntry::ApplicationEntry(const std::string& fileName, const tinyxml2::
 		reference = std::unique_ptr<Reference>(new Reference(getFileName(), element));
 	}
 	else if(elementName == "procedure") {
-		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element, EngineMode::isServer, dummyHasAnonymousProcedure));
+		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
 	else if(elementName == "database") {
 		database = std::unique_ptr<Database>(new Database(getFileName(), element));

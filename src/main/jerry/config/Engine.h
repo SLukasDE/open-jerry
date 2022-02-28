@@ -22,7 +22,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Certificate.h>
 #include <jerry/config/LoggerConfig.h>
-#include <jerry/EngineMode.h>
+#include <jerry/config/BatchProcedure.h>
 #include <jerry/config/EngineEntry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/OptionalBool.h>
@@ -47,24 +47,21 @@ namespace config {
 class Engine : public Config {
 public:
 	Engine(const std::string& fileName);
-
-	EngineMode getEngineMode() const;
+	Engine(const char* xml, std::size_t size);
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();
-	std::unique_ptr<esl::logging::layout::Interface::Layout> install(engine::Engine& engine, esl::logging::appender::Interface::Appender& appender1, esl::logging::appender::Interface::Appender& appenderMemBuffer);
-	//void install(engine::Engine& engine);
+
+	std::unique_ptr<esl::logging::layout::Interface::Layout> installLogging();
+	void installEngine(engine::Engine& jEngine);
 
 private:
 	tinyxml2::XMLDocument xmlDocument;
 
-	bool hasEngineType = false;
-	EngineMode engineMode = EngineMode::isServer;
-
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
 	LoggerConfig loggerConfig;
-	bool hasAnonymousProcedure = false;
+	std::unique_ptr<BatchProcedure> batchProcedure;
 
 	std::vector<std::unique_ptr<EngineEntry>> entries;
 

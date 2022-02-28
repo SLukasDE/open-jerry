@@ -16,36 +16,37 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_
-#define JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_
+#ifndef JERRY_ENGINE_DAEMON_H_
+#define JERRY_ENGINE_DAEMON_H_
 
-#include <esl/object/Interface.h>
+#include <esl/processing/procedure/Interface.h>
 #include <esl/object/ObjectContext.h>
 
-#include <string>
-#include <map>
+#include <functional>
+#include <mutex>
 #include <memory>
 
 namespace jerry {
-namespace builtin {
-namespace daemon {
-namespace procedure {
+namespace engine {
 
-class ObjectContext final : public esl::object::ObjectContext {
+class Daemon {
 public:
-	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
+	Daemon(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
+	~Daemon();
 
-protected:
-	esl::object::Interface::Object* findRawObject(const std::string& id) override;
-	const esl::object::Interface::Object* findRawObject(const std::string& id) const override;
+	void initializeContext(esl::object::ObjectContext& objectContext);
+
+	void start(std::function<void()> onReleasedHandler);
+	void release();
 
 private:
-	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
+	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
+	std::function<void()> onReleasedHandler;
+
+	std::mutex runningMutex;
 };
 
-} /* namespace procedure */
-} /* namespace daemon */
-} /* namespace builtin */
+} /* namespace engine */
 } /* namespace jerry */
 
-#endif /* JERRY_BUILTIN_DAEMON_PROCEDURE_OBJECTCONTEXT_H_ */
+#endif /* JERRY_ENGINE_DAEMON_H_ */
