@@ -33,11 +33,11 @@ namespace {
 Logger logger("jerry::builtin::procedure::authorization::cache::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::createProcedure(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
 }
 
-Procedure::Procedure(const esl::module::Interface::Settings& settings) {
+Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
 	bool hasAuthorizedObjectId = false;
 	bool hasLifetimeRenew = false;
 

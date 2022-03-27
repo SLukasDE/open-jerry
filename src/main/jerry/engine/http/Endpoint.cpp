@@ -30,8 +30,9 @@ namespace {
 Logger logger("jerry::engine::http::Endpoint");
 } /* anonymous namespace */
 
-Endpoint::Endpoint(const std::string& aPath)
-: path("/" + esl::utility::String::trim(std::move(aPath), '/'))
+Endpoint::Endpoint(ProcessRegistry& processRegistry, const std::string& aPath)
+: Context(processRegistry),
+  path("/" + esl::utility::String::trim(std::move(aPath), '/'))
 { }
 
 void Endpoint::dumpTree(std::size_t depth) const {

@@ -28,12 +28,13 @@
 #include <esl/object/Cloneable.h>
 #include <esl/object/Value.h>
 
-#include <map>
-#include <string>
-#include <vector>
-#include <tuple>
-#include <memory>
 #include <chrono>
+#include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -47,9 +48,9 @@ public:
 		return "jerry/authorization-cache";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> createProcedure(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	Procedure(const esl::module::Interface::Settings& settings);
+	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	void initializeContext(esl::object::ObjectContext& objectContext) override;
 

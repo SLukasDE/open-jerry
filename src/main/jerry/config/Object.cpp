@@ -86,17 +86,11 @@ void Object::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</object>\n";
 }
 
-void Object::install(engine::ObjectContext& engineObjectContext) const {
-	engineObjectContext.addObject(id, install());
+void Object::install(esl::object::ObjectContext& engineObjectContext) const {
+	engineObjectContext.addObject(id, create());
 }
 
-void Object::install(engine::Application& engineApplication) const {
-	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
-	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
-	engineApplication.addObject(id, std::move(eslObject));
-}
-
-std::unique_ptr<esl::object::Interface::Object> Object::install() const {
+std::unique_ptr<esl::object::Interface::Object> Object::create() const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));

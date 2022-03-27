@@ -30,7 +30,7 @@ namespace {
 Logger logger("jerry::engine::http::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(Applications& aRefApplications)
+EntryImpl::EntryImpl(main::Applications& aRefApplications)
 : refApplications(&aRefApplications)
 { }
 
@@ -202,12 +202,9 @@ esl::io::Input EntryImpl::accept(RequestContext& requestContext) {
 				continue;
 			}
 
-			jerry::engine::http::Context* context = appsEntry.second->getHttpListener();
-			if(context) {
-				esl::io::Input input = context->accept(requestContext);
-				if(input) {
-					return input;
-				}
+			esl::io::Input input = appsEntry.second->getHttpContext().accept(requestContext);
+			if(input) {
+				return input;
 			}
 		}
 	}

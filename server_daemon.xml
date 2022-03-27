@@ -14,8 +14,51 @@
 		<parameter key="procedure-id" value="y"/>
 	</procedure>
 	
-	<daemon-procedure implementation="jerry/list">
+	<!--procedure implementation="jerry/list">
 		<parameter key="procedure-id" value="x"/>
 		<parameter key="procedure-id" value="y"/>
-	</daemon-procedure>
+	</procedure-->
+	<procedure id="1" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="2" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="3" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="4" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="5" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="6" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="7" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="8" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	
+	<procedure id="list2" implementation="jerry/list">
+		<parameter key="procedure-id" value="1"/>
+		<parameter key="procedure-id" value="2"/>
+		<parameter key="procedure-id" value="3"/>
+		<parameter key="procedure-id" value="4"/>
+		<parameter key="procedure-id" value="5"/>
+		<parameter key="procedure-id" value="6"/>
+		<parameter key="procedure-id" value="7"/>
+		<parameter key="procedure-id" value="8"/>
+	</procedure>
+	
+	<procedure implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="10000"/>
+	</procedure>
+	
+	<procedure implementation="jerry/detach">
+		<parameter key="procedure-id" value="list2"/>
+	</procedure>
 </jerry>

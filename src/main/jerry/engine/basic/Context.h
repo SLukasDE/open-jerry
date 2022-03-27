@@ -22,10 +22,11 @@
 #include <jerry/engine/ObjectContext.h>
 #include <jerry/engine/basic/Entry.h>
 
-#include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/module/Interface.h>
 #include <esl/processing/procedure/Interface.h>
+#include <esl/com/basic/server/RequestContext.h>
+#include <esl/com/basic/server/requesthandler/Interface.h>
 
 #include <string>
 #include <set>
@@ -38,16 +39,16 @@ namespace basic {
 
 class Context : public ObjectContext {
 public:
+	using ObjectContext::ObjectContext;
 
 	void addApplications(const std::string& refId);
 
 	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
-	Context& addContext(const std::string& id, bool inheritObjects);
 	void addContext(const std::string& refId);
-
-	void addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings);
+	void addContext(std::unique_ptr<Context> context);
+	void addRequestHandler(std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler);
 
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;

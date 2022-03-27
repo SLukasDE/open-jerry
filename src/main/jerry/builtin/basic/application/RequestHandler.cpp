@@ -69,12 +69,9 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
 			continue;
 		}
 
-		jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
-		if(context) {
-			esl::io::Input input = context->accept(requestContext);
-			if(input) {
-				return engine::InputProxy::create(std::move(input));
-			}
+		esl::io::Input input = appsEntry.second->getBasicContext().accept(requestContext);
+		if(input) {
+			return engine::InputProxy::create(std::move(input));
 		}
 	}
 	return esl::io::Input();
@@ -85,7 +82,7 @@ std::set<std::string> RequestHandler::getNotifiers() const {
 }
 
 void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
-	applications = objectContext.findObject<engine::Applications>(applicationsId);
+	applications = objectContext.findObject<engine::main::Applications>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find application object with id \"" + applicationsId + "\"");
 	}

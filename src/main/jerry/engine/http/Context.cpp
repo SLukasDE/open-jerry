@@ -22,11 +22,10 @@
 #include <jerry/engine/http/Host.h>
 #include <jerry/engine/http/RequestContext.h>
 #include <jerry/engine/http/ExceptionHandler.h>
-#include <jerry/engine/Applications.h>
+#include <jerry/engine/main/Applications.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/object/InitializeContext.h>
 
 #include <stdexcept>
@@ -40,8 +39,9 @@ namespace {
 Logger logger("jerry::engine::http::Context");
 } /* anonymous namespace */
 
-Context::Context(bool aFollowParentOnFind)
-: followParentOnFind(aFollowParentOnFind)
+Context::Context(ProcessRegistry& processRegistry, bool aFollowParentOnFind)
+: ObjectContext(processRegistry),
+  followParentOnFind(aFollowParentOnFind)
 { }
 
 void Context::setParent(Context* context) {
@@ -56,7 +56,7 @@ const Context* Context::getParent() const {
 }
 
 void Context::addApplications(const std::string& refId) {
-	Applications* applications = findObject<Applications>(refId);
+	main::Applications* applications = findObject<main::Applications>(refId);
 
 	if(applications == nullptr) {
 	    throw std::runtime_error("No applications-object found with ref-id=\"" + refId + "\".");
@@ -79,24 +79,6 @@ void Context::addProcedure(const std::string& refId) {
 	entries.emplace_back(new EntryImpl(*procedure));
 }
 
-Context& Context::addContext(const std::string& id, bool inheritObjects) {
-	std::unique_ptr<Context> context(new Context);
-	Context& reference = *context;
-
-	if(id == "") {
-		entries.emplace_back(new EntryImpl(std::move(context)));
-	}
-	else {
-		addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
-	}
-
-	if(inheritObjects) {
-		reference.setParent(this);
-	}
-
-	return reference;
-}
-
 void Context::addContext(const std::string& refId) {
 	Context* context = findObject<Context>(refId);
 
@@ -107,35 +89,19 @@ void Context::addContext(const std::string& refId) {
 	entries.emplace_back(new EntryImpl(*context));
 }
 
-Context& Context::addEndpoint(const std::string& path, bool inheritObjects) {
-	std::unique_ptr<Endpoint> endpoint(new Endpoint(path));
-	Context& reference = *endpoint;
+void Context::addContext(std::unique_ptr<Context> context) {
+	entries.emplace_back(new EntryImpl(std::move(context)));
+}
 
+void Context::addEndpoint(std::unique_ptr<Endpoint> endpoint) {
 	entries.emplace_back(new EntryImpl(std::move(endpoint)));
-
-	if(inheritObjects) {
-		reference.setParent(this);
-	}
-
-	return reference;
 }
 
-Context& Context::addHost(const std::string& serverName, bool inheritObjects) {
-	std::unique_ptr<Host> host(new Host(serverName));
-	Context& reference = *host;
-
+void Context::addHost(std::unique_ptr<Host> host) {
 	entries.emplace_back(new EntryImpl(std::move(host)));
-
-	if(inheritObjects) {
-		reference.setParent(this);
-	}
-
-	return reference;
 }
 
-void Context::addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings) {
-	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
-	requestHandler = esl::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createRequestHandler(settings);
+void Context::addRequestHandler(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler) {
 	entries.emplace_back(new EntryImpl(std::move(requestHandler)));
 }
 

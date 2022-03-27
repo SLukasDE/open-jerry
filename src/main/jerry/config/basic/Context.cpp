@@ -132,22 +132,57 @@ void Context::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Context::install(engine::basic::Context& engineBasicContext) const {
-	if(refId == "") {
-		engine::basic::Context& newEngineContext = engineBasicContext.addContext(id, inherit);
+	if(refId.empty()) {
+		std::unique_ptr<engine::basic::Context> basicContext(new engine::basic::Context(engineBasicContext.getProcessRegistry()));
+		engine::basic::Context& basicContextRef = *basicContext;
+
+		if(inherit) {
+			basicContextRef.setParent(&engineBasicContext);
+		}
+
+		if(id.empty()) {
+			engineBasicContext.addContext(std::move(basicContext));
+		}
+		else {
+			engineBasicContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(basicContext.release()));
+		}
 
 		/* *****************
 		 * install entries *
 		 * *****************/
-		for(const auto& entry : entries) {
-			entry->install(newEngineContext);
-		}
+		installEntries(basicContextRef);
 	}
 	else {
 		engineBasicContext.addContext(refId);
 	}
 }
 
+const std::string& Context::getId() const noexcept {
+	return id;
+}
+
+const std::string& Context::getRefId() const noexcept {
+	return refId;
+}
+
+bool Context::getInherit() const noexcept {
+	return inherit;
+}
+
+void Context::installEntries(engine::basic::Context& newContext) const {
+	/* *****************
+	 * install entries *
+	 * *****************/
+	for(const auto& entry : entries) {
+		entry->install(newContext);
+	}
+}
+
 void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(!refId.empty()) {
+		throw XMLException(*this, "No content allowed if 'ref-id' is specified.");
+	}
+
 	entries.emplace_back(new EntryImpl(getFileName(), element));
 }
 

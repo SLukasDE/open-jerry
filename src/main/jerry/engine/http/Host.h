@@ -20,6 +20,7 @@
 #define JERRY_ENGINE_HTTP_HOST_H_
 
 #include <jerry/engine/http/Context.h>
+#include <jerry/engine/ProcessRegistry.h>
 
 #include <string>
 
@@ -27,10 +28,9 @@ namespace jerry {
 namespace engine {
 namespace http {
 
-
 class Host : public Context {
 public:
-	Host(const std::string& serverName);
+	Host(ProcessRegistry& processRegistry, const std::string& serverName);
 
 	void dumpTree(std::size_t depth) const override;
 

@@ -23,6 +23,7 @@
 #include <jerry/config/http/Entry.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/engine/http/Host.h>
 
 #include <esl/utility/String.h>
 
@@ -95,23 +96,31 @@ void Host::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Host::install(engine::http::Context& engineHttpContext) const {
-	engine::http::Context& newEngineContext = engineHttpContext.addHost(serverName, inherit);
+	std::unique_ptr<engine::http::Host> httpHost(new engine::http::Host(engineHttpContext.getProcessRegistry(), serverName));
+	engine::http::Host& httpHostRef = *httpHost;
+
+	if(inherit) {
+		httpHostRef.setParent(&engineHttpContext);
+	}
+
+	engineHttpContext.addHost(std::move(httpHost));
+
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(newEngineContext);
+		entry->install(httpHostRef);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
+		httpHostRef.addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(newEngineContext);
+	exceptions.install(httpHostRef);
 }
 
 void Host::parseInnerElement(const tinyxml2::XMLElement& element) {

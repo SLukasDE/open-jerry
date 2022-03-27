@@ -77,6 +77,9 @@ void RequestHandler::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void RequestHandler::install(engine::basic::Context& context) const {
+#if 1
+	context.addRequestHandler(create());
+#else
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
@@ -91,6 +94,7 @@ void RequestHandler::install(engine::basic::Context& context) const {
 	catch(...) {
 		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
+#endif
 }
 
 void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
@@ -106,6 +110,30 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else {
 		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
 	}
+}
+
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::create() const {
+	esl::module::Interface::Settings eslSettings;
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler;
+	try {
+		requestHandler = esl::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation).createRequestHandler(eslSettings);
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
+
+	if(!requestHandler) {
+		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because interface method createRequestHandler() returns nullptr.");
+	}
+
+	return requestHandler;
 }
 
 } /* namespace basic */

@@ -18,7 +18,7 @@
 
 #include <jerry/engine/http/RequestHandler.h>
 #include <jerry/engine/http/RequestContext.h>
-#include <jerry/engine/http/Socket.h>
+#include <jerry/engine/http/Server.h>
 #include <jerry/engine/http/InputProxy.h>
 #include <jerry/engine/http/ExceptionHandler.h>
 #include <jerry/Logger.h>
@@ -37,8 +37,8 @@ namespace {
 Logger logger("jerry::engine::http::RequestHandler");
 }
 
-RequestHandler::RequestHandler(Socket& aSocket)
-: socket(aSocket)
+RequestHandler::RequestHandler(Server& aServer)
+: server(aServer)
 { }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& baseRequestContext) const {
@@ -48,10 +48,12 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 		/* Access log */
 		logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
 
-		esl::io::Input input = socket.getContext().accept(*requestContext);
+		esl::io::Input input = server.getContext().accept(*requestContext);
 		if(input) {
 			return InputProxy::create(std::move(input), std::move(requestContext));
 		}
+		throw esl::com::http::server::exception::StatusCode(404);
+
 	}
 	catch(...) {
 		ExceptionHandler exceptionHandler(std::current_exception());

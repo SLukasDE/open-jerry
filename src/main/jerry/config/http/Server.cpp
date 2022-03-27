@@ -18,9 +18,10 @@
 
 #include <jerry/config/http/Server.h>
 #include <jerry/config/http/Exceptions.h>
-//#include <jerry/config/main/Engine.h>
+#include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/http/Socket.h>
+#include <jerry/engine/http/Server.h>
+#include <jerry/Logger.h>
 
 #include <esl/utility/String.h>
 
@@ -28,12 +29,18 @@ namespace jerry {
 namespace config {
 namespace http {
 
+namespace {
+Logger logger("jerry::config::http::Server");
+} /* anonymous namespace */
+
 Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
 		throw XMLException(*this, "Element has user data but it should be empty");
 	}
+
+	bool hasInherit = false;
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		// 	<http-server implementation="mhd4esl" https="true">
@@ -55,6 +62,22 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
 			}
 		}
+		else if(std::string(attribute->Name()) == "inherit") {
+			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
+			if(hasInherit) {
+				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+			}
+			hasInherit = true;
+			if(inheritStr == "true") {
+				inherit = true;
+			}
+			else if(inheritStr == "false") {
+				inherit = false;
+			}
+			else {
+				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+			}
+		}
 		else {
 			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
@@ -71,10 +94,91 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		parseInnerElement(*innerElement);
 		setXMLFile(oldXmlFile);
 	}
+}
 
-	if(!listener) {
-		throw XMLException(*this, "Missing definition of element \"listener\"");
+void Server::save(std::ostream& oStream, std::size_t spaces) const {
+	oStream << makeSpaces(spaces) << "<http-server";
+	if(implementation != "") {
+		oStream <<  " implementation=\"" << implementation << "\"";
 	}
+
+	if(isHttps) {
+		oStream << " https=\"true\"";
+	}
+
+	if(inherit) {
+		oStream << " inherit=\"true\"";
+	}
+	else {
+		oStream << " inherit=\"false\"";
+	}
+
+	oStream << ">\n";
+
+	for(const auto& entry : settings) {
+		entry.saveParameter(oStream, spaces+2);
+	}
+
+	for(const auto& entry : entries) {
+		entry->save(oStream, spaces+2);
+	}
+
+	for(const auto& responseHeader : responseHeaders) {
+		responseHeader.saveResponseHeader(oStream, spaces+2);
+	}
+
+	exceptions.save(oStream, spaces+2);
+
+	oStream << makeSpaces(spaces) << "</http-server>\n";
+}
+
+void Server::install(engine::main::Context& engineMainContext) const {
+	std::vector<std::pair<std::string, std::string>> eslSettings;
+
+	for(const auto& setting : settings) {
+		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
+	}
+
+	try {
+		if(isHttps) {
+			logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\")\n";
+		}
+		else {
+			logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
+		}
+
+		std::unique_ptr<engine::http::Server> server(new engine::http::Server(engineMainContext, isHttps, eslSettings, implementation));
+		engine::http::Server& serverRef = *server;
+
+		if(inherit) {
+			serverRef.getContext().ObjectContext::setParent(&engineMainContext);
+		}
+
+		engineMainContext.addHttpServer(std::move(server));
+
+		/* *****************
+		 * install entries *
+		 * *****************/
+		for(const auto& entry : entries) {
+			entry->install(serverRef.getContext());
+		}
+
+		/* **********************
+		 * Set response headers *
+		 * **********************/
+		for(const auto& responseHeader : responseHeaders) {
+			serverRef.getContext().addHeader(responseHeader.key, responseHeader.value);
+		}
+
+		exceptions.install(serverRef.getContext());
+	}
+	catch(const std::exception& e) {
+		throw XMLException(*this, e.what());
+	}
+	catch(...) {
+		throw XMLException(*this, "Could not create http-socket for implementation '" + implementation + "' because an unknown exception occurred.");
+	}
+
 }
 
 void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
@@ -87,54 +191,15 @@ void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(innerElementName == "parameter") {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
-	else if(innerElementName == "listener") {
-		if(listener) {
-			throw XMLException(*this, "Multiple definition of element \"listener\"");
-		}
-		listener.reset(new Listener(getFileName(), element));
+	else if(innerElementName == "response-header") {
+		responseHeaders.push_back(Setting(getFileName(), element, false));
+	}
+	else if(innerElementName == "exceptions") {
+		exceptions = Exceptions(getFileName(), element);
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + innerElementName + "\"");
+		entries.emplace_back(new EntryImpl(getFileName(), element));
 	}
-}
-
-void Server::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<http-server";
-	if(implementation != "") {
-		oStream <<  " implementation=\"" << implementation << "\"";
-	}
-	if(isHttps) {
-		oStream << " https=\"true\"";
-	}
-	oStream << ">\n";
-
-	for(const auto& entry : settings) {
-		entry.saveParameter(oStream, spaces+2);
-	}
-
-	listener->save(oStream, spaces+2);
-
-	oStream << makeSpaces(spaces) << "</http-server>\n";
-}
-
-void Server::install(engine::Engine& jEngine) const {
-	std::vector<std::pair<std::string, std::string>> eslSettings;
-
-	for(const auto& setting : settings) {
-		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
-	}
-
-	try {
-		engine::http::Socket& engineHttpSocket = jEngine.addHttpServer(isHttps, eslSettings, implementation);
-		listener->install(jEngine, engineHttpSocket);
-	}
-	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
-	}
-	catch(...) {
-		throw XMLException(*this, "Could not create http-socket for implementation '" + implementation + "' because an unknown exception occurred.");
-	}
-
 }
 
 } /* namespace http */

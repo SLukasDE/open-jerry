@@ -19,37 +19,18 @@
 #ifndef JERRY_CONFIG_HTTP_PROCEDURE_H_
 #define JERRY_CONFIG_HTTP_PROCEDURE_H_
 
-#include <jerry/config/Config.h>
-#include <jerry/config/Setting.h>
+#include <jerry/config/Procedure.h>
 #include <jerry/engine/http/Context.h>
-
-#include <tinyxml2/tinyxml2.h>
-
-#include <vector>
-#include <ostream>
-#include <string>
-#include <memory>
 
 namespace jerry {
 namespace config {
 namespace http {
 
-class Procedure : public Config {
+class Procedure : public config::Procedure {
 public:
-	Procedure(const Procedure&) = delete;
-	Procedure(const std::string& fileName, const tinyxml2::XMLElement& element);
+	using config::Procedure::Procedure;
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::http::Context& engineHttpContext) const;
-
-private:
-	std::string id;
-	std::string implementation;
-	std::string refId;
-
-	std::vector<Setting> settings;
-
-	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 
 } /* namespace http */

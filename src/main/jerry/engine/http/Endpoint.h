@@ -20,6 +20,7 @@
 #define JERRY_ENGINE_HTTP_ENDPOINT_H_
 
 #include <jerry/engine/http/Context.h>
+#include <jerry/engine/ProcessRegistry.h>
 
 #include <string>
 
@@ -27,10 +28,9 @@ namespace jerry {
 namespace engine {
 namespace http {
 
-
 class Endpoint : public Context {
 public:
-	Endpoint(const std::string& path);
+	Endpoint(ProcessRegistry& processRegistry, const std::string& path);
 
 	void dumpTree(std::size_t depth) const override;
 

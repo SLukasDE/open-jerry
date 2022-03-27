@@ -1,7 +1,7 @@
 <jerry>
 	<include file="logger.xml"/>
 	
-	<certificate domain="*" key="server.key" cert="server.pem"/>
+	<certificate domain="*" key="server.key" cert="server.pub"/>
 	
 	<http-context id="x">
 		<requesthandler implementation="jerry/filebrowser">
@@ -106,10 +106,11 @@
 	<http-server implementation="mhd4esl" https="false">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
-		<listener>
+		<context ref-id="ref-context"/>
+		<!--context>
 			<host server-name="*">
 				<context ref-id="ref-context"/>
 			</host>
-		</listener>
+		</context-->
 	</http-server>
 </jerry>

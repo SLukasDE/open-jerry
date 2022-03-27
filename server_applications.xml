@@ -1,7 +1,7 @@
 <jerry>
 	<include file="logger.xml"/>
 	
-	<certificate domain="*" key="server.key" cert="server.pem"/>
+	<certificate domain="*" key="server.key" cert="server.pub"/>
 	
 	<applications id="apps" path="apps"/>
 	
@@ -12,8 +12,8 @@
 	<http-server implementation="mhd4esl" https="false">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
-		<listener>
+		<context>
 			<applications ref-id="apps"/>
-		</listener>
+		</context>
 	</http-server>
 </jerry>

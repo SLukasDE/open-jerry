@@ -49,7 +49,7 @@ public:
 	void install(engine::basic::Context& engineBasicContext) const override;
 
 private:
-	std::unique_ptr<config::Object> object;
+	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
 	std::unique_ptr<Database> database;
 	std::unique_ptr<Procedure> procedure;

@@ -28,8 +28,9 @@ namespace {
 Logger logger("jerry::engine::http::Host");
 } /* anonymous namespace */
 
-Host::Host(const std::string& aServerName)
-: serverName(aServerName)
+Host::Host(ProcessRegistry& processRegistry, const std::string& aServerName)
+: Context(processRegistry),
+  serverName(aServerName)
 { }
 
 void Host::dumpTree(std::size_t depth) const {

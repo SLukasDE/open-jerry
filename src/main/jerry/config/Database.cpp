@@ -81,16 +81,10 @@ void Database::save(std::ostream& oStream, std::size_t spaces) const {
 
 
 void Database::install(engine::ObjectContext& engineObjectContext) const {
-	engineObjectContext.addObject(id, install());
+	engineObjectContext.addObject(id, create());
 }
 
-void Database::install(engine::Application& engineApplication) const {
-	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
-	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
-	engineApplication.addObject(id, std::move(eslObject));
-}
-
-std::unique_ptr<esl::object::Interface::Object> Database::install() const {
+std::unique_ptr<esl::object::Interface::Object> Database::create() const {
 	esl::module::Interface::Settings eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));

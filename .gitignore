@@ -13,6 +13,7 @@ build.sh
 ca-key.pem
 server.key
 server.pem
+server.pub
 cp_libs.sh
 my.db
 src/main/rapidjson

@@ -24,7 +24,7 @@
 #include <jerry/engine/http/Endpoint.h>
 #include <jerry/engine/http/Host.h>
 #include <jerry/engine/http/RequestContext.h>
-#include <jerry/engine/Applications.h>
+#include <jerry/engine/main/Applications.h>
 
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/io/Input.h>
@@ -40,7 +40,7 @@ namespace http {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(Applications& refApplications);
+	EntryImpl(main::Applications& refApplications);
 	EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	EntryImpl(esl::processing::procedure::Interface::Procedure& refProcedure);
 	EntryImpl(std::unique_ptr<Context> context);
@@ -54,7 +54,7 @@ public:
 	esl::io::Input accept(RequestContext& requestContext) override;
 
 private:
-	Applications* refApplications = nullptr;
+	main::Applications* refApplications = nullptr;
 
 	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
 	esl::processing::procedure::Interface::Procedure* refProcedure = nullptr;

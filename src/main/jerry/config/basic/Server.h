@@ -21,8 +21,8 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
-#include <jerry/config/basic/Listener.h>
-#include <jerry/engine/Engine.h>
+#include <jerry/config/basic/Entry.h>
+#include <jerry/engine/main/Context.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -41,12 +41,13 @@ public:
 	Server(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	void install(engine::Engine& engine) const;
+	void install(engine::main::Context& engineMainContext) const;
 
 private:
 	std::string implementation;
 	std::vector<Setting> settings;
-	std::unique_ptr<Listener> listener;
+	bool inherit = true;
+	std::vector<std::unique_ptr<Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };

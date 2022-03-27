@@ -74,16 +74,6 @@ void Reference::install(engine::ObjectContext& engineObjectContext) const {
 	engineObjectContext.addReference(id, *eslObject);
 }
 
-void Reference::install(engine::Application& engineApplication) const {
-	esl::object::Interface::Object* eslObject = engineApplication.findObject<esl::object::Interface::Object>(refId);
-	if(eslObject == nullptr) {
-        throw std::runtime_error("Cannot add reference with id '" + id + "', because it's reference id '" + refId + "' does not exists.");
-	}
-
-	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
-	engineApplication.addReference(id, *eslObject);
-}
-
 } /* namespace config */
 } /* namespace jerry */
 

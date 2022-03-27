@@ -31,17 +31,17 @@ namespace engine {
 namespace basic {
 
 
-class Socket;
+class Server;
 
 class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
 public:
-	RequestHandler(Socket& socket);
+	RequestHandler(Server& server);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
 
 private:
-	Socket& socket;
+	Server& server;
 };
 
 

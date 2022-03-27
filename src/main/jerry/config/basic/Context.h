@@ -42,11 +42,18 @@ public:
 	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::basic::Context& basicContext) const;
 
+	const std::string& getId() const noexcept;
+	const std::string& getRefId() const noexcept;
+	bool getInherit() const noexcept;
+
+protected:
+	void installEntries(engine::basic::Context& newContext) const;
+
 private:
 	std::string id;
 	std::string refId;
-
 	bool inherit = true;
+
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	void parseInnerElement(const tinyxml2::XMLElement& element);

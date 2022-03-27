@@ -21,8 +21,6 @@
 
 #include <esl/object/Value.h>
 
-#include <thread>
-#include <string>
 #include <stdexcept>
 
 namespace jerry {
@@ -35,11 +33,11 @@ using ReturnCodeObject = esl::object::Value<int>;
 Logger logger("jerry::builtin::procedure::returncode::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::createProcedure(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
 }
 
-Procedure::Procedure(const esl::module::Interface::Settings& settings) {
+Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
 	bool hasReturnCode = false;
 	for(const auto& setting : settings) {
 		if(setting.first == "return-code") {

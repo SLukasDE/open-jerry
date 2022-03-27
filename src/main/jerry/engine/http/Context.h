@@ -22,10 +22,13 @@
 #include <jerry/engine/http/Entry.h>
 #include <jerry/engine/http/Document.h>
 #include <jerry/engine/ObjectContext.h>
+#include <jerry/engine/ProcessRegistry.h>
 
 #include <esl/io/Input.h>
 #include <esl/module/Interface.h>
 #include <esl/processing/procedure/Interface.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/requesthandler/Interface.h>
 
 #include <string>
 #include <map>
@@ -36,8 +39,9 @@ namespace jerry {
 namespace engine {
 namespace http {
 
-
 class RequestContext;
+class Endpoint;
+class Host;
 
 class Context : public ObjectContext {
 public:
@@ -47,7 +51,7 @@ public:
 		obFalse
 	};
 
-	Context(bool followParentOnFind = true);
+	Context(ProcessRegistry& processRegistry, bool followParentOnFind = true);
 
 	void setParent(Context* context);
 	const Context* getParent() const;
@@ -57,13 +61,11 @@ public:
 	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
-	Context& addContext(const std::string& id, bool inheritObjects);
 	void addContext(const std::string& refId);
-
-	Context& addEndpoint(const std::string& path, bool inheritObjects);
-	Context& addHost(const std::string& serverName, bool inheritObjects);
-
-	void addRequestHandler(const std::string& implementation, const esl::module::Interface::Settings& settings);
+	void addContext(std::unique_ptr<Context> context);
+	void addEndpoint(std::unique_ptr<Endpoint> endpoint);
+	void addHost(std::unique_ptr<Host> host);
+	void addRequestHandler(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
 
 	void setShowException(OptionalBool showException);
 	bool getShowException() const;

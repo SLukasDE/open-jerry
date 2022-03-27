@@ -28,16 +28,16 @@ namespace engine {
 namespace http {
 
 
-class Socket;
+class Server;
 
 class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
 public:
-	RequestHandler(Socket& socket);
+	RequestHandler(Server& server);
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 
 private:
-	Socket& socket;
+	Server& server;
 };
 
 

@@ -26,12 +26,11 @@ namespace jerry {
 namespace engine {
 namespace basic {
 
-
 namespace {
 Logger logger("jerry::engine::basic::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(Applications& aRefApplications)
+EntryImpl::EntryImpl(main::Applications& aRefApplications)
 : refApplications(&aRefApplications)
 { }
 
@@ -97,11 +96,8 @@ std::set<std::string> EntryImpl::getNotifiers() const {
 				continue;
 			}
 
-			jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
-			if(context) {
-				std::set<std::string> tmpNotifiers = context->getNotifiers();
-				notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
-			}
+			std::set<std::string> tmpNotifiers = appsEntry.second->getBasicContext().getNotifiers();
+			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
 		}
 
 		return notifiers;
@@ -193,12 +189,9 @@ esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& reques
 				continue;
 			}
 
-			jerry::engine::basic::Context* context = appsEntry.second->getBasicListener();
-			if(context) {
-				esl::io::Input input = context->accept(requestContext);
-				if(input) {
-					return input;
-				}
+			esl::io::Input input = appsEntry.second->getBasicContext().accept(requestContext);
+			if(input) {
+				return input;
 			}
 		}
 	}

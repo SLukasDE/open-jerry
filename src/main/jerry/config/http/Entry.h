@@ -25,8 +25,6 @@
 #include <string>
 #include <ostream>
 
-#include <tinyxml2/tinyxml2.h>
-
 namespace jerry {
 namespace config {
 namespace http {

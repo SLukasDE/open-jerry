@@ -21,7 +21,7 @@
 /* *************** *
  * jerry procedure *
  * *************** */
-#include <jerry/Procedure.h>
+#include <jerry/engine/main/Context.h>
 
 /* ****************************** *
  * builtin basic request handlers *
@@ -33,6 +33,7 @@
 /* ***************************** *
  * builtin http request handlers *
  * ***************************** */
+#include <jerry/builtin/http/applications/RequestHandler.h>
 #include <jerry/builtin/http/authentication/RequestHandler.h>
 #include <jerry/builtin/http/database/RequestHandler.h>
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
@@ -49,6 +50,7 @@
 #include <jerry/builtin/procedure/authorization/cache/Procedure.h>
 #include <jerry/builtin/procedure/authorization/dblookup/Procedure.h>
 #include <jerry/builtin/procedure/authorization/jwt/Procedure.h>
+#include <jerry/builtin/procedure/detach/Procedure.h>
 #include <jerry/builtin/procedure/list/Procedure.h>
 #include <jerry/builtin/procedure/returncode/Procedure.h>
 #include <jerry/builtin/procedure/sleep/Procedure.h>
@@ -56,13 +58,20 @@
 /* *************** *
  * builtin objects *
  * *************** */
+#include <jerry/builtin/object/standard/Int.h>
+#include <jerry/builtin/object/standard/MapStringString.h>
+#include <jerry/builtin/object/standard/SetInt.h>
+#include <jerry/builtin/object/standard/SetString.h>
+#include <jerry/builtin/object/standard/String.h>
+#include <jerry/builtin/object/standard/VectorInt.h>
+#include <jerry/builtin/object/standard/VectorPairStringString.h>
+#include <jerry/builtin/object/standard/VectorString.h>
 
 #include <eslx/Module.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/processing/procedure/Interface.h>
-#include <esl/processing/daemon/Interface.h>
 #include <esl/object/Interface.h>
 #include <esl/Module.h>
 
@@ -78,93 +87,130 @@ void Module::install(esl::module::Module& module) {
 	 * ***************************** */
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			builtin::basic::dump::RequestHandler::getImplementation(),
+			"jerry/dump", // builtin::basic::dump::RequestHandler::getImplementation(),
 			&builtin::basic::dump::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			builtin::basic::echo::RequestHandler::getImplementation(),
+			"jerry/echo", // builtin::basic::echo::RequestHandler::getImplementation(),
 			&builtin::basic::echo::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			builtin::basic::application::RequestHandler::getImplementation(),
+			"jerry/applications", // builtin::basic::application::RequestHandler::getImplementation(),
 			&builtin::basic::application::RequestHandler::createRequestHandler));
 
 	/* ***************************** *
 	 * builtin http request handlers *
 	 * ***************************** */
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::authentication::RequestHandler::getImplementation(),
+			"jerry/applications", // builtin::http::applications::RequestHandler::getImplementation(),
+			&builtin::http::applications::RequestHandler::create));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			"jerry/authentication", // builtin::http::authentication::RequestHandler::getImplementation(),
 			&builtin::http::authentication::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::database::RequestHandler::getImplementation(),
+			"jerry/database", // builtin::http::database::RequestHandler::getImplementation(),
 			&builtin::http::database::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::filebrowser::RequestHandler::getImplementation(),
+			"jerry/filebrowser", // builtin::http::filebrowser::RequestHandler::getImplementation(),
 			&builtin::http::filebrowser::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::file::RequestHandler::getImplementation(),
+			"jerry/file", // builtin::http::file::RequestHandler::getImplementation(),
 			&builtin::http::file::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::self::RequestHandler::getImplementation(),
+			"jerry/self", // builtin::http::self::RequestHandler::getImplementation(),
 			&builtin::http::self::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
-			builtin::http::proxy::RequestHandler::getImplementation(),
+			"jerry/proxy", // builtin::http::proxy::RequestHandler::getImplementation(),
 			&builtin::http::proxy::RequestHandler::createRequestHandler));
 
 	/* ****************** *
 	 * builtin procedures *
 	 * ****************** */
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authentication::basic::dblookup::Procedure::getImplementation(),
-			&builtin::procedure::authentication::basic::dblookup::Procedure::createProcedure));
+			"jerry/authentication-basic-dblookup", // builtin::procedure::authentication::basic::dblookup::Procedure::getImplementation(),
+			&builtin::procedure::authentication::basic::dblookup::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authentication::basic::stable::Procedure::getImplementation(),
-			&builtin::procedure::authentication::basic::stable::Procedure::createProcedure));
+			"jerry/authentication-basic-stable", // builtin::procedure::authentication::basic::stable::Procedure::getImplementation(),
+			&builtin::procedure::authentication::basic::stable::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authentication::jwt::Procedure::getImplementation(),
-			&builtin::procedure::authentication::jwt::Procedure::createProcedure));
+			"jerry/authentication-jwt", // builtin::procedure::authentication::jwt::Procedure::getImplementation(),
+			&builtin::procedure::authentication::jwt::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authorization::cache::Procedure::getImplementation(),
-			&builtin::procedure::authorization::cache::Procedure::createProcedure));
+			"jerry/authorization-cache", // builtin::procedure::authorization::cache::Procedure::getImplementation(),
+			&builtin::procedure::authorization::cache::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authorization::dblookup::Procedure::getImplementation(),
-			&builtin::procedure::authorization::dblookup::Procedure::createProcedure));
+			"jerry/authorization-dblookup", // builtin::procedure::authorization::dblookup::Procedure::getImplementation(),
+			&builtin::procedure::authorization::dblookup::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::authorization::jwt::Procedure::getImplementation(),
-			&builtin::procedure::authorization::jwt::Procedure::createProcedure));
+			"jerry/authorization-jwt", // builtin::procedure::authorization::jwt::Procedure::getImplementation(),
+			&builtin::procedure::authorization::jwt::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::list::Procedure::getImplementation(),
-			&builtin::procedure::list::Procedure::createProcedure));
+			"jerry/detach", // builtin::procedure::list::Procedure::getImplementation(),
+			&builtin::procedure::detach::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::returncode::Procedure::getImplementation(),
-			&builtin::procedure::returncode::Procedure::createProcedure));
+			"jerry/list", // builtin::procedure::list::Procedure::getImplementation(),
+			&builtin::procedure::list::Procedure::create));
 
 	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			builtin::procedure::sleep::Procedure::getImplementation(),
-			&builtin::procedure::sleep::Procedure::createProcedure));
+			"jerry/return-code", // builtin::procedure::returncode::Procedure::getImplementation(),
+			&builtin::procedure::returncode::Procedure::create));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			"jerry/sleep", // builtin::procedure::sleep::Procedure::getImplementation(),
+			&builtin::procedure::sleep::Procedure::create));
+
+	module.addInterface(esl::processing::procedure::Interface::createInterface(
+			"jerry", // Procedure::getImplementation(),
+			&engine::main::Context::create));
 
 	/* *************** *
 	 * builtin objects *
 	 * *************** */
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/int",
+			&builtin::object::standard::Int::create));
 
-	/* *************** *
-	 * jerry procedure *
-	 * *************** */
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
-			Procedure::getImplementation(),
-			&Procedure::create));
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/map<string,string>",
+			&builtin::object::standard::MapStringString::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/set<int>",
+			&builtin::object::standard::SetInt::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/set<string>",
+			&builtin::object::standard::SetString::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/string",
+			&builtin::object::standard::String::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/vector<int>",
+			&builtin::object::standard::VectorInt::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/vector<pair<string,string>>",
+			&builtin::object::standard::VectorPairStringString::create));
+
+	module.addInterface(esl::object::Interface::createInterface(
+			"std/vector<string>",
+			&builtin::object::standard::VectorString::create));
+
 }
 
 } /* namespace jerry */

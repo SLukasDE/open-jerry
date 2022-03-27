@@ -22,6 +22,7 @@
 #include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
+#include <jerry/engine/http/Endpoint.h>
 
 #include <esl/utility/String.h>
 
@@ -100,23 +101,31 @@ void Endpoint::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 void Endpoint::install(engine::http::Context& engineHttpContext) const {
-	engine::http::Context& newEngineContext = engineHttpContext.addEndpoint(path, inherit);
+	std::unique_ptr<engine::http::Endpoint> httpEndpoint(new engine::http::Endpoint(engineHttpContext.getProcessRegistry(), path));
+	engine::http::Endpoint& httpEndpointRef = *httpEndpoint;
+
+	if(inherit) {
+		httpEndpointRef.setParent(&engineHttpContext);
+	}
+
+	engineHttpContext.addEndpoint(std::move(httpEndpoint));
+
 
 	/* *****************
 	 * install entries *
 	 * *****************/
 	for(const auto& entry : entries) {
-		entry->install(newEngineContext);
+		entry->install(httpEndpointRef);
 	}
 
 	/* **********************
 	 * Set response headers *
 	 * **********************/
 	for(const auto& responseHeader : responseHeaders) {
-		newEngineContext.addHeader(responseHeader.key, responseHeader.value);
+		httpEndpointRef.addHeader(responseHeader.key, responseHeader.value);
 	}
 
-	exceptions.install(newEngineContext);
+	exceptions.install(httpEndpointRef);
 }
 
 void Endpoint::parseInnerElement(const tinyxml2::XMLElement& element) {

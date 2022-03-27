@@ -20,7 +20,6 @@
 #include <jerry/Logger.h>
 
 #include <thread>
-#include <string>
 #include <stdexcept>
 
 namespace jerry {
@@ -32,11 +31,11 @@ namespace {
 Logger logger("jerry::builtin::procedure::sleep::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::createProcedure(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
 }
 
-Procedure::Procedure(const esl::module::Interface::Settings& settings) {
+Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "sleep-ms") {
 			if(sleepMs != std::chrono::milliseconds(0)) {
@@ -67,7 +66,15 @@ Procedure::Procedure(const esl::module::Interface::Settings& settings) {
 
 void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	logger.debug << "before sleep\n";
+#if 0
+	// on linux/gcc sleep_for gets interrupted by receiving a signal
 	std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+#else
+	auto sleepUntil = std::chrono::steady_clock::now() + sleepMs;
+	while(std::chrono::steady_clock::now() < sleepUntil) {
+		std::this_thread::sleep_until(sleepUntil);
+	}
+#endif
 	logger.debug << "after sleep\n";
 }
 

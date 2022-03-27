@@ -93,12 +93,6 @@ void Client::install(engine::ObjectContext& engineObjectContext) const {
 	engineObjectContext.addObject(id, install());
 }
 
-void Client::install(engine::Application& engineApplication) const {
-	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
-	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
-	engineApplication.addObject(id, std::move(eslObject));
-}
-
 std::unique_ptr<esl::object::Interface::Object> Client::install() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {

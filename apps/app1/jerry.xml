@@ -1,5 +1,5 @@
 <jerry-app>
-	<http-context id="x">
+	<http-context id="http-context-x">
 		<requesthandler implementation="jerry/filebrowser">
 			<parameter key="browsable" value="true"/>
 			<parameter key="ignoreError" value="true"/>
@@ -11,7 +11,7 @@
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<http-listener inherit="false">
+	<http-context inherit="true">
 		<endpoint path="heise">
 			<requesthandler implementation="jerry/proxy">
 				<parameter key="http-client-id" value="http-client-1"/>
@@ -41,7 +41,7 @@
 				</requesthandler>
 			</endpoint>
 			
-			<reference id="y" ref-id="x"/>
+			<reference id="y" ref-id="http-context-x"/>
 			
 			<context ref-id="y"/>
 			<!--requesthandler implementation="jerry/filebrowser">
@@ -51,5 +51,68 @@
 			</requesthandler-->
 			
 		</endpoint>
-	</http-listener>
+	</http-context>
+	
+	
+	
+	<procedure id="x" implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</procedure>
+	
+	<procedure id="y" implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="1000"/>
+	</procedure>
+	
+	<procedure id="list" implementation="jerry/list">
+		<parameter key="procedure-id" value="x"/>
+		<parameter key="procedure-id" value="y"/>
+	</procedure>
+	
+	<!--procedure implementation="jerry/list">
+		<parameter key="procedure-id" value="x"/>
+		<parameter key="procedure-id" value="y"/>
+	</procedure-->
+	<procedure id="1" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="2" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="3" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="4" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="5" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="6" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="7" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	<procedure id="8" implementation="jerry/detach">
+		<parameter key="procedure-id" value="list"/>
+	</procedure>
+	
+	<procedure id="list2" implementation="jerry/list">
+		<parameter key="procedure-id" value="1"/>
+		<parameter key="procedure-id" value="2"/>
+		<parameter key="procedure-id" value="3"/>
+		<parameter key="procedure-id" value="4"/>
+		<parameter key="procedure-id" value="5"/>
+		<parameter key="procedure-id" value="6"/>
+		<parameter key="procedure-id" value="7"/>
+		<parameter key="procedure-id" value="8"/>
+	</procedure>
+	
+	<procedure implementation="jerry/sleep">
+		<parameter key="sleep-ms" value="10000"/>
+	</procedure>
+	
+	<procedure implementation="jerry/detach">
+		<parameter key="procedure-id" value="list2"/>
+	</procedure>
 </jerry-app>

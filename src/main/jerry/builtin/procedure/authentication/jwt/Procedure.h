@@ -25,11 +25,12 @@
 #include <esl/object/Value.h>
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
-#include <vector>
 #include <tuple>
-#include <memory>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -43,9 +44,9 @@ public:
 		return "jerry/authentication-jwt";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> createProcedure(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	Procedure(const esl::module::Interface::Settings& settings);
+	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override;

@@ -47,7 +47,7 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "applications") {
 		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
 	}
-	else if(elementName == "context" || elementName == "basic-context") {
+	else if(elementName == "context" || elementName == "basic-context" || elementName == "listener") {
 		context = std::unique_ptr<Context>(new Context(getFileName(), element));
 	}
 	else if(elementName == "requesthandler") {

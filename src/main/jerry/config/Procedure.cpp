@@ -19,7 +19,7 @@
 #include <jerry/config/Procedure.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/processing/procedure/Interface.h>
+//#include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
 
 namespace jerry {
@@ -34,21 +34,39 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
-			if(!id.empty()) {
-				throw XMLException(*this, "Multiple definitions of attribute 'id'.");
+			if(id != "") {
+				throw XMLException(*this, "Multiple definition of attribute 'id'");
 			}
 			id = attribute->Value();
-			if(id.empty()) {
+			if(id == "") {
 				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+			}
+			if(refId != "") {
+				throw XMLException(*this, "Attribute 'id' is not allowed together with attribute 'ref-id'.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
-			if(!implementation.empty()) {
-				throw std::runtime_error("Multiple definition of attribute 'implementation'.");
-			}
 			implementation = attribute->Value();
-			if(implementation.empty()) {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+			if(implementation == "") {
+				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+			}
+			if(refId != "") {
+				throw XMLException(*this, "Attribute 'implementation' is not allowed together with attribute 'ref-id'.");
+			}
+		}
+		else if(std::string(attribute->Name()) == "ref-id") {
+			if(refId != "") {
+				throw XMLException(*this, "Multiple definition of attribute 'ref-id'");
+			}
+			refId = attribute->Value();
+			if(refId == "") {
+				throw XMLException(*this, "Invalid value \"\" for attribute 'ref-id'");
+			}
+			if(id != "") {
+				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'id'.");
+			}
+			if(implementation != "") {
+				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'implementation'.");
 			}
 		}
 		else {
@@ -56,11 +74,8 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 		}
 	}
 
-	if(id.empty()) {
-		throw XMLException(*this, "Missing attribute 'id'");
-	}
-	if(implementation.empty()) {
-		throw XMLException(*this, "Missing attribute 'implementation'");
+	if(refId == "" && implementation == "") {
+		throw XMLException(*this, "Attribute 'implementation' is missing.");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -77,26 +92,38 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 }
 
 void Procedure::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<procedure id=\"" << id << "\" implementation=\"" << implementation << "\">\n";
+	oStream << makeSpaces(spaces) << "<procedure";
 
-	for(const auto& entry : settings) {
-		entry.saveParameter(oStream, spaces+2);
+	if(refId.empty()) {
+		if(!id.empty()) {
+			oStream << " id=\"" << id << "\"";
+		}
+		if(!implementation.empty()) {
+			oStream << " implementation=\"" << implementation << "\"";
+		}
+		oStream << ">\n";
+
+		for(const auto& setting : settings) {
+			setting.saveParameter(oStream, spaces+2);
+		}
+
+		oStream << makeSpaces(spaces) << "</procedure>\n";
 	}
-	oStream << makeSpaces(spaces) << "</procedure>\n";
+	else {
+		oStream << " ref-id=\"" << refId << "\"/>\n";
+	}
 }
 
-void Procedure::install(engine::ObjectContext& engineObjectContext) const {
-	engineObjectContext.addObject(id, install());
+const std::string& Procedure::getId() const noexcept {
+	return id;
 }
 
-void Procedure::install(engine::Application& engineApplication) const {
-	std::unique_ptr<esl::object::Interface::Object> eslObject = install();
-	engineApplication.getLocalObjectContext().addReference(id, *eslObject);
-	engineApplication.addObject(id, std::move(eslObject));
+const std::string& Procedure::getRefId() const noexcept {
+	return refId;
 }
 
-std::unique_ptr<esl::object::Interface::Object> Procedure::install() const {
-	esl::module::Interface::Settings eslSettings;
+std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create() const {
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
@@ -116,7 +143,7 @@ std::unique_ptr<esl::object::Interface::Object> Procedure::install() const {
 		throw XMLException(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
 	}
 
-	return std::unique_ptr<esl::object::Interface::Object>(procedure.release());
+	return procedure;
 }
 
 void Procedure::parseInnerElement(const tinyxml2::XMLElement& element) {

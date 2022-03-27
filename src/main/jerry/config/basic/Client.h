@@ -22,7 +22,6 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/Application.h>
 
 #include <esl/object/Interface.h>
 
@@ -43,7 +42,6 @@ public:
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 	void install(engine::ObjectContext& engineObjectContext) const;
-	void install(engine::Application& engineApplication) const;
 
 private:
 	std::string id;

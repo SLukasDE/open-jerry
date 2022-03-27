@@ -103,10 +103,7 @@ Context::Context(const std::string& fileName, const tinyxml2::XMLElement& elemen
 void Context::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<context";
 
-	if(refId != "") {
-		oStream << " ref-id=\"" << refId << "\"/>\n";
-	}
-	else {
+	if(refId.empty()) {
 		if(id != "") {
 			oStream << " id=\"" << id << "\"";
 		}
@@ -130,36 +127,69 @@ void Context::save(std::ostream& oStream, std::size_t spaces) const {
 
 		oStream << makeSpaces(spaces) << "</context>\n";
 	}
+	else {
+		oStream << " ref-id=\"" << refId << "\"/>\n";
+	}
 }
 
 void Context::install(engine::http::Context& engineHttpContext) const {
-	if(refId == "") {
-		engine::http::Context& newEngineHttpContext = engineHttpContext.addContext(id, inherit);
+	if(refId.empty()) {
+		std::unique_ptr<engine::http::Context> httpContext(new engine::http::Context(engineHttpContext.getProcessRegistry()));
+		engine::http::Context& httpContextRef = *httpContext;
+
+		if(inherit) {
+			httpContextRef.setParent(&engineHttpContext);
+		}
+
+		if(id.empty()) {
+			engineHttpContext.addContext(std::move(httpContext));
+		}
+		else {
+			engineHttpContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(httpContext.release()));
+		}
 
 		/* *****************
 		 * install entries *
 		 * *****************/
-		for(const auto& entry : entries) {
-			entry->install(newEngineHttpContext);
-		}
-
-		/* **********************
-		 * Set response headers *
-		 * **********************/
-		for(const auto& responseHeader : responseHeaders) {
-			newEngineHttpContext.addHeader(responseHeader.key, responseHeader.value);
-		}
-
-		exceptions.install(newEngineHttpContext);
+		installEntries(httpContextRef);
 	}
 	else {
 		engineHttpContext.addContext(refId);
 	}
 }
 
-void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
+const std::string& Context::getId() const noexcept {
+	return id;
+}
 
-	if(refId != "") {
+const std::string& Context::getRefId() const noexcept {
+	return refId;
+}
+
+bool Context::getInherit() const noexcept {
+	return inherit;
+}
+
+void Context::installEntries(engine::http::Context& newContext) const {
+	/* *****************
+	 * install entries *
+	 * *****************/
+	for(const auto& entry : entries) {
+		entry->install(newContext);
+	}
+
+	/* **********************
+	 * Set response headers *
+	 * **********************/
+	for(const auto& responseHeader : responseHeaders) {
+		newContext.addHeader(responseHeader.key, responseHeader.value);
+	}
+
+	exceptions.install(newContext);
+}
+
+void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
+	if(!refId.empty()) {
 		throw XMLException(*this, "No content allowed if 'ref-id' is specified.");
 	}
 

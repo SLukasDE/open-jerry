@@ -27,7 +27,6 @@ namespace jerry {
 namespace engine {
 namespace http {
 
-
 class Context;
 class RequestContext;
 

@@ -17,11 +17,11 @@
  */
 
 #include <jerry/config/basic/Server.h>
-//#include <jerry/config/main/Engine.h>
+#include <jerry/config/basic/EntryImpl.h>
 #include <jerry/config/XMLException.h>
-#include <jerry/engine/basic/Socket.h>
+#include <jerry/engine/basic/Server.h>
+#include <jerry/Logger.h>
 
-#include <esl/Stacktrace.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -30,6 +30,10 @@ namespace jerry {
 namespace config {
 namespace basic {
 
+namespace {
+Logger logger("jerry::config::basic::Server");
+} /* anonymous namespace */
+
 Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
@@ -37,11 +41,29 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
+	bool hasInherit = false;
+
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
 				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+			}
+		}
+		else if(std::string(attribute->Name()) == "inherit") {
+			if(hasInherit) {
+				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+			}
+			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
+			hasInherit = true;
+			if(inheritStr == "true") {
+				inherit = true;
+			}
+			else if(inheritStr == "false") {
+				inherit = false;
+			}
+			else {
+				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
@@ -60,10 +82,6 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		parseInnerElement(*innerElement);
 		setXMLFile(oldXmlFile);
 	}
-
-	if(!listener) {
-		throw XMLException(*this, "Missing definition of element \"listener\"");
-	}
 }
 
 void Server::save(std::ostream& oStream, std::size_t spaces) const {
@@ -71,18 +89,28 @@ void Server::save(std::ostream& oStream, std::size_t spaces) const {
 	if(implementation != "") {
 		oStream << makeSpaces(spaces) << " implementation=\"" << implementation << "\"";
 	}
-	oStream << makeSpaces(spaces) << ">\n";
+
+	if(inherit) {
+		oStream << " inherit=\"true\"";
+	}
+	else {
+		oStream << " inherit=\"false\"";
+	}
+
+	oStream << ">\n";
 
 	for(const auto& entry : settings) {
 		entry.saveParameter(oStream, spaces+2);
 	}
 
-	listener->save(oStream, spaces+2);
+	for(const auto& entry : entries) {
+		entry->save(oStream, spaces+2);
+	}
 
-	oStream << makeSpaces(spaces) << "<basic-server/>\n";
+	oStream << makeSpaces(spaces) << "</basic-server>\n";
 }
 
-void Server::install(engine::Engine& jEngine) const {
+void Server::install(engine::main::Context& engineMainContext) const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 
 	for(const auto& setting : settings) {
@@ -90,8 +118,24 @@ void Server::install(engine::Engine& jEngine) const {
 	}
 
 	try {
-		engine::basic::Socket& engineBasicSocket = jEngine.addBasicServer(eslSettings, implementation);
-		listener->install(jEngine, engineBasicSocket);
+		logger.trace << "Adding basic server (implementation=\"" << implementation << "\")\n";
+
+		std::unique_ptr<engine::basic::Server> server(new engine::basic::Server(engineMainContext, eslSettings, implementation));
+		engine::basic::Server& serverRef = *server;
+
+		if(inherit) {
+			serverRef.getContext().ObjectContext::setParent(&engineMainContext);
+		}
+
+		engineMainContext.addBasicServer(std::move(server));
+
+		/* *****************
+		 * install entries *
+		 * *****************/
+		for(const auto& entry : entries) {
+			entry->install(serverRef.getContext());
+		}
+		//listener->install(engineMainContext, serverRef);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());
@@ -111,14 +155,8 @@ void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(innerElementName == "parameter") {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
-	else if(innerElementName == "listener") {
-		if(listener) {
-			throw XMLException(*this, "Multiple definition of element \"listener\"");
-		}
-		listener = std::unique_ptr<Listener>(new Listener(getFileName(), element));
-	}
 	else {
-		throw XMLException(*this, "Unknown element name '" + std::string(element.Name()) + "'");
+		entries.emplace_back(new EntryImpl(getFileName(), element));
 	}
 }
 

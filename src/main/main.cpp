@@ -1,6 +1,6 @@
 /*
  * This file is part of Jerry application server.
- * Copyright (c) 2019-2022 Sven Lukas
+ * Copyright (C) 2020-2022 Sven Lukas
  *
  * Jerry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/Procedure.h>
+#include <jerry/engine/main/Context.h>
 #include <jerry/ObjectContext.h>
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Module.h>
@@ -116,7 +116,7 @@ int main(int argc, const char *argv[]) {
 			settings.push_back(std::make_pair("verbose", "true"));
 		}
 
-		jerry::Procedure procedure(settings);
+		jerry::engine::main::Context procedure(settings);
 		jerry::ObjectContext objectContext;
 
 		if(!isDryRun) {

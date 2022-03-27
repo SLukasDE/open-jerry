@@ -37,8 +37,8 @@ namespace {
 Logger logger("jerry::engine::ObjectContext");
 } /* anonymous namespace */
 
-ObjectContext::ObjectContext(bool aIsGlobal)
-: isGlobal(aIsGlobal)
+ObjectContext::ObjectContext(ProcessRegistry& aProcessRegistry)
+: processRegistry(aProcessRegistry)
 { }
 
 void ObjectContext::setParent(esl::object::ObjectContext* objectContext) {
@@ -48,6 +48,9 @@ void ObjectContext::setParent(esl::object::ObjectContext* objectContext) {
 void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
 	logger.trace << "Adding object with id=\"" << id << "\"\n";
 
+	if(id.empty()) {
+		throw std::runtime_error("Add an object with empty id is not allowed.");
+	}
 	if(!object) {
 		throw std::runtime_error("Cannot add an empty object with id '" + id + "'.");
 	}
@@ -59,6 +62,9 @@ void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object
 void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {
 	logger.trace << "Adding object reference with id=\"" << id << "\"\n";
 
+	if(id.empty()) {
+		throw std::runtime_error("Add an object with empty id is not allowed.");
+	}
 	if(objectRefsById.count(id) != 0) {
         throw std::runtime_error("Cannot add an object reference with id '" + id + "' because there exists already a object reference with same id.");
 	}
@@ -68,15 +74,17 @@ void ObjectContext::addReference(const std::string& id, esl::object::Interface::
 
 void ObjectContext::initializeContext() {
 	for(auto& object : objects) {
-		esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(object.second.get());
 		ObjectContext* objectContext = dynamic_cast<ObjectContext*>(object.second.get());
-
-		if(initializeContext) {
-			initializeContext->initializeContext(*this);
-		}
 
 		if(objectContext) {
 			objectContext->initializeContext();
+		}
+		else {
+			esl::object::InitializeContext* initializeContext = dynamic_cast<esl::object::InitializeContext*>(object.second.get());
+
+			if(initializeContext) {
+				initializeContext->initializeContext(*this);
+			}
 		}
 	}
 }
@@ -103,14 +111,8 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 		}
 
 		if(basicContextPtr) {
-			if(isGlobal) {
-				logger.info << "+-> Basic context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
-			}
-			else {
-				logger.info << "+-> Context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
-			}
+			logger.info << "+-> Basic context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
 			if(!isReference) {
-
 				basicContextPtr->dumpTree(depth+1);
 			}
 		}
@@ -127,12 +129,7 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 			}
 		}
 		else if(httpContextPtr) {
-			if(isGlobal) {
-				logger.info << "+-> HTTP context: \"" << entry.first << "\" -> " << httpContextPtr << isReferenceStr << "\n";
-			}
-			else {
-				logger.info << "+-> Context: \"" << entry.first << "\" -> " << httpContextPtr << isReferenceStr << "\n";
-			}
+			logger.info << "+-> HTTP context: \"" << entry.first << "\" -> " << httpContextPtr << isReferenceStr << "\n";
 			if(!isReference) {
 				httpContextPtr->dumpTree(depth+1);
 			}
@@ -157,6 +154,14 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 
 const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& ObjectContext::getObjects() const {
 	return objectRefsById;
+}
+
+ProcessRegistry& ObjectContext::getProcessRegistry() {
+	return processRegistry;
+}
+
+const ProcessRegistry& ObjectContext::getProcessRegistry() const {
+	return processRegistry;
 }
 
 esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {

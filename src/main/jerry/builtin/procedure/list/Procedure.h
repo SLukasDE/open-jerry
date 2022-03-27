@@ -24,11 +24,12 @@
 #include <esl/object/ObjectContext.h>
 #include <esl/module/Interface.h>
 
-#include <string>
-#include <vector>
-#include <mutex>
+#include <map>
 #include <memory>
-
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -41,9 +42,9 @@ public:
 		return "jerry/list";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> createProcedure(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	Procedure(const esl::module::Interface::Settings& settings);
+	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	void initializeContext(esl::object::ObjectContext& objectContext) override;
 
@@ -54,11 +55,9 @@ private:
 	std::vector<std::string> procedureIds;
 	std::vector<esl::processing::procedure::Interface::Procedure*> procedures;
 
-	std::mutex runningMutex;
-
-	std::mutex currentProcedureMutex;
-	esl::processing::procedure::Interface::Procedure* currentProcedure = nullptr;
-	bool currentProcedureCancel = false;
+	std::mutex runningProceduresMutex;
+	std::map<esl::processing::procedure::Interface::Procedure*, std::size_t> runningProcedures;
+	bool runningProceduresCancel = false;
 };
 
 } /* namespace list */

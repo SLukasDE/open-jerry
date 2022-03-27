@@ -30,11 +30,11 @@ namespace {
 Logger logger("jerry::builtin::procedure::list::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::createProcedure(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
 }
 
-Procedure::Procedure(const esl::module::Interface::Settings& settings) {
+Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "procedure-id") {
 			if(setting.second.empty()) {
@@ -63,36 +63,41 @@ void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
 }
 
 void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
-	std::lock_guard<std::mutex> runningLock(runningMutex);
-
-	{
-		std::lock_guard<std::mutex> currentProcedureLock(currentProcedureMutex);
-		currentProcedureCancel = false;
-	}
-
 	for(auto procedure : procedures) {
 		{
-			std::lock_guard<std::mutex> currentProcedureLock(currentProcedureMutex);
-			if(currentProcedureCancel) {
+			std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
+			if(runningProceduresCancel) {
 				break;
 			}
-
-			currentProcedure = procedure;
+			++runningProcedures[procedure];
 		}
+
 		procedure->procedureRun(objectContext);
+
+		{
+			std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
+			auto iter = runningProcedures.find(procedure);
+			if(iter != runningProcedures.end()) {
+				--iter->second;
+				if(iter->second == 0) {
+					runningProcedures.erase(iter);
+				}
+			}
+		}
 	}
 
-	{
-		std::lock_guard<std::mutex> currentProcedureLock(currentProcedureMutex);
-		currentProcedure = nullptr;
+	std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
+	if(runningProcedures.empty()){
+		runningProceduresCancel = false;
 	}
 }
 
 void Procedure::procedureCancel() {
-	std::lock_guard<std::mutex> currentProcedureLock(currentProcedureMutex);
-	currentProcedureCancel = true;
-	if(currentProcedure) {
-		currentProcedure->procedureCancel();
+	std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
+
+	runningProceduresCancel = !runningProcedures.empty();
+	for(auto& runningProcedure : runningProcedures) {
+		runningProcedure.first->procedureCancel();
 	}
 }
 

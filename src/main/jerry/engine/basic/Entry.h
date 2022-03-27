@@ -29,7 +29,6 @@ namespace jerry {
 namespace engine {
 namespace basic {
 
-
 class Context;
 
 class Entry {
