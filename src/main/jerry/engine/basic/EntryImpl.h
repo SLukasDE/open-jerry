@@ -21,7 +21,6 @@
 
 #include <jerry/engine/basic/Entry.h>
 #include <jerry/engine/basic/Context.h>
-#include <jerry/engine/main/Applications.h>
 
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/com/basic/server/requesthandler/Interface.h>
@@ -37,7 +36,6 @@ namespace basic {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(main::Applications& refApplications);
 	EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	EntryImpl(esl::processing::procedure::Interface::Procedure& refProcedure);
 	EntryImpl(std::unique_ptr<Context> context);
@@ -50,8 +48,6 @@ public:
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) override;
 
 private:
-	main::Applications* refApplications = nullptr;
-
 	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
 	esl::processing::procedure::Interface::Procedure* refProcedure = nullptr;
 

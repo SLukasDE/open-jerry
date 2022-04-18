@@ -19,7 +19,12 @@
 #include <jerry/builtin/http/self/RequestHandler.h>
 #include <jerry/Logger.h>
 
+#if 0
 #include <esl/io/input/Closed.h>
+#else
+#include <esl/io/Writer.h>
+#include <esl/io/input/String.h>
+#endif
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Request.h>
 #include <esl/Stacktrace.h>
@@ -34,6 +39,52 @@ namespace self {
 
 namespace {
 Logger logger("jerry::builtin::http::self::RequestHandler");
+
+class InputHandler : public esl::io::input::String {
+public:
+	using ProcessHandler = void (InputHandler::*)();
+
+	InputHandler(esl::com::http::server::RequestContext& aRequestContext)
+	: requestContext(aRequestContext)
+	{ }
+
+	void process() override {
+		std::string content;
+
+		content += "LOCAL_PATH:     " + requestContext.getPath() + "\n";
+
+		const auto& request = requestContext.getRequest();
+		content += "FULL_PATH:      " + request.getPath() + "\n";
+		content += "HTTP_VERSION:   " + request.getHTTPVersion() + "\n";
+		content += "METHOD:         " + request.getMethod() + "\n";
+		content += "HOST_ADDRESS:   " + request.getHostAddress() + "\n";
+		content += "HOST_PORT:      " + std::to_string(request.getHostPort()) + "\n";
+		content += "REMOTE_ADDRESS: " + request.getRemoteAddress() + "\n";
+		content += "REMOTE_PORT:    " + std::to_string(request.getRemotePort()) + "\n";
+		content += "CONTENT_TYPE:   " + request.getContentType().toString() + "\n";
+		content += "\n";
+		content += "HTTP headers:\n";
+		content += "\n";
+
+		const std::map<std::string, std::string>& headers = requestContext.getRequest().getHeaders();
+		for(const auto& header : headers) {
+			content += header.first + "=" + header.second + "\n";
+		}
+
+		content += "\n";
+		content += "HTTP body: (" + std::to_string(getString().size()) + " bytes)\n";
+		content += "\n";
+		content += getString();
+
+		esl::com::http::server::Response response(200, esl::utility::MIME::textPlain);
+		esl::io::Output output = esl::io::output::String::create(std::move(content));
+		requestContext.getConnection().send(response, std::move(output));
+	}
+
+private:
+    esl::com::http::server::RequestContext& requestContext;
+};
+
 } /* anonymous namespace */
 
 std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
@@ -44,7 +95,9 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
+#if 0
 	std::string content;
+#if 0
 	content += "<!DOCTYPE html>\n";
 	content += "<html>\n";
 	content += "<head>\n";
@@ -97,9 +150,36 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	content += "</html>\n";
 
 	esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
+#else
+	content += "LOCAL_PATH:     " + requestContext.getPath() + "\n";
+
+	const auto& request = requestContext.getRequest();
+	content += "FULL_PATH:      " + request.getPath() + "\n";
+	content += "HTTP_VERSION:   " + request.getHTTPVersion() + "\n";
+	content += "METHOD:         " + request.getMethod() + "\n";
+	content += "HOST_ADDRESS:   " + request.getHostAddress() + "\n";
+	content += "HOST_PORT:      " + std::to_string(request.getHostPort()) + "\n";
+	content += "REMOTE_ADDRESS: " + request.getRemoteAddress() + "\n";
+	content += "REMOTE_PORT:    " + std::to_string(request.getRemotePort()) + "\n";
+	content += "CONTENT_TYPE:   " + request.getContentType().toString() + "\n";
+	content += "\n";
+	content += "HTTP headers:\n";
+	content += "\n";
+
+	const std::map<std::string, std::string>& headers = requestContext.getRequest().getHeaders();
+	for(const auto& header : headers) {
+		content += header.first + "=" + header.second + "\n";
+	}
+
+	esl::com::http::server::Response response(200, esl::utility::MIME::textPlain);
+#endif
+
 	esl::io::Output output = esl::io::output::String::create(std::move(content));
 	requestContext.getConnection().send(response, std::move(output));
 	return esl::io::input::Closed::create();
+#else
+	return esl::io::Input(std::unique_ptr<esl::io::Writer>(new InputHandler(requestContext)));
+#endif
 }
 
 } /* namespace self */

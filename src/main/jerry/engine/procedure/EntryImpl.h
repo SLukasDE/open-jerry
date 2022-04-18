@@ -21,6 +21,7 @@
 
 #include <jerry/engine/procedure/Entry.h>
 #include <jerry/engine/procedure/Context.h>
+#include <jerry/engine/ProcessRegistry.h>
 
 #include <esl/processing/procedure/Interface.h>
 
@@ -43,6 +44,8 @@ public:
 
 	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override;
+
+	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
 private:
 	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;

@@ -18,7 +18,6 @@
 
 #include <jerry/engine/basic/Context.h>
 #include <jerry/engine/basic/EntryImpl.h>
-#include <jerry/engine/main/Applications.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
@@ -34,16 +33,6 @@ namespace basic {
 namespace {
 Logger logger("jerry::engine::basic::Context");
 } /* anonymous namespace */
-
-void Context::addApplications(const std::string& refId) {
-	main::Applications* applications = findObject<main::Applications>(refId);
-
-	if(applications == nullptr) {
-	    throw std::runtime_error("No applications-object found with ref-id=\"" + refId + "\".");
-	}
-
-	entries.emplace_back(new EntryImpl(*applications));
-}
 
 void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));

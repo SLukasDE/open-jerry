@@ -27,8 +27,6 @@
 #include <esl/Stacktrace.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
-#include <esl/logging/appender/Appender.h>
-#include <esl/logging/layout/Layout.h>
 #include <esl/system/SignalHandler.h>
 #include <esl/utility/String.h>
 
@@ -46,10 +44,6 @@ namespace main {
 
 namespace {
 Logger logger("jerry::engine::main::Context");
-
-std::unique_ptr<esl::logging::appender::Interface::Appender> appenderCoutStream;
-std::unique_ptr<esl::logging::appender::Interface::Appender> appenderMemBuffer;
-std::unique_ptr<esl::logging::layout::Interface::Layout> layout;
 
 class ProcessLockGuard {
 public:
@@ -85,37 +79,14 @@ std::unique_ptr<esl::processing::procedure::Interface::Procedure> Context::creat
 }
 
 Context::Context(const std::vector<std::pair<std::string, std::string>>& settings)
-: ObjectContext(static_cast<ProcessRegistry&>(*this))
+: ObjectContext(static_cast<ProcessRegistry*>(this))
 {
-	bool hasVerbose = false;
+	//bool hasVerbose = false;
 	bool hasCatchException = false;
+	bool hasDumpException = false;
 
 	for(const auto& setting : settings) {
-		if(setting.first == "config-data") {
-			if(!configData.empty()) {
-				throw std::runtime_error("Multiple definition of attribute 'config-data'");
-			}
-			if(!configFile.empty()) {
-				throw std::runtime_error("Definition of attribute 'config-data' is not allowed together with attribute 'config-file'");
-			}
-			configData = setting.second;
-			if(configData.empty()) {
-				throw std::runtime_error("Invalid value \"\" for attribute 'config-data'");
-			}
-		}
-		else if(setting.first == "config-file") {
-			if(!configFile.empty()) {
-				throw std::runtime_error("Multiple definition of attribute 'config-file'");
-			}
-			if(!configData.empty()) {
-				throw std::runtime_error("Definition of attribute 'config-file' is not allowed together with attribute 'config-data'");
-			}
-			configFile = setting.second;
-			if(configFile.empty()) {
-				throw std::runtime_error("Invalid value \"\" for attribute 'config-file'");
-			}
-		}
-		else if(setting.first == "stop-signal") {
+		if(setting.first == "stop-signal") {
 			esl::system::Interface::SignalType signalType = esl::system::Interface::SignalType::unknown;
 			if(setting.second == "interrupt") {
 				signalType = esl::system::Interface::SignalType::interrupt;
@@ -145,21 +116,6 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'terminate-counter'.");
 			}
 		}
-		else if(setting.first == "verbose") {
-			if(hasVerbose) {
-				throw std::runtime_error("Multiple definition of attribute 'verbose'");
-			}
-			hasVerbose = true;
-			if(esl::utility::String::toLower(setting.second) == "true") {
-				verbose = true;
-			}
-			else if(esl::utility::String::toLower(setting.second) == "false") {
-				verbose = false;
-			}
-			else {
-				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'verbose'. Allowed values are \"true\" or \"false\"");
-			}
-		}
 		else if(setting.first == "catch-exception") {
 			if(hasCatchException) {
 				throw std::runtime_error("Multiple definition of attribute 'catch-exception'");
@@ -173,6 +129,21 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 			}
 			else {
 				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'catch-exception'. Allowed values are \"true\" or \"false\"");
+			}
+		}
+		else if(setting.first == "dump-exception") {
+			if(hasDumpException) {
+				throw std::runtime_error("Multiple definition of attribute 'dump-exception'");
+			}
+			hasDumpException = true;
+			if(esl::utility::String::toLower(setting.second) == "true") {
+				dumpException = true;
+			}
+			else if(esl::utility::String::toLower(setting.second) == "false") {
+				dumpException = false;
+			}
+			else {
+				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'dump-exception'. Allowed values are \"true\" or \"false\"");
 			}
 		}
 		else if(setting.first == "exception-return-code") {
@@ -190,90 +161,6 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 		else {
 			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
-	}
-
-	std::unique_ptr<config::main::Context> config;
-	if(!configFile.empty()) {
-		try {
-			config.reset(new config::main::Context(configFile));
-		}
-		catch(...) {
-			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.dump(std::cerr);
-	    	throw std::runtime_error("Failed to load config-file \"" + configFile + "\"");
-		}
-	}
-	else if(!configData.empty()) {
-		try {
-			config.reset(new config::main::Context(configData.c_str(), configData.size()));
-		}
-		catch(...) {
-			ExceptionHandler exceptionHandler(std::current_exception());
-	    	exceptionHandler.dump(std::cerr);
-	    	throw std::runtime_error("Failed to parse config");
-		}
-	}
-	else {
-		throw std::runtime_error("Missing attribute 'config-data' or 'config-file'");
-	}
-
-	if(verbose) {
-		/* show configuration */
-		config->save(std::cout);
-		std::cout << "\n\n";
-	}
-
-	try {
-		config->loadLibraries();
-
-		if(verbose) {
-			/* show loaded modules and interfaces */
-			std::cout << "Interfaces:\n";
-			std::cout << "-----------\n";
-			for(const auto& interface : esl::getModule().getMetaInterfaces()) {
-				std::cout << "  module:         \"" << interface.module << "\"\n";
-				std::cout << "  type:           \"" << interface.type << "\"\n";
-				std::cout << "  implementation: \"" << interface.implementation << "\"\n";
-				std::cout << "  apiVersion:     \"" << interface.apiVersion << "\"\n";
-				std::cout << "\n";
-			}
-			std::cout << "\n\n";
-		}
-
-		layout = config->installLogging();
-
-		appenderCoutStream.reset(new esl::logging::appender::Appender({
-			{"trace", "out"},
-			{"info", "out"},
-			{"debug", "out"},
-			{"warn", "err"},
-			{"error", "err"}}, "eslx/ostream"));
-
-		appenderMemBuffer.reset(new esl::logging::appender::Appender({
-			{"max-lines", "100"}}, "eslx/membuffer"));
-
-		/* *********************** *
-		 * set layout to appenders *
-		 * *********************** */
-
-	    appenderCoutStream->setRecordLevel();
-	    appenderCoutStream->setLayout(layout.get());
-	    esl::logging::addAppender(*appenderCoutStream);
-
-	    /* MemBuffer appender just writes output to a buffer of a fixed number of lines.
-	     * If number of columns is specified as well the whole memory is allocated at initialization time.
-	     */
-	    appenderMemBuffer->setRecordLevel(esl::logging::appender::Interface::Appender::RecordLevel::ALL);
-	    appenderMemBuffer->setLayout(layout.get());
-	    esl::logging::addAppender(*appenderMemBuffer);
-
-
-		config->install(*this);
-	}
-	catch(...) {
-		ExceptionHandler exceptionHandler(std::current_exception());
-    	exceptionHandler.dump(std::cerr);
-    	throw std::runtime_error("Failed to create jerry procedure");
 	}
 }
 
@@ -313,6 +200,24 @@ const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<un
 const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Context::getCertsByHostname(const std::string& hostname) const {
 	auto certIter = certsByHostname.find(hostname);
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
+}
+
+void Context::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	if(id.empty()) {
+		if(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get())) {
+			addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure>(static_cast<esl::processing::procedure::Interface::Procedure*>(object.release())));
+			return;
+		}
+/*
+		if(dynamic_cast<procedure::Context*>(object.get())) {
+			std::unique_ptr<procedure::Context> procedureContext(static_cast<procedure::Context*>(object.release()));
+			procedureContext->ObjectContext::setParent(this);
+			addProcedureContext(std::move(procedureContext));
+			return;
+		}
+*/
+	}
+	ObjectContext::addObject(id, std::move(object));
 }
 
 void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
@@ -369,6 +274,12 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 				std::unique_lock<std::mutex> signalThreadLock(signalThreadMutex);
 				while(true) {
 					logger.trace << "SIGNAL THREAD: wait.\n";
+					// sometimes infinite waiting
+					// Hinweis: signalThreadMutex wird bei keinem notify_one() verwendet!
+					// es sollte die zu prüfende Variable/Bedingung durch den Mutex geschützt werden:
+					// Siehe:
+					// - https://www.cplusplus.com/reference/condition_variable/condition_variable/
+					// - https://en.cppreference.com/w/cpp/thread/condition_variable
 					signalThreadCondVar.wait(signalThreadLock);
 					logger.trace << "SIGNAL THREAD: wake up.\n";
 					if(getProceduresRunningCount() == 0) {
@@ -439,14 +350,14 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 			}
 		}
 
-		if(catchException) {
+		if(dumpException) {
 			ExceptionHandler exceptionHandler(std::current_exception());
 	    	exceptionHandler.dump(std::cerr);
 
-			flushLogAppender("eslx/ostream", *appenderCoutStream);
-			flushLogAppender("eslx/membuffer", *appenderMemBuffer);
+	    	Logger::flush();
 		}
-		else {
+
+		if(!catchException) {
 			throw;
 		}
 	}
@@ -515,6 +426,13 @@ void Context::procedureCancel() {
 	logger.debug << "Stopping initiated for all procedures.\n";
 }
 
+void Context::setProcessRegistry(ProcessRegistry* processRegistry) {
+	ObjectContext::setProcessRegistry(processRegistry);
+	for(auto& entry : entries) {
+		entry->setProcessRegistry(processRegistry);
+	}
+}
+
 void Context::processRegister(esl::processing::procedure::Interface::Procedure& procedureRunning) {
 	std::lock_guard<std::mutex> proceduresRunningLock(proceduresRunningMutex);
 	proceduresRunning.insert(&procedureRunning);
@@ -543,12 +461,6 @@ void Context::processUnregister(esl::processing::procedure::Interface::Procedure
 }
 
 void Context::initializeContext() {
-	if(verbose) {
-		/* show configuration file */
-		dumpTree(0);
-		std::cout << "\n\n";
-	}
-
 	ObjectContext::initializeContext();
 
 	// call initializeContext() of sub-context's
@@ -574,18 +486,6 @@ void Context::dumpTree(std::size_t depth) const {
 unsigned int Context::getProceduresRunningCount() {
 	std::lock_guard<std::mutex> processCountLock(proceduresRunningMutex);
 	return proceduresRunning.size();
-}
-
-void Context::flushLogAppender(const std::string& id, esl::logging::appender::Interface::Appender& appender) {
-	std::stringstream strStream;
-
-	appender.flush();
-	appender.flush(strStream);
-
-	if(!strStream.str().empty()) {
-		std::cerr << "\n\nFlush log messages " << id << ":\n";
-		std::cerr << strStream.str();
-	}
 }
 
 } /* namespace main */

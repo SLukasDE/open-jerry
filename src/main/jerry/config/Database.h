@@ -22,7 +22,6 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/application/Context.h>
 
 #include <esl/object/Interface.h>
 

@@ -37,7 +37,7 @@ namespace {
 Logger logger("jerry::engine::ObjectContext");
 } /* anonymous namespace */
 
-ObjectContext::ObjectContext(ProcessRegistry& aProcessRegistry)
+ObjectContext::ObjectContext(ProcessRegistry* aProcessRegistry)
 : processRegistry(aProcessRegistry)
 { }
 
@@ -156,11 +156,15 @@ const std::map<std::string, std::reference_wrapper<esl::object::Interface::Objec
 	return objectRefsById;
 }
 
-ProcessRegistry& ObjectContext::getProcessRegistry() {
+void ObjectContext::setProcessRegistry(ProcessRegistry* aProcessRegistry) {
+	processRegistry = aProcessRegistry;
+}
+
+ProcessRegistry* ObjectContext::getProcessRegistry() {
 	return processRegistry;
 }
 
-const ProcessRegistry& ObjectContext::getProcessRegistry() const {
+const ProcessRegistry* ObjectContext::getProcessRegistry() const {
 	return processRegistry;
 }
 

@@ -78,7 +78,7 @@ void Procedure::procedureRun(esl::object::ObjectContext&) {
 
 	std::thread runThread([this] {
 		try {
-			engine::ObjectContext objectContext(*processRegistry);
+			engine::ObjectContext objectContext(processRegistry);
 			if(procedure) {
 				procedure->procedureRun(objectContext);
 			}
@@ -92,13 +92,17 @@ void Procedure::procedureRun(esl::object::ObjectContext&) {
 			std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
 			--runningProcedures;
 		}
-		processRegistry->processUnregister(*this);
+		if(processRegistry) {
+			processRegistry->processUnregister(*this);
+		}
 		runningProceduresCondVar.notify_one();
 	});
 
 	runThread.detach();
 	++runningProcedures;
-	processRegistry->processRegister(*this);
+	if(processRegistry) {
+		processRegistry->processRegister(*this);
+	}
 }
 
 void Procedure::procedureCancel() {
@@ -119,7 +123,7 @@ void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
 	if(engineObjectContext == nullptr) {
 		throw esl::addStacktrace(std::runtime_error("Engine error"));
 	}
-	processRegistry = &engineObjectContext->getProcessRegistry();
+	processRegistry = engineObjectContext->getProcessRegistry();
 }
 
 } /* namespace detach */

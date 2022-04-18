@@ -19,18 +19,21 @@
 #ifndef JERRY_BUILTIN_BASIC_APPLICATION_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_BASIC_APPLICATION_REQUESTHANDLER_H_
 
-#include <jerry/engine/main/Applications.h>
+#include <jerry/builtin/object/applications/Object.h>
+#include <jerry/builtin/object/applications/Application.h>
 
 #include <esl/com/basic/server/requesthandler/Interface.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
-#include <esl/module/Interface.h>
-#include <esl/object/ObjectContext.h>
 #include <esl/object/InitializeContext.h>
+#include <esl/object/Interface.h>
+#include <esl/object/ObjectContext.h>
 
+#include <memory>
 #include <set>
 #include <string>
-#include <memory>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -43,9 +46,9 @@ public:
 		return "jerry/applications";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	RequestHandler(const esl::module::Interface::Settings& settings);
+	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
@@ -54,7 +57,12 @@ public:
 
 private:
 	std::string applicationsId;
-	engine::main::Applications* applications = nullptr;
+	std::string applicationName;
+	std::string refId;
+
+	object::applications::Object* applications = nullptr;
+	object::applications::Application* application = nullptr;
+	esl::object::Interface::Object* refObject = nullptr;
 };
 
 } /* namespace application */

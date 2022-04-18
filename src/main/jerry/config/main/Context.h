@@ -21,11 +21,11 @@
 
 #include <jerry/config/Config.h>
 #include <jerry/config/Certificate.h>
-#include <jerry/config/LoggerConfig.h>
 #include <jerry/config/Object.h>
 #include <jerry/config/OptionalBool.h>
 #include <jerry/config/main/Entry.h>
 #include <jerry/engine/main/Context.h>
+#include <jerry/config/logging/Logger.h>
 
 #include <esl/logging/appender/Interface.h>
 #include <esl/logging/layout/Interface.h>
@@ -33,11 +33,13 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <vector>
-#include <set>
-#include <string>
+#include <boost/filesystem/path.hpp>
+
 #include <memory>
 #include <ostream>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace jerry {
 namespace config {
@@ -45,13 +47,12 @@ namespace main {
 
 class Context : public Config {
 public:
-	Context(const std::string& fileName);
-	Context(const char* xmlData, std::size_t xmlDataSize);
+	explicit Context(const std::string& configuration);
+	explicit Context(const boost::filesystem::path& filename);
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();
 
-	std::unique_ptr<esl::logging::layout::Interface::Layout> installLogging();
 	void install(engine::main::Context& context);
 
 private:
@@ -59,11 +60,11 @@ private:
 
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
-	LoggerConfig loggerConfig;
 
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	std::set<std::string> filesLoaded;
+	std::vector<logging::Logger> eslLoggers;
 
 	void loadXML(const tinyxml2::XMLElement& element);
 

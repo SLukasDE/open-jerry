@@ -19,11 +19,16 @@
 #ifndef JERRY_BUILTIN_PROCEDURE_AUTHENTICATION_JWT_PROCEDURE_H_
 #define JERRY_BUILTIN_PROCEDURE_AUTHENTICATION_JWT_PROCEDURE_H_
 
+#include <esl/com/http/client/Interface.h>
 #include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
+#include <esl/object/InitializeContext.h>
 #include <esl/object/ObjectContext.h>
 #include <esl/object/Value.h>
 
+#include <gtx/PublicKey.h>
+
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -38,7 +43,7 @@ namespace procedure {
 namespace authentication {
 namespace jwt {
 
-class Procedure final : public esl::processing::procedure::Interface::Procedure {
+class Procedure final : public virtual esl::processing::procedure::Interface::Procedure, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/authentication-jwt";
@@ -48,6 +53,8 @@ public:
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
+	void initializeContext(esl::object::ObjectContext& objectContext) override;
+
 	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override;
 
@@ -55,6 +62,12 @@ private:
 	using Properties = esl::object::Value<std::map<std::string, std::string>>;
 	std::set<std::string> dropFields;
 	std::map<std::string, std::string> overrideFields;
+	std::set<std::string> jwksConnectionFactoryIds;
+	std::map<std::string, std::reference_wrapper<esl::com::http::client::Interface::ConnectionFactory>> jwksConnectionFactories;
+
+	std::map<std::string, std::pair<std::unique_ptr<gtx::PublicKey>, std::string>> publicKeyById;
+
+	std::pair<gtx::PublicKey*, std::string> getPublicKeyById(const std::string& kid);
 };
 
 } /* namespace jwt */

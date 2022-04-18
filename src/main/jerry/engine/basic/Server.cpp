@@ -34,12 +34,14 @@ Logger logger("jerry::engine::basic::Server");
 
 Server::Server(ProcessRegistry& aProcessRegistry, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
 : socket(aSettings, aImplementation),
-  requestHandler(*this),
-  implementation(aImplementation),
-  settings(aSettings),
   processRegistry(aProcessRegistry),
-  context(processRegistry)
-{ }
+  context(nullptr),
+  requestHandler(context),
+  implementation(aImplementation),
+  settings(aSettings)
+{
+	context.setProcessRegistry(&processRegistry);
+}
 
 void Server::initializeContext() {
 	getContext().initializeContext();

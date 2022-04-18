@@ -36,28 +36,29 @@ namespace engine {
 class ObjectContext : public esl::object::ObjectContext {
 public:
 	ObjectContext(const ObjectContext&) = delete;
-	ObjectContext(ProcessRegistry& processRegistry);
+	ObjectContext(ProcessRegistry* processRegistry);
 
 	ObjectContext& operator=(const ObjectContext&) = delete;
 
 	void setParent(esl::object::ObjectContext* objectContext);
 
-	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) final;
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object); // final;
 	void addReference(const std::string& id, esl::object::Interface::Object& object);
 
 	virtual void initializeContext();
 	virtual void dumpTree(std::size_t depth) const;
 	const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& getObjects() const;
 
-	ProcessRegistry& getProcessRegistry();
-	const ProcessRegistry& getProcessRegistry() const;
+	virtual void setProcessRegistry(ProcessRegistry* processRegistry);
+	ProcessRegistry* getProcessRegistry();
+	const ProcessRegistry* getProcessRegistry() const;
 
 protected:
 	esl::object::Interface::Object* findRawObject(const std::string& id) override;
 	const esl::object::Interface::Object* findRawObject(const std::string& id) const override;
 
 private:
-	ProcessRegistry& processRegistry;
+	ProcessRegistry* processRegistry;
 	esl::object::ObjectContext* parent = nullptr;
 	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 	std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>> objectRefsById;

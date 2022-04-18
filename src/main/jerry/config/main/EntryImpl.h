@@ -28,7 +28,6 @@
 #include <jerry/config/http/Client.h>
 #include <jerry/config/http/Server.h>
 #include <jerry/config/main/Entry.h>
-#include <jerry/config/main/Applications.h>
 #include <jerry/config/main/Procedure.h>
 #include <jerry/config/main/ProcedureContext.h>
 #include <jerry/config/main/BasicContext.h>
@@ -54,7 +53,6 @@ private:
 	std::unique_ptr<Object> object;
 	std::unique_ptr<Reference> reference;
 	std::unique_ptr<Database> database;
-	std::unique_ptr<Applications> applications;
 
 	std::unique_ptr<Procedure> procedure;
 	std::unique_ptr<ProcedureContext> procedureContext;

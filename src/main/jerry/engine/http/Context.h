@@ -51,12 +51,10 @@ public:
 		obFalse
 	};
 
-	Context(ProcessRegistry& processRegistry, bool followParentOnFind = true);
+	Context(ProcessRegistry* processRegistry, bool followParentOnFind = true);
 
 	void setParent(Context* context);
 	const Context* getParent() const;
-
-	void addApplications(const std::string& refId);
 
 	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	void addProcedure(const std::string& refId);

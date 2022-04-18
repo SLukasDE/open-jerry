@@ -61,6 +61,9 @@ public:
 	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
 	/* context specific methods */
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
+	//void addReference(const std::string& id, esl::object::Interface::Object& object);
+
 	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
@@ -77,18 +80,19 @@ public:
 	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override;
 
+	void setProcessRegistry(ProcessRegistry* processRegistry) override;
+
 	/* specializations of ProcessRegistry */
 	void processRegister(esl::processing::procedure::Interface::Procedure& procedureRunning) override;
 	void processUnregister(esl::processing::procedure::Interface::Procedure& procedureRunning) override;
 
 private:
-	std::string configData;
-	std::string configFile;
 	std::atomic<int> terminateCounter{-1};
 	std::set<esl::system::Interface::SignalType> stopSignals;
 	bool verbose = false;
 
 	bool catchException = true;
+	bool dumpException = true;
 	bool hasExceptionReturnCode = false;
 	int exceptionReturnCode = -1;
 
@@ -107,8 +111,6 @@ private:
 	std::mutex signalThreadRunningMutex;
 
 	unsigned int getProceduresRunningCount();
-
-	static void flushLogAppender(const std::string& id, esl::logging::appender::Interface::Appender& appender);
 };
 
 } /* namespace main */

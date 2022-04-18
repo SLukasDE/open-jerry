@@ -29,37 +29,53 @@ Setting::Setting(const std::string& fileName, const tinyxml2::XMLElement& elemen
 		throw XMLException(*this, "Element has user data but it should be empty");
 	}
 
+	bool hasValue = false;
+	bool hasLanguage = false;
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "key") {
+			if(!key.empty()) {
+				throw XMLException(*this, "Multiple definition of attribute 'key'.");
+			}
 			key = attribute->Value();
-			if(key == "") {
+			if(key.empty()) {
 				throw XMLException(*this, "Value \"\" of attribute 'key' is invalid.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "value") {
+			if(hasValue) {
+				throw XMLException(*this, "Multiple definition of attribute 'value'.");
+			}
 			value = attribute->Value();
+			hasValue = true;
 		}
 		else if(std::string(attribute->Name()) == "language" && isParameter) {
+			if(hasLanguage) {
+				throw XMLException(*this, "Multiple definition of attribute 'language'.");
+			}
 			language = attribute->Value();
+			hasLanguage = true;
 		}
 		else {
 			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(key == "") {
+	if(key.empty()) {
 		throw XMLException(*this, "Missing attribute 'key'");
+	}
+	if(!hasValue) {
+		throw XMLException(*this, "Missing attribute 'value'");
 	}
 }
 
 void Setting::saveParameter(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<parameter key=\"" << key << "\" value=\"" << value << "\" language=\"" << language << "\"/>\n";
 }
-
+/*
 void Setting::saveLayout(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<layout key=\"" << key << "\" value=\"" << value << "\"/>\n";
 }
-
+*/
 void Setting::saveResponseHeader(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "<response-header key=\"" << key << "\" value=\"" << value << "\"/>\n";
 }

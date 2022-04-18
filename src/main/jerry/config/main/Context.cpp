@@ -28,6 +28,7 @@
 #include <esl/logging/layout/Layout.h>
 #include <esl/logging/Logger.h>
 
+#include <iostream>
 #include <stdexcept>
 
 namespace jerry {
@@ -38,29 +39,10 @@ namespace {
 Logger logger("jerry::config::main::Context");
 } /* anonymous namespace */
 
-Context::Context(const std::string& fileName)
-: Config(fileName)
-{
-	filesLoaded.insert(fileName);
-
-	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(fileName.c_str());
-	if(xmlError != tinyxml2::XML_SUCCESS) {
-		throw XMLException(*this, xmlError);
-	}
-
-	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
-	if(element == nullptr) {
-		throw XMLException(*this, "No root element");
-	}
-
-	setXMLFile(fileName, *element);
-	loadXML(*element);
-}
-
-Context::Context(const char* xmlData, std::size_t xmlDataSize)
+Context::Context(const std::string& configuration)
 : Config("{mem}")
 {
-	tinyxml2::XMLError xmlError = xmlDocument.Parse(xmlData, xmlDataSize);
+	tinyxml2::XMLError xmlError = xmlDocument.Parse(configuration.c_str(), configuration.size());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
 		throw XMLException(*this, xmlError);
 	}
@@ -71,6 +53,25 @@ Context::Context(const char* xmlData, std::size_t xmlDataSize)
 	}
 
 	setXMLFile(getFileName(), *element);
+	loadXML(*element);
+}
+
+Context::Context(const boost::filesystem::path& filename)
+: Config(filename.generic_string())
+{
+	filesLoaded.insert(filename.generic_string());
+
+	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(filename.generic_string().c_str());
+	if(xmlError != tinyxml2::XML_SUCCESS) {
+		throw XMLException(*this, xmlError);
+	}
+
+	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
+	if(element == nullptr) {
+		throw XMLException(*this, "No root element");
+	}
+
+	setXMLFile(filename.generic_string(), *element);
 	loadXML(*element);
 }
 
@@ -88,8 +89,6 @@ void Context::save(std::ostream& oStream) const {
 	for(const auto& entry : certificates) {
 		entry.save(oStream, 2);
 	}
-
-	loggerConfig.save(oStream, 2);
 
 	for(const auto& entry : entries) {
 		entry->save(oStream, 2);
@@ -114,59 +113,11 @@ void Context::loadLibraries() {
 	}
 }
 
-std::unique_ptr<esl::logging::layout::Interface::Layout> Context::installLogging() {
-	/* ************* *
-	 * create layout *
-	 * ************* */
-	esl::object::Interface::Settings eslSettings;
-
-	for(auto const setting : loggerConfig.layoutSettings) {
-		eslSettings.push_back(std::make_pair(setting.key, setting.value));
-	}
-
-	std::unique_ptr<esl::logging::layout::Interface::Layout> layout;
-	try {
-		layout.reset(new esl::logging::layout::Layout(eslSettings, loggerConfig.layout));
-	}
-	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
-	}
-	catch(...) {
-		throw XMLException(*this, "Could not create logging-layout for implementation '" + loggerConfig.layout + "' because an unknown exception occurred.");
-	}
-
-
-    /* ************** *
-     * set log levels *
-     * ************** */
-	for(auto const setting : loggerConfig.levelSettings) {
-		if(setting.level == "SILENT") {
-			esl::logging::setLevel(esl::logging::Level::SILENT, setting.className);
-		}
-		else if(setting.level == "ERROR") {
-			esl::logging::setLevel(esl::logging::Level::ERROR, setting.className);
-		}
-		else if(setting.level == "WARN") {
-			esl::logging::setLevel(esl::logging::Level::WARN, setting.className);
-		}
-		else if(setting.level == "INFO") {
-			esl::logging::setLevel(esl::logging::Level::INFO, setting.className);
-		}
-		else if(setting.level == "DEBUG") {
-			esl::logging::setLevel(esl::logging::Level::DEBUG, setting.className);
-		}
-		else if(setting.level == "TRACE") {
-			esl::logging::setLevel(esl::logging::Level::TRACE, setting.className);
-		}
-		else {
-			logger.warn << "Unknown logging level \"" << setting.level << "\" for class \"" << setting.className << "\"\n";
-		}
-	}
-
-	return layout;
-}
-
 void Context::install(engine::main::Context& context) {
+	for(const auto& eslLogger : eslLoggers) {
+		eslLogger.install();
+	}
+
 	for(const auto& configCertificate : certificates) {
 		context.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
 	}
@@ -183,8 +134,14 @@ void Context::loadXML(const tinyxml2::XMLElement& element) {
 
 	const std::string elementName(element.Name());
 
-	if(elementName != "jerry" && elementName != "jerry-batch" && elementName != "jerry-server") {
-		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-batch\" or \"jerry-server\"");
+	if(elementName == "jerry-batch") {
+		std::cerr << "Tag <jerry-batch> is deprecated. Use tag <jerry> instead.";
+	}
+	else if(elementName == "jerry-server") {
+		std::cerr << "Tag <jerry-server> is deprecated. Use tag <jerry> instead.";
+	}
+	else if(elementName != "jerry") {
+		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
 	}
 
 	if(element.GetUserData() != nullptr) {
@@ -250,7 +207,10 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 		certificates.push_back(Certificate(getFileName(), element));
 	}
 	else if(elementName == "logger") {
-		loggerConfig = LoggerConfig(getFileName(), element);
+		std::cerr << "Tag <logger> is deprecated. Use tag <esl-logger> instead or use a separate esl-logger configuration file outside of the jerry configuration file. Skipping tag <logger> !\n";
+	}
+	else if(elementName == "esl-logger") {
+		eslLoggers.push_back(logging::Logger(getFileName(), element));
 	}
 	else {
 		entries.emplace_back(new EntryImpl(getFileName(), element));

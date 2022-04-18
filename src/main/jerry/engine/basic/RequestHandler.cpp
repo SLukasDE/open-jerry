@@ -18,7 +18,6 @@
 
 #include <jerry/engine/basic/RequestHandler.h>
 #include <jerry/engine/basic/Context.h>
-#include <jerry/engine/basic/Server.h>
 #include <jerry/engine/InputProxy.h>
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
@@ -35,8 +34,8 @@ namespace {
 Logger logger("jerry::engine::basic::RequestHandler");
 }
 
-RequestHandler::RequestHandler(Server& aServer)
-: server(aServer)
+RequestHandler::RequestHandler(Context& aContext)
+: context(aContext)
 { }
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
@@ -44,7 +43,7 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
 		/* Access log */
 		logger.debug << "Request received\n";
 
-		esl::io::Input input = server.getContext().accept(requestContext);
+		esl::io::Input input = context.accept(requestContext);
 		if(input) {
 			return InputProxy::create(std::move(input));
 		}
@@ -58,7 +57,7 @@ esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& r
 }
 
 std::set<std::string> RequestHandler::getNotifiers() const {
-	return server.getContext().getNotifiers();
+	return context.getNotifiers();
 }
 
 

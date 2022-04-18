@@ -184,6 +184,12 @@ void EntryImpl::procedureCancel() {
 	}
 }
 
+void EntryImpl::setProcessRegistry(ProcessRegistry* processRegistry) {
+	if(context) {
+		context->setProcessRegistry(processRegistry);
+	}
+}
+
 } /* namespace procedure */
 } /* namespace engine */
 } /* namespace jerry */

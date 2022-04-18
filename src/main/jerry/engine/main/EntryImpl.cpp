@@ -223,6 +223,12 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 	}
 }
 
+void EntryImpl::setProcessRegistry(ProcessRegistry* processRegistry) {
+	if(procedureContext) {
+		procedureContext->setProcessRegistry(processRegistry);
+	}
+}
+
 } /* namespace main */
 } /* namespace engine */
 } /* namespace jerry */

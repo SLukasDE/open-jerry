@@ -30,7 +30,7 @@ namespace http {
 
 class Endpoint : public Context {
 public:
-	Endpoint(ProcessRegistry& processRegistry, const std::string& path);
+	Endpoint(ProcessRegistry* processRegistry, const std::string& path);
 
 	void dumpTree(std::size_t depth) const override;
 

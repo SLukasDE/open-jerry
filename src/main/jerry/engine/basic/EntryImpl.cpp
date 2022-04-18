@@ -30,10 +30,6 @@ namespace {
 Logger logger("jerry::engine::basic::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(main::Applications& aRefApplications)
-: refApplications(&aRefApplications)
-{ }
-
 EntryImpl::EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure)
 : procedure(std::move(aProcedure))
 { }
@@ -84,24 +80,6 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 }
 
 std::set<std::string> EntryImpl::getNotifiers() const {
-	if(refApplications) {
-		/* ****************************** *
-		 * handle referenced applications *
-		 * ****************************** */
-		std::set<std::string> notifiers;
-
-		for(auto& appsEntry : refApplications->getApplications()) {
-			if(!appsEntry.second) {
-				logger.warn << "Application \"" << appsEntry.first << "\" is null\n";
-				continue;
-			}
-
-			std::set<std::string> tmpNotifiers = appsEntry.second->getBasicContext().getNotifiers();
-			notifiers.insert(tmpNotifiers.begin(), tmpNotifiers.end());
-		}
-
-		return notifiers;
-	}
 	if(context) {
 		return context->getNotifiers();
 	}
@@ -115,16 +93,6 @@ std::set<std::string> EntryImpl::getNotifiers() const {
 }
 
 void EntryImpl::dumpTree(std::size_t depth) const {
-	if(refApplications) {
-		/* **************************** *
-		 * dump referenced applications *
-		 * **************************** */
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "+-> Applications: -> " << refApplications << " (reference)\n";
-	}
-
 	if(procedure) {
 		/* ************** *
 		 * dump procedure *
@@ -178,24 +146,6 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 }
 
 esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& requestContext) {
-	if(refApplications) {
-		/* ****************************** *
-		 * handle referenced applications *
-		 * ****************************** */
-
-		for(auto& appsEntry : refApplications->getApplications()) {
-			if(!appsEntry.second) {
-				logger.warn << "Application \"" << appsEntry.first << "\" is null\n";
-				continue;
-			}
-
-			esl::io::Input input = appsEntry.second->getBasicContext().accept(requestContext);
-			if(input) {
-				return input;
-			}
-		}
-	}
-
 	if(procedure) {
 		/* **************** *
 		 * handle procedure *

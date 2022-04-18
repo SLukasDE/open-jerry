@@ -19,15 +19,14 @@
 #ifndef JERRY_BUILTIN_HTTP_APPLICATIONS_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_HTTP_APPLICATIONS_REQUESTHANDLER_H_
 
-#include <jerry/engine/main/Applications.h>
-#include <jerry/engine/application/Context.h>
-#include <jerry/engine/http/Context.h>
-#include <jerry/engine/procedure/Context.h>
+#include <jerry/builtin/object/applications/Object.h>
+#include <jerry/builtin/object/applications/Application.h>
 
 #include <esl/com/http/server/RequestContext.h>
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
+#include <esl/object/Interface.h>
 #include <esl/object/ObjectContext.h>
 
 #include <memory>
@@ -57,11 +56,11 @@ public:
 private:
 	std::string applicationsId;
 	std::string applicationName;
-	std::string contextId;
+	std::string refId;
 
-	engine::main::Applications* applications = nullptr;
-	engine::http::Context* httpContext = nullptr;
-	engine::procedure::Context* procedureContext = nullptr;
+	object::applications::Object* applications = nullptr;
+	object::applications::Application* application = nullptr;
+	esl::object::Interface::Object* refObject = nullptr;
 };
 
 } /* namespace applications */

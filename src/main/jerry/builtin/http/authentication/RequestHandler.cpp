@@ -51,11 +51,11 @@ const std::string PAGE_401(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	bool hasBehavior = false;
 
 	for(const auto& setting : settings) {
@@ -284,15 +284,29 @@ void RequestHandler::processRequestJWT(std::set<std::string>& authDataTypes, Req
 	}
 
 	authDataTypes.insert("jwt");
-	settings["jwt-header"] =  esl::utility::String::fromBase64(jwtSplit[0]);
-	settings["jwt-payload"] = esl::utility::String::fromBase64(jwtSplit[1]);
+	std::string tmpStr;
+
+	tmpStr = esl::utility::String::fromBase64(jwtSplit[0]);
+	logger.debug << "jwt-header: " << tmpStr << "\n";
+	settings["jwt-header"] = std::move(tmpStr);
+
+	tmpStr = esl::utility::String::fromBase64(jwtSplit[1]);
+	logger.debug << "jwt-payload: " << tmpStr << "\n";
+	settings["jwt-payload"] = std::move(tmpStr);
+
+	tmpStr = jwtSplit[0] + "." + jwtSplit[1];
+	logger.debug << "jwt-data: " << tmpStr << "\n";
+	settings["jwt-data"] = std::move(tmpStr);
+
 	if(jwtSplit.size() >= 3) {
+		logger.debug << "jwt-signature: " << jwtSplit[2] << "\n";
 		settings["jwt-signature"] = esl::utility::String::fromBase64(jwtSplit[2]);
 	}
 	else {
 		logger.warn << "JSON web token has no 'signature'. JWT should look like \"<header>.<payload>.<signature>\".\n";
 		logger.warn << "Continue without signature.\n";
 	}
+
 	settings["jwt-aud"] = requestContext.getRequest().getHostName();
 
 	if(jwtSplit.size() > 3) {

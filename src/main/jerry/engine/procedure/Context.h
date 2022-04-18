@@ -50,6 +50,8 @@ public:
 	void procedureRun(esl::object::ObjectContext& objectContext);
 	void procedureCancel();
 
+	void setProcessRegistry(ProcessRegistry* processRegistry) override;
+
 private:
 	Context* parent = nullptr;
 	std::vector<std::unique_ptr<Entry>> entries;

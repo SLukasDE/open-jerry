@@ -30,7 +30,7 @@ namespace http {
 
 class Host : public Context {
 public:
-	Host(ProcessRegistry& processRegistry, const std::string& serverName);
+	Host(ProcessRegistry* processRegistry, const std::string& serverName);
 
 	void dumpTree(std::size_t depth) const override;
 

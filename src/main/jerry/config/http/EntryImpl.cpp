@@ -44,9 +44,6 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "database") {
 		database = std::unique_ptr<Database>(new Database(getFileName(), element));
 	}
-	else if(elementName == "applications") {
-		applications = std::unique_ptr<Applications>(new Applications(getFileName(), element));
-	}
 	else if(elementName == "context" || elementName == "http-context" || elementName == "listener") {
 		context = std::unique_ptr<Context>(new Context(getFileName(), element));
 	}
@@ -83,9 +80,6 @@ void EntryImpl::save(std::ostream& oStream, std::size_t spaces) const {
 	if(database) {
 		database->save(oStream, spaces);
 	}
-	if(applications) {
-		applications->save(oStream, spaces);
-	}
 	if(context) {
 		context->save(oStream, spaces);
 	}
@@ -118,9 +112,6 @@ void EntryImpl::install(engine::http::Context& engineHttpContext) const {
 	}
 	if(database) {
 		database->install(engineHttpContext);
-	}
-	if(applications) {
-		applications->install(engineHttpContext);
 	}
 	if(context) {
 		context->install(engineHttpContext);

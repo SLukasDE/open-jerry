@@ -30,18 +30,17 @@ namespace jerry {
 namespace engine {
 namespace basic {
 
-
-class Server;
+class Context;
 
 class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
 public:
-	RequestHandler(Server& server);
+	RequestHandler(Context& context);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
 
 private:
-	Server& server;
+	Context& context;
 };
 
 

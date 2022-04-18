@@ -1,5 +1,5 @@
 <jerry>
-	<include file="logger.xml"/>
+	<!--include file="logger.xml"/-->
 	
 	<certificate domain="*" key="server.key" cert="server.pub"/>
 	

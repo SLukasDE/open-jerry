@@ -46,7 +46,7 @@ void Context::addProcedure(const std::string& refId) {
 	entries.emplace_back(new EntryImpl(*procedure));
 }
 
-void Context::addContext(std::unique_ptr<procedure::Context> context) {
+void Context::addContext(std::unique_ptr<Context> context) {
 	entries.emplace_back(new EntryImpl(std::move(context)));
 }
 
@@ -119,6 +119,13 @@ void Context::procedureCancel() {
 	runningProceduresCancel = !runningProcedures.empty();
 	for(auto& runningProcedure : runningProcedures) {
 		runningProcedure.first->procedureCancel();
+	}
+}
+
+void Context::setProcessRegistry(ProcessRegistry* processRegistry) {
+	ObjectContext::setProcessRegistry(processRegistry);
+	for(auto& entry : entries) {
+		entry->setProcessRegistry(processRegistry);
 	}
 }
 

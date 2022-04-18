@@ -36,8 +36,10 @@
 #include <jerry/builtin/http/applications/RequestHandler.h>
 #include <jerry/builtin/http/authentication/RequestHandler.h>
 #include <jerry/builtin/http/database/RequestHandler.h>
+#include <jerry/builtin/http/dump/RequestHandler.h>
 #include <jerry/builtin/http/filebrowser/RequestHandler.h>
 #include <jerry/builtin/http/file/RequestHandler.h>
+#include <jerry/builtin/http/log/RequestHandler.h>
 #include <jerry/builtin/http/self/RequestHandler.h>
 #include <jerry/builtin/http/proxy/RequestHandler.h>
 
@@ -66,6 +68,7 @@
 #include <jerry/builtin/object/standard/VectorInt.h>
 #include <jerry/builtin/object/standard/VectorPairStringString.h>
 #include <jerry/builtin/object/standard/VectorString.h>
+#include <jerry/builtin/object/applications/Object.h>
 
 #include <eslx/Module.h>
 
@@ -96,7 +99,7 @@ void Module::install(esl::module::Module& module) {
 
 	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
 			"jerry/applications", // builtin::basic::application::RequestHandler::getImplementation(),
-			&builtin::basic::application::RequestHandler::createRequestHandler));
+			&builtin::basic::application::RequestHandler::create));
 
 	/* ***************************** *
 	 * builtin http request handlers *
@@ -114,12 +117,20 @@ void Module::install(esl::module::Module& module) {
 			&builtin::http::database::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			"jerry/dump", // builtin::http::dump::RequestHandler::getImplementation(),
+			&builtin::http::dump::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			"jerry/filebrowser", // builtin::http::filebrowser::RequestHandler::getImplementation(),
 			&builtin::http::filebrowser::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			"jerry/file", // builtin::http::file::RequestHandler::getImplementation(),
 			&builtin::http::file::RequestHandler::createRequestHandler));
+
+	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+			"jerry/log", // builtin::http::file::RequestHandler::getImplementation(),
+			&builtin::http::log::RequestHandler::createRequestHandler));
 
 	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
 			"jerry/self", // builtin::http::self::RequestHandler::getImplementation(),
@@ -211,6 +222,9 @@ void Module::install(esl::module::Module& module) {
 			"std/vector<string>",
 			&builtin::object::standard::VectorString::create));
 
+	module.addInterface(esl::object::Interface::createInterface(
+			"jerry/applications",
+			&builtin::object::applications::Object::create));
 }
 
 } /* namespace jerry */

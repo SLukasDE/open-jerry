@@ -16,12 +16,16 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <jerry/config/main/Context.h>
+#include <jerry/config/logging/Logger.h>
 #include <jerry/engine/main/Context.h>
 #include <jerry/ObjectContext.h>
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Module.h>
 
 #include <esl/object/Value.h>
+
+#include <boost/filesystem/path.hpp>
 
 #include <string>
 #include <vector>
@@ -37,14 +41,17 @@ using ReturnCodeObject = esl::object::Value<int>;
 const std::string jerryVersionStr = STRINGIFY(TRANSFORMER_ARTEFACT_VERSION);
 
 void printUsage() {
-	std::cout << "Wrong arguments for jerry " + jerryVersionStr + ".\n";
-	std::cout << "Usage: jerry [-v] <path to server.xml>\n";
+	std::cout << "\n";
+	std::cout << "Usage: jerry [-v] [-dry] [-l <esl logger configuration file>] <server configuration file>\n";
 	std::cout << "  -v\n";
 	std::cout << "    Specifying this flags results to some extra output on startup phase.\n";
 	std::cout << "  -dry\n";
 	std::cout << "    Make a dry run. Just read server configuration file and load libraries.\n";
-	std::cout << "  <path to server.xml>\n";
+	std::cout << "  -l <esl logger configuration file>\n";
 	std::cout << "    This file is mandatory. It contains the whole server configuration.\n";
+	std::cout << "  <server configuration file>\n";
+	std::cout << "    This file is mandatory. It contains the whole server configuration.\n";
+	std::cout << std::flush;
 }
 
 int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
@@ -56,23 +63,10 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 	return -1;
 }
 
-int calcFlagIndexSum(int argc, int flags) {
-	int rc = flags * (-1);
-
-	for(int i=1; i<argc; ++i) {
-		rc += 1 + i;
-	}
-
-	return rc;
-}
-
 int main(int argc, const char *argv[]) {
 	jerry::Module::install(esl::getModule());
 
-	if(argc > 5) {
-		printUsage();
-		return -1;
-	}
+	std::cout << "jerry version " << jerryVersionStr << std::endl;
 
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
@@ -80,27 +74,41 @@ int main(int argc, const char *argv[]) {
 	int flagIndexDryRun = findFlagIndex(argc, argv, "-dry");
 	bool isDryRun = (flagIndexDryRun > 0);
 
-	int flagIndexConfigFile = -1;
+	int flagIndexLoggerConfig = findFlagIndex(argc, argv, "-l");
+	std::string loggerConfigFile;
+	if(flagIndexLoggerConfig > 0) {
+		if(flagIndexLoggerConfig+1 >= argc) {
+			std::cerr << "Wrong arguments: logger configuration file is missing." << std::endl;
+			printUsage();
+			return -1;
+		}
+		loggerConfigFile = argv[flagIndexLoggerConfig+1];
+	}
+
+	std::string serverConfigFile;
 	for(int i=1; i<argc; ++i) {
-		if(flagIndexVerbose != i
-		&& flagIndexDryRun != i) {
-			flagIndexConfigFile = i;
-			break;
+		if(isVerbose && flagIndexVerbose == i) {
+			continue;
+		}
+
+		if(isDryRun && flagIndexDryRun == i) {
+			continue;
+		}
+
+		if(!loggerConfigFile.empty() && (flagIndexLoggerConfig == i || flagIndexLoggerConfig+1 == i)) {
+			continue;
+		}
+
+		serverConfigFile = argv[i];
+		if(i+1 < argc) {
+			std::cerr << "Unknown argument \"" << argv[i+1] << "\"" << std::endl;
+			printUsage();
+			return -1;
 		}
 	}
 
-	std::string configFile;
-	if(flagIndexConfigFile > 0) {
-		configFile = argv[flagIndexConfigFile];
-	}
-	else {
-		printUsage();
-		return -1;
-	}
-
-	int flagIndexSum1 = flagIndexVerbose + flagIndexDryRun + flagIndexConfigFile;
-	int flagIndexSum2 = calcFlagIndexSum(argc, 3);
-	if(flagIndexSum1 != flagIndexSum2) {
+	if(serverConfigFile.empty()) {
+		std::cerr << "Wrong arguments: server configuration file is missing." << std::endl;
 		printUsage();
 		return -1;
 	}
@@ -108,15 +116,49 @@ int main(int argc, const char *argv[]) {
 	int returnCode = 0;
 	try {
 		std::vector<std::pair<std::string, std::string>> settings;
-		settings.push_back(std::make_pair("config-file", configFile));
 		settings.push_back(std::make_pair("stop-signal", "interrupt"));
 		settings.push_back(std::make_pair("stop-signal", "terminate"));
 		settings.push_back(std::make_pair("stop-signal", "pipe"));
+		jerry::engine::main::Context procedure(settings);
+
+		boost::filesystem::path serverConfigPath(serverConfigFile);
+		jerry::config::main::Context config(serverConfigPath);
 		if(isVerbose) {
-			settings.push_back(std::make_pair("verbose", "true"));
+			/* show configuration */
+			config.save(std::cout);
+			std::cout << "\n\n";
 		}
 
-		jerry::engine::main::Context procedure(settings);
+		config.loadLibraries();
+
+		if(isVerbose) {
+			/* show loaded modules and interfaces */
+			std::cout << "Interfaces:\n";
+			std::cout << "-----------\n";
+			for(const auto& interface : esl::getModule().getMetaInterfaces()) {
+				std::cout << "  module:         \"" << interface.module << "\"\n";
+				std::cout << "  type:           \"" << interface.type << "\"\n";
+				std::cout << "  implementation: \"" << interface.implementation << "\"\n";
+				std::cout << "  apiVersion:     \"" << interface.apiVersion << "\"\n";
+				std::cout << "\n";
+			}
+			std::cout << "\n\n";
+		}
+
+		if(!loggerConfigFile.empty()) {
+			boost::filesystem::path loggerConfigPath(loggerConfigFile);
+			jerry::config::logging::Logger loggerConfig(loggerConfigPath);
+
+			if(isVerbose) {
+				/* show logger configuration */
+				loggerConfig.save(std::cout);
+				std::cout << "\n\n";
+			}
+			loggerConfig.install();
+		}
+
+		config.install(procedure);
+
 		jerry::ObjectContext objectContext;
 
 		if(!isDryRun) {

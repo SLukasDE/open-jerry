@@ -19,9 +19,18 @@
 #include <jerry/builtin/procedure/authentication/jwt/Procedure.h>
 #include <jerry/Logger.h>
 
+#include <esl/com/http/client/Request.h>
+#include <esl/com/http/client/Response.h>
+#include <esl/io/Input.h>
+#include <esl/io/input/String.h>
+#include <esl/io/Output.h>
+#include <esl/utility/HttpMethod.h>
+#include <esl/utility/MIME.h>
 #include <esl/utility/String.h>
 
 #include "rapidjson/document.h"
+
+#include <gnutls/gnutls.h>
 
 #include <ctime>
 #include <stdexcept>
@@ -56,9 +65,25 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 
 			overrideFields.insert(std::make_pair(setting.second.substr(0, pos), setting.second.substr(pos+1)));
 		}
+		else if(setting.first == "jwks-client-id") {
+			if(setting.second.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'jwks-client-id'");
+			}
+			jwksConnectionFactoryIds.insert(setting.second);
+		}
 		else {
 			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
+	}
+}
+
+void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+	for(const auto jwksConnectionFactoryId : jwksConnectionFactoryIds) {
+		esl::com::http::client::Interface::ConnectionFactory* connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(jwksConnectionFactoryId);
+		if(!connectionFactory) {
+			throw std::runtime_error("HTTP client with id \"" + jwksConnectionFactoryId + "\" not found");
+		}
+		jwksConnectionFactories.insert(std::make_pair(jwksConnectionFactoryId, std::ref(*connectionFactory)));
 	}
 }
 
@@ -68,12 +93,12 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 		return;
 	}
 
-	auto iter = authProperties->get().find("type");
-	if(iter == authProperties->get().end()) {
+	auto authIter = authProperties->get().find("type");
+	if(authIter == authProperties->get().end()) {
 		return;
 	}
 
-	std::vector<std::string> typeSplit = esl::utility::String::split(iter->second, ',', true);
+	std::vector<std::string> typeSplit = esl::utility::String::split(authIter->second, ',', true);
 	bool jwtFound = false;
 	for(const auto& type : typeSplit) {
 		if(type == "jwt") {
@@ -86,13 +111,65 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 		return;
 	}
 
-	std::string jwtPayloadStr = authProperties->get().at("jwt-payload");
-	std::string jwtAudStr = authProperties->get().at("jwt-aud");
-	rapidjson::Document document;
-	document.Parse(jwtPayloadStr.c_str());
+    std::time_t currentTime = std::time(nullptr);
 
-	if(!document.IsObject()) {
-		return;
+	/* **************** *
+	 * Verification JWT *
+	 * **************** */
+	if(authProperties->get().count("jwt-signature") != 0) {
+		std::string jwtHeaderStr = authProperties->get().at("jwt-header");
+		rapidjson::Document document;
+		document.Parse(jwtHeaderStr.c_str());
+
+		if(!document.IsObject()) {
+			logger.warn << "JWT header content is not a JSON object.\n";
+			return;
+		}
+
+		std::string kid;
+		if(overrideFields.count("kid") != 0) {
+			kid = overrideFields.at("kid");
+		}
+		else if(document.HasMember("kid") && document["kid"].IsString()) {
+			kid = document["kid"].GetString();
+		}
+		else {
+			logger.warn << "Field \"kid\" is missing in JWT header.\n";
+		}
+
+		std::string alg;
+		if(overrideFields.count("alg") != 0) {
+			alg = overrideFields.at("alg");
+		}
+		else if(document.HasMember("alg") && document["alg"].IsString()) {
+			alg = document["alg"].GetString();
+		}
+		else {
+			logger.warn << "Field \"alg\" is missing in JWT header.\n";
+		}
+
+		std::pair<gtx::PublicKey*, std::string> publicKey = getPublicKeyById(kid);
+		if(publicKey.first) {
+			std::string data = authProperties->get().at("jwt-data");
+			std::string signature = authProperties->get().at("jwt-signature");
+
+			if(alg.empty()) {
+				alg = publicKey.second;
+			}
+
+			if(publicKey.first->verifySignature(data, signature, alg) == false) {
+				logger.warn << "JWT verification failed because signature is invalid.\n";
+				return;
+			}
+			logger.warn << "JWT verification SUCCESSFUL.\n";
+		}
+		else if(kid.empty()) {
+			return;
+		}
+		else {
+			logger.warn << "JWT verification failed because public key is not available.\n";
+			return;
+		}
 	}
 
 	/* iss  Issuer           Der Aussteller des Tokens
@@ -102,117 +179,242 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	 * nbf  Not Before       Die Unixzeit, ab der das Token gültig ist.
 	 * iat  Issued At        Die Unixzeit, zu der das Token ausgestellt wurde.
 	 */
-#if 1
-	if(dropFields.count("aud") == 0) {
-		auto iter = overrideFields.find("aud");
-		if(iter == overrideFields.end()) {
-			if(document.HasMember("aud") && document["aud"].IsString()) {
-				if(jwtAudStr != document["aud"].GetString()) {
-					logger.warn << "Web-Token is issued for \"" << document["aud"].GetString() << "\" but used for \"" << jwtAudStr << "\".\n";
-					return;
-				}
-			}
-		}
-		else if(jwtAudStr != iter->second) {
-			logger.warn << "Web-Token is issued for \"" << iter->second << "\" but used for \"" << jwtAudStr << "\".\n";
-			return;
-		}
-	}
-#else
-	if(document.HasMember("aud") && document["aud"].IsString()) {
-		if(jwtAudStr != document["aud"].GetString()) {
-			logger.warn << "Web-Token is issued for \"" << document["aud"].GetString() << "\" but used for \"" << jwtAudStr << "\".\n";
-			return;
-		}
-	}
-#endif
 
-    std::time_t currentTime = std::time(nullptr);
+	std::string jwtPayloadStr = authProperties->get().at("jwt-payload");
+	rapidjson::Document document;
+	document.Parse(jwtPayloadStr.c_str());
 
-#if 1
-	if(dropFields.count("exp") == 0) {
-		auto iter = overrideFields.find("exp");
-		if(iter == overrideFields.end()) {
-			if(document.HasMember("exp") && document["exp"].IsUint64()) {
-				if(currentTime > document["exp"].GetInt64()) {
-					logger.warn << "Web-Token is expired. Token is valid to timestamp " << document["exp"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
-					return;
-				}
-			}
-		}
-		else {
-			long value = std::stol(iter->second);
-			if(currentTime > value) {
-				logger.warn << "Web-Token is expired. Token is valid to timestamp " << value << " but current timestamp is " << currentTime << ".\n";
-				return;
-			}
-		}
+	if(!document.IsObject()) {
+		logger.warn << "JWT payload content is not a JSON object.\n";
+		return;
 	}
-#else
-	if(document.HasMember("exp") && document["exp"].IsUint64()) {
-		if(currentTime > document["exp"].GetInt64()) {
-			logger.warn << "Web-Token is expired. Token is valid to timestamp " << document["exp"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
-			return;
-		}
-	}
-#endif
-#if 1
-	if(dropFields.count("nbf") == 0) {
-		auto iter = overrideFields.find("nbf");
-		if(iter == overrideFields.end()) {
-			if(document.HasMember("nbf") && document["nbf"].IsUint64()) {
-				if(currentTime < document["nbf"].GetInt64()) {
-					logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << document["nbf"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
-					return;
-				}
-			}
-		}
-		else {
-			long value = std::stol(iter->second);
-			if(currentTime < value) {
-				logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << value << " but current timestamp is " << currentTime << ".\n";
-				return;
-			}
-		}
-	}
-#else
-	if(document.HasMember("nbf") && document["nbf"].IsUint64()) {
-		if(currentTime < document["nbf"].GetInt64()) {
-			logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << document["nbf"].GetUint64() << " but current timestamp is " << currentTime << ".\n";
-			return;
-		}
-	}
-#endif
 
-#if 1
-	if(dropFields.count("sub") == 0) {
-		auto iter = overrideFields.find("sub");
-		if(iter == overrideFields.end()) {
-			if(!document.HasMember("sub") || !document["sub"].IsString()) {
-				authProperties->get()["identified"] = "";
-			}
-			else {
-				authProperties->get()["identified"] = document["sub"].GetString();
-			}
-		}
-		else {
-			authProperties->get()["identified"] = iter->second;
-		}
+	/* ************ *
+	 * verify 'aud' *
+	 * ************ */
+	std::string aud;
+	if(dropFields.count("aud") != 0) {
+		aud == authProperties->get().at("jwt-aud");
 	}
-	else {
+	else if(overrideFields.count("aud") != 0) {
+		aud = overrideFields.at("aud");
+	}
+	else if(document.HasMember("aud") && document["aud"].IsString()) {
+		aud = document["aud"].GetString();
+	}
+
+	if(aud != authProperties->get().at("jwt-aud")) {
+		logger.warn << "Web-Token is issued for \"" << overrideFields.at("aud") << "\" but used for \"" << authProperties->get().at("jwt-aud") << "\".\n";
+		return;
+	}
+
+	/* ************ *
+	 * verify 'exp' *
+	 * ************ */
+    std::time_t exp = 0;
+	if(dropFields.count("exp") != 0) {
+		exp = currentTime;
+	}
+	else if(overrideFields.count("exp") != 0) {
+		exp = std::stol(overrideFields.at("exp"));
+	}
+	else if(document.HasMember("exp") && document["exp"].IsUint64()) {
+		exp = document["exp"].GetInt64();
+	}
+
+	if(currentTime > exp) {
+		logger.warn << "Web-Token is expired. Token is valid to timestamp " << exp << " but current timestamp is " << currentTime << ".\n";
+		return;
+	}
+
+	/* ************ *
+	 * verify 'nbf' *
+	 * ************ */
+    std::time_t nbf = 0;
+	if(dropFields.count("nbf") != 0) {
+		nbf = currentTime;
+	}
+	else if(overrideFields.count("nbf") != 0) {
+		exp = std::stol(overrideFields.at("nbf"));
+	}
+	else if(document.HasMember("nbf") && document["nbf"].IsUint64()) {
+		exp = document["nbf"].GetInt64();
+	}
+
+	if(currentTime < nbf) {
+		logger.warn << "Web-Token is still not valid. Token is valid from timestamp " << nbf << " but current timestamp is " << currentTime << ".\n";
+		return;
+	}
+
+	/* ****************** *
+	 * fetch 'identified' *
+	 * ****************** */
+	if(dropFields.count("sub") != 0) {
 		authProperties->get()["identified"] = "";
 	}
-#else
-	if(!document.HasMember("sub") || !document["sub"].IsString()) {
-		authProperties->get()["identified"] = "";
+	else if(overrideFields.count("sub") != 0) {
+		authProperties->get()["identified"] = overrideFields.at("sub");
 	}
-	else {
+	else if(document.HasMember("sub") && document["sub"].IsString()) {
 		authProperties->get()["identified"] = document["sub"].GetString();
 	}
-#endif
+	else {
+		authProperties->get()["identified"] = "";
+	}
+
 }
 
 void Procedure::procedureCancel() {
+}
+
+std::pair<gtx::PublicKey*, std::string> Procedure::getPublicKeyById(const std::string& kid) {
+	if(publicKeyById.count(kid) != 0) {
+		return std::make_pair(publicKeyById.at(kid).first.get(), publicKeyById.at(kid).second);
+	}
+
+	for(auto& jwksConnectionFactory : jwksConnectionFactories) {
+		auto connection = jwksConnectionFactory.second.get().createConnection();
+		if(!connection) {
+			logger.warn << "Could not get an connection object for JWKS server with id \"" << jwksConnectionFactory.first << "\".\n";
+			continue;
+		}
+		esl::com::http::client::Request request("", esl::utility::HttpMethod::httpGet, esl::utility::MIME());
+		esl::io::input::String inputString;
+
+		esl::com::http::client::Response response = connection->send(request, esl::io::Output(), esl::io::Input(inputString));
+
+		if(response.getStatusCode() < 200 || response.getStatusCode() > 299) {
+			logger.warn << "JWKS server response with HTTP status code " << response.getStatusCode() << ".\n";
+			continue;
+		}
+
+		rapidjson::Document document;
+		document.Parse(inputString.getString().c_str());
+
+		logger.info << "HTTP response:\n";
+		logger.info << "- content type: " << response.getContentType().toString() << "\n";
+
+		if(!document.IsObject()) {
+			logger.warn << "JWKS content is not a JSON object.\n";
+			continue;
+		}
+
+		if(!document.HasMember("keys") || !document["keys"].IsArray()) {
+			logger.warn << "JWKS object has no \"keys\" array.\n";
+		}
+
+		auto jsonArray = document["keys"].GetArray();
+		for(rapidjson::Value::ConstValueIterator iter = jsonArray.Begin(); iter != jsonArray.End(); ++iter) {
+			if(!iter->IsObject()) {
+				logger.warn << "JWK object has no \"keys\" array.\n";
+				continue;
+			}
+
+			std::string kid;
+			if(iter->HasMember("kid") && (*iter)["kid"].IsString()) {
+				kid = (*iter)["kid"].GetString();
+			}
+
+			if(!iter->HasMember("kty") || !(*iter)["kty"].IsString()) {
+				logger.warn << "JWK object has no string member \"kty\".\n";
+				continue;
+			}
+			std::string kty = (*iter)["kty"].GetString();
+
+			if(kty == "RSA") {
+				std::string use = "sig";
+				if(iter->HasMember("use") && (*iter)["use"].IsString()) {
+					use = (*iter)["use"].GetString();
+				}
+				if(use != "sig") {
+					continue;
+				}
+
+				if(!iter->HasMember("n") || !(*iter)["n"].IsString()) {
+					logger.warn << "JWK object has no string member \"n\".\n";
+					continue;
+				}
+				std::string modulus = (*iter)["n"].GetString();
+
+				if(!iter->HasMember("e") || !(*iter)["e"].IsString()) {
+					logger.warn << "JWK object has no string member \"e\".\n";
+					continue;
+				}
+				std::string exponent = (*iter)["e"].GetString();
+
+				std::string alg = "RS256";
+				if(iter->HasMember("alg") && (*iter)["alg"].IsString()) {
+					alg = (*iter)["alg"].GetString();
+				}
+
+				publicKeyById.insert(std::make_pair(kid, std::make_pair(gtx::PublicKey::createRSA(exponent, modulus), alg)));
+			}
+			else if(kty == "EC") {
+				std::string use = "sig";
+				if(iter->HasMember("use") && (*iter)["use"].IsString()) {
+					use = (*iter)["use"].GetString();
+				}
+				if(use != "sig") {
+					continue;
+				}
+
+				if(!iter->HasMember("x") || !(*iter)["x"].IsString()) {
+					logger.warn << "JWK object has no string member \"x\".\n";
+					continue;
+				}
+				std::string coordinateX = (*iter)["x"].GetString();
+
+				if(!iter->HasMember("y") || !(*iter)["y"].IsString()) {
+					logger.warn << "JWK object has no string member \"y\".\n";
+					continue;
+				}
+				std::string coordinateY = (*iter)["y"].GetString();
+
+				std::string crv = "P-256";
+				if(iter->HasMember("crv") && (*iter)["crv"].IsString()) {
+					crv = (*iter)["crv"].GetString();
+				}
+
+				gnutls_ecc_curve_t curveType = GNUTLS_ECC_CURVE_INVALID;
+				if(crv == "P-192") {
+					curveType = GNUTLS_ECC_CURVE_SECP192R1;
+				}
+				else if(crv == "P-224") {
+					curveType = GNUTLS_ECC_CURVE_SECP224R1;
+				}
+				else if(crv == "P-256") {
+					curveType = GNUTLS_ECC_CURVE_SECP256R1;
+				}
+				else if(crv == "P-384") {
+					curveType = GNUTLS_ECC_CURVE_SECP384R1;
+				}
+				else if(crv == "P-521") {
+					curveType = GNUTLS_ECC_CURVE_SECP521R1;
+				}
+				else {
+					logger.warn << "JWK object has an unknown EC curve type \"" << crv << "\".\n";
+					continue;
+				}
+
+				std::string alg = "ES256";
+				if(iter->HasMember("alg") && (*iter)["alg"].IsString()) {
+					alg = (*iter)["alg"].GetString();
+				}
+
+				publicKeyById.insert(std::make_pair(kid, std::make_pair(gtx::PublicKey::createEC(curveType, coordinateX, coordinateY), alg)));
+			}
+			else {
+				logger.warn << "Value \"" << kty << "\" of JWK member \"kty\" is not supported. Supported values are \"RSA\" and \"EC\".\n";
+				continue;
+			}
+		}
+
+		if(publicKeyById.count(kid) != 0) {
+			return std::make_pair(publicKeyById.at(kid).first.get(), publicKeyById.at(kid).second);
+		}
+	}
+
+	return std::make_pair(nullptr, "");
 }
 
 } /* namespace jwt */

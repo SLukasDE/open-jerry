@@ -53,14 +53,14 @@ public:
 
 private:
 	esl::com::http::server::Socket socket;
+	ProcessRegistry& processRegistry;
+	Context context;
 	RequestHandler requestHandler;
 
 	const bool https;
 
 	const std::string implementation;
 	const std::vector<std::pair<std::string, std::string>> settings;
-	ProcessRegistry& processRegistry;
-	Context context;
 };
 
 } /* namespace http */

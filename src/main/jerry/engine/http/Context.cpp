@@ -22,7 +22,6 @@
 #include <jerry/engine/http/Host.h>
 #include <jerry/engine/http/RequestContext.h>
 #include <jerry/engine/http/ExceptionHandler.h>
-#include <jerry/engine/main/Applications.h>
 #include <jerry/Logger.h>
 
 #include <esl/Module.h>
@@ -39,7 +38,7 @@ namespace {
 Logger logger("jerry::engine::http::Context");
 } /* anonymous namespace */
 
-Context::Context(ProcessRegistry& processRegistry, bool aFollowParentOnFind)
+Context::Context(ProcessRegistry* processRegistry, bool aFollowParentOnFind)
 : ObjectContext(processRegistry),
   followParentOnFind(aFollowParentOnFind)
 { }
@@ -53,16 +52,6 @@ void Context::setParent(Context* context) {
 
 const Context* Context::getParent() const {
 	return parent;
-}
-
-void Context::addApplications(const std::string& refId) {
-	main::Applications* applications = findObject<main::Applications>(refId);
-
-	if(applications == nullptr) {
-	    throw std::runtime_error("No applications-object found with ref-id=\"" + refId + "\".");
-	}
-
-	entries.emplace_back(new EntryImpl(*applications));
 }
 
 void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {

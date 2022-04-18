@@ -1,0 +1,26 @@
+<jerry>
+	<include file="logger.xml"/>
+	
+	<certificate domain="*" key="server.key" cert="server.pub"/>
+	
+	<object id="apps" implementation="jerry/applications">
+		<parameter key="path" value="apps"/>
+	</object>
+	
+	<http-client id="http-client-1" implementation="curl4esl">
+		<parameter key="url" value="https://www.heise.de"/>
+	</http-client>
+	
+	<http-server implementation="mhd4esl" https="false">
+		<parameter key="threads" value="4"/>
+		<parameter key="port" value="8080"/>
+		<context>
+			<requesthandler implementation="jerry/applications">
+				<parameter key="applications-id" value="apps"/>
+				<parameter key="application-name" value="app1"/>
+				<!--parameter key="ref-id" value="list"/-->
+				<!--parameter key="ref-id" value="http-context-x"/-->
+			</requesthandler>
+		</context>
+	</http-server>
+</jerry>

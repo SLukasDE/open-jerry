@@ -37,13 +37,15 @@ Logger logger("jerry::engine::http::Server");
 
 Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
 : socket(aSettings, aImplementation),
-  requestHandler(*this),
+  processRegistry(aProcessRegistry),
+  context(nullptr),
+  requestHandler(context),
   https(aHttps),
   implementation(aImplementation),
-  settings(aSettings),
-  processRegistry(aProcessRegistry),
-  context(processRegistry)
-{ }
+  settings(aSettings)
+{
+	context.setProcessRegistry(&processRegistry);
+}
 
 void Server::initializeContext() {
 	getContext().initializeContext();

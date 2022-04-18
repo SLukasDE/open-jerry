@@ -18,7 +18,8 @@
 
 #include <jerry/builtin/basic/application/RequestHandler.h>
 #include <jerry/engine/basic/Context.h>
-#include <jerry/engine/InputProxy.h>
+#include <jerry/engine/procedure/Context.h>
+//#include <jerry/engine/InputProxy.h>
 #include <jerry/Logger.h>
 
 #include <stdexcept>
@@ -32,19 +33,37 @@ namespace {
 Logger logger("jerry::builtin::basic::application::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "applications-id") {
 			if(!applicationsId.empty()) {
-				throw std::runtime_error("Multiple definition of parameter 'applications-id'.");
+				throw std::runtime_error("Multiple definition of attribute 'applications-id'");
 			}
 			applicationsId = setting.second;
 			if(applicationsId.empty()) {
-				throw std::runtime_error("Invalid value \"\" for parameter 'applications-id'.");
+				throw std::runtime_error("Invalid value \"\" for attribute 'applications-id'");
+			}
+		}
+		else if(setting.first == "application-name") {
+			if(!applicationName.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'application-name'");
+			}
+			applicationName = setting.second;
+			if(applicationName.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'application-name'");
+			}
+		}
+		else if(setting.first == "ref-id") {
+			if(!refId.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'ref-id'");
+			}
+			refId = setting.second;
+			if(refId.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'ref-id");
 			}
 		}
 		else {
@@ -53,28 +72,17 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 	}
 
 	if(applicationsId.empty()) {
-		throw std::runtime_error("Missing specification of parameter 'applications-id'.");
+		throw std::runtime_error("Attribute 'applications-id' is missing");
+	}
+
+	if(applicationName.empty() && !refId.empty()) {
+		throw std::runtime_error("Cannot specify attribute 'ref-id' without specifying 'application-name'");
 	}
 }
 
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
-	if(applications == nullptr) {
-        throw std::runtime_error("Initialization failed for 'applications-id'=\"" + applicationsId + "\"");
-	}
-
-	for(auto& appsEntry : applications->getApplications()) {
-		if(!appsEntry.second) {
-			logger.error << "Application \"" << appsEntry.first << "\" is null\n";
-			continue;
-		}
-
-		esl::io::Input input = appsEntry.second->getBasicContext().accept(requestContext);
-		if(input) {
-			return engine::InputProxy::create(std::move(input));
-		}
-	}
-	return esl::io::Input();
+	return applications->accept(requestContext, application, refObject);
 }
 
 std::set<std::string> RequestHandler::getNotifiers() const {
@@ -82,9 +90,33 @@ std::set<std::string> RequestHandler::getNotifiers() const {
 }
 
 void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
-	applications = objectContext.findObject<engine::main::Applications>(applicationsId);
+	applications = objectContext.findObject<object::applications::Object>(applicationsId);
 	if(applications == nullptr) {
-		throw std::runtime_error("Cannot find application object with id \"" + applicationsId + "\"");
+		throw std::runtime_error("Cannot find applications object with id \"" + applicationsId + "\"");
+	}
+
+	if(!applicationName.empty()) {
+		auto iter = applications->getApplications().find(applicationName);
+		if(iter == applications->getApplications().end()) {
+			throw std::runtime_error("Application name '" + applicationName + "' not available in applications object with id '" + applicationsId + "'");
+		}
+		application = iter->second.get();
+		if(application == nullptr) {
+			throw std::runtime_error("Engine error");
+		}
+
+		if(!refId.empty()) {
+			refObject = application->findObject<esl::object::Interface::Object>(refId);
+			if(refObject) {
+				throw std::runtime_error("Reference id '" + refId + "' not available in applications object with id '" + applicationsId + "' and application name '" + applicationName + "'");
+			}
+
+			if(dynamic_cast<engine::basic::Context*>(refObject) == nullptr
+			&& dynamic_cast<engine::procedure::Context*>(refObject) == nullptr
+			&& dynamic_cast<esl::processing::procedure::Interface::Procedure*>(refObject)) {
+				throw std::runtime_error("Reference id '" + refId + "' has been found in applications object with id '" + applicationsId + "' and application name '" + applicationName + "', but type is not compatible");
+			}
+		}
 	}
 }
 

@@ -21,9 +21,22 @@
 
 #include <esl/logging/Logger.h>
 #include <esl/logging/Level.h>
+#include <esl/logging/layout/Interface.h>
+#include <esl/logging/appender/Interface.h>
+
+#include <memory>
+#include <string>
 
 namespace jerry {
-using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
+class Logger : public esl::logging::Logger<esl::logging::Level::TRACE> {
+public:
+	using esl::logging::Logger<esl::logging::Level::TRACE>::Logger;
+	//Logger(const char* aTypeName = "")
+
+	static void flush();
+	static void addLayout(const std::string& id, std::unique_ptr<esl::logging::layout::Interface::Layout> layout);
+	static void addAppender(const std::string& name, const std::string& layoutRefId, std::unique_ptr<esl::logging::appender::Interface::Appender> appender);
+};
 } /* namespace jerry */
 
 #endif /* JERRY_LOGGER_H_ */

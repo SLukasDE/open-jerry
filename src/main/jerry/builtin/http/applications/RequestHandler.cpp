@@ -17,9 +17,15 @@
  */
 
 #include <jerry/builtin/http/applications/RequestHandler.h>
+#include <jerry/engine/http/Context.h>
+#include <jerry/engine/procedure/Context.h>
 #include <jerry/Logger.h>
 
+#include <esl/com/http/server/exception/StatusCode.h>
+#include <esl/processing/procedure/Interface.h>
+
 #include <stdexcept>
+//#include <exception>
 
 namespace jerry {
 namespace builtin {
@@ -54,13 +60,13 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 				throw std::runtime_error("Invalid value \"\" for attribute 'application-name'");
 			}
 		}
-		else if(setting.first == "context-id") {
-			if(!contextId.empty()) {
-				throw std::runtime_error("Multiple definition of attribute 'context-id'");
+		else if(setting.first == "ref-id") {
+			if(!refId.empty()) {
+				throw std::runtime_error("Multiple definition of attribute 'ref-id'");
 			}
-			contextId = setting.second;
-			if(contextId.empty()) {
-				throw std::runtime_error("Invalid value \"\" for attribute 'context-id");
+			refId = setting.second;
+			if(refId.empty()) {
+				throw std::runtime_error("Invalid value \"\" for attribute 'ref-id");
 			}
 		}
 		else {
@@ -72,66 +78,41 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 		throw std::runtime_error("Attribute 'applications-id' is missing");
 	}
 
-	if(applicationName.empty() && !contextId.empty()) {
-		throw std::runtime_error("Cannot specify attribute 'context-id' without specifying 'application-name'");
+	if(applicationName.empty() && !refId.empty()) {
+		throw std::runtime_error("Cannot specify attribute 'ref-id' without specifying 'application-name'");
 	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
-	if(httpContext == nullptr && procedureContext == nullptr) {
-		if(procedureContext) {
-			procedureContext->procedureRun(requestContext.getObjectContext());
-		}
-
-		/* TODO: RequestContext musss in engine::http::RequestContext umgewandelt werden
-		if(httpContext) {
-			esl::io::Input input = httpContext->accept(requestContext);
-			if(input) {
-				return input;
-			}
-		}
-		*/
-	}
-	else {
-
-	}
-
-	for(auto& appsEntry : applications->getApplications()) {
-		appsEntry.second->getProcedureContext().procedureRun(requestContext.getObjectContext());
-
-		/* TODO: RequestContext musss in engine::http::RequestContext umgewandelt werden
-		esl::io::Input input = appsEntry.second->getHttpContext().accept(requestContext);
-		if(input) {
-			return input;
-		}
-		*/
-	}
+	return applications->accept(requestContext, application, refObject);
 }
 
 void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
-	applications = objectContext.findObject<engine::main::Applications>(applicationsId);
+	applications = objectContext.findObject<object::applications::Object>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find applications object with id \"" + applicationsId + "\"");
 	}
+
 	if(!applicationName.empty()) {
 		auto iter = applications->getApplications().find(applicationName);
 		if(iter == applications->getApplications().end()) {
 			throw std::runtime_error("Application name '" + applicationName + "' not available in applications object with id '" + applicationsId + "'");
 		}
-		engine::application::Context* application = iter->second.get();
+		application = iter->second.get();
 		if(application == nullptr) {
 			throw std::runtime_error("Engine error");
 		}
 
-		if(contextId.empty()) {
-			httpContext = &application->getHttpContext();
-			procedureContext = &application->getProcedureContext();
-		}
-		else {
-			httpContext = application->findObject<engine::http::Context>(contextId);
-			procedureContext = application->findObject<engine::procedure::Context>(contextId);
-			if(httpContext == nullptr && procedureContext == nullptr) {
-				throw std::runtime_error("Context id '" + contextId + "' not available in applications object with id '" + applicationsId + "' and application name '" + applicationName + "'");
+		if(!refId.empty()) {
+			refObject = application->findObject<esl::object::Interface::Object>(refId);
+			if(refObject) {
+				throw std::runtime_error("Reference id '" + refId + "' not available in applications object with id '" + applicationsId + "' and application name '" + applicationName + "'");
+			}
+
+			if(dynamic_cast<engine::http::Context*>(refObject) == nullptr
+			&& dynamic_cast<engine::procedure::Context*>(refObject) == nullptr
+			&& dynamic_cast<esl::processing::procedure::Interface::Procedure*>(refObject)) {
+				throw std::runtime_error("Reference id '" + refId + "' has been found in applications object with id '" + applicationsId + "' and application name '" + applicationName + "', but type is not compatible");
 			}
 		}
 	}
