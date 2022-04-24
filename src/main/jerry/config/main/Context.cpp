@@ -39,8 +39,9 @@ namespace {
 Logger logger("jerry::config::main::Context");
 } /* anonymous namespace */
 
-Context::Context(const std::string& configuration)
-: Config("{mem}")
+Context::Context(const std::string& configuration, bool aIsJBoot)
+: Config("{mem}"),
+  isJBoot(aIsJBoot)
 {
 	tinyxml2::XMLError xmlError = xmlDocument.Parse(configuration.c_str(), configuration.size());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
@@ -56,8 +57,9 @@ Context::Context(const std::string& configuration)
 	loadXML(*element);
 }
 
-Context::Context(const boost::filesystem::path& filename)
-: Config(filename.generic_string())
+Context::Context(const boost::filesystem::path& filename, bool aIsJBoot)
+: Config(filename.generic_string()),
+  isJBoot(aIsJBoot)
 {
 	filesLoaded.insert(filename.generic_string());
 
@@ -134,14 +136,21 @@ void Context::loadXML(const tinyxml2::XMLElement& element) {
 
 	const std::string elementName(element.Name());
 
-	if(elementName == "jerry-batch") {
-		std::cerr << "Tag <jerry-batch> is deprecated. Use tag <jerry> instead.";
+	if(isJBoot) {
+		if(elementName != "jboot") {
+			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jboot\"");
+		}
 	}
-	else if(elementName == "jerry-server") {
-		std::cerr << "Tag <jerry-server> is deprecated. Use tag <jerry> instead.";
-	}
-	else if(elementName != "jerry") {
-		throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
+	else {
+		if(elementName == "jerry-batch") {
+			std::cerr << "Tag <jerry-batch> is deprecated. Use tag <jerry> instead.";
+		}
+		else if(elementName == "jerry-server") {
+			std::cerr << "Tag <jerry-server> is deprecated. Use tag <jerry> instead.";
+		}
+		else if(elementName != "jerry") {
+			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
+		}
 	}
 
 	if(element.GetUserData() != nullptr) {
@@ -175,7 +184,7 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(elementName == "include") {
 		parseInclude(element);
 	}
-	else if(elementName == "mime-types") {
+	else if(elementName == "mime-types" && isJBoot == false) {
 		std::string file;
 
 		if(element.GetUserData() != nullptr) {
@@ -203,17 +212,17 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else if(elementName == "library") {
 		parseLibrary(element);
 	}
-	else if(elementName == "certificate") {
+	else if(elementName == "certificate" && isJBoot == false) {
 		certificates.push_back(Certificate(getFileName(), element));
 	}
-	else if(elementName == "logger") {
+	else if(elementName == "logger" && isJBoot == false) {
 		std::cerr << "Tag <logger> is deprecated. Use tag <esl-logger> instead or use a separate esl-logger configuration file outside of the jerry configuration file. Skipping tag <logger> !\n";
 	}
 	else if(elementName == "esl-logger") {
 		eslLoggers.push_back(logging::Logger(getFileName(), element));
 	}
 	else {
-		entries.emplace_back(new EntryImpl(getFileName(), element));
+		entries.emplace_back(new EntryImpl(getFileName(), element, isJBoot));
 	}
 }
 

@@ -76,6 +76,8 @@
 #include <esl/com/http/server/requesthandler/Interface.h>
 #include <esl/processing/procedure/Interface.h>
 #include <esl/object/Interface.h>
+#include <esl/logging/appender/Interface.h>
+#include <esl/logging/layout/Interface.h>
 #include <esl/Module.h>
 
 namespace jerry {
@@ -225,6 +227,27 @@ void Module::install(esl::module::Module& module) {
 	module.addInterface(esl::object::Interface::createInterface(
 			"jerry/applications",
 			&builtin::object::applications::Object::create));
+
+
+
+	/* ************************* *
+	 * builtin logging appenders *
+	 * ************************* */
+	module.addInterface(esl::logging::appender::Interface::createInterface(
+			"jerry/membuffer",
+			esl::getModule().getInterface<esl::logging::appender::Interface>("eslx/membuffer").createAppender));
+
+	module.addInterface(esl::logging::appender::Interface::createInterface(
+			"jerry/ostream",
+			esl::getModule().getInterface<esl::logging::appender::Interface>("eslx/ostream").createAppender));
+
+	/* *********************** *
+	 * builtin logging layouts *
+	 * *********************** */
+	module.addInterface(esl::logging::layout::Interface::createInterface(
+			"jerry/default",
+			esl::getModule().getInterface<esl::logging::layout::Interface>("eslx/default").createLayout));
+
 }
 
 } /* namespace jerry */

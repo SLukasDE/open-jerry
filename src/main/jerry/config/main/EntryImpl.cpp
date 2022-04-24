@@ -24,7 +24,7 @@ namespace jerry {
 namespace config {
 namespace main {
 
-EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element)
+EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element, bool isJBoot)
 : Entry(fileName, element)
 {
 	if(element.Name() == nullptr) {
@@ -46,27 +46,27 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
-	else if(elementName == "procedure-context") {
+	else if(elementName == "procedure-context" && isJBoot == false) {
 		procedureContext = std::unique_ptr<ProcedureContext>(new ProcedureContext(getFileName(), element));
 	}
 
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
-	else if(elementName == "basic-context") {
+	else if(elementName == "basic-context" && isJBoot == false) {
 		basicContext = std::unique_ptr<BasicContext>(new BasicContext(getFileName(), element));
 	}
-	else if(elementName == "basic-server") {
+	else if(elementName == "basic-server" && isJBoot == false) {
 		basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
 	}
 
 	else if(elementName == "http-client") {
 		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
-	else if(elementName == "http-context") {
+	else if(elementName == "http-context" && isJBoot == false) {
 		httpContext = std::unique_ptr<HttpContext>(new HttpContext(getFileName(), element));
 	}
-	else if(elementName == "http-server") {
+	else if(elementName == "http-server" && isJBoot == false) {
 		httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
 	}
 

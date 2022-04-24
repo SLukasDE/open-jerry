@@ -44,7 +44,7 @@ namespace main {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element);
+	EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element, bool isJBoot);
 
 	void save(std::ostream& oStream, std::size_t spaces) const override;
 	void install(engine::main::Context& context) const override;

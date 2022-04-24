@@ -47,8 +47,8 @@ namespace main {
 
 class Context : public Config {
 public:
-	explicit Context(const std::string& configuration);
-	explicit Context(const boost::filesystem::path& filename);
+	explicit Context(const std::string& configuration, bool isJBoot = false);
+	explicit Context(const boost::filesystem::path& filename, bool isJBoot = false);
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();
@@ -57,6 +57,7 @@ public:
 
 private:
 	tinyxml2::XMLDocument xmlDocument;
+	bool isJBoot;
 
 	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
 	std::vector<Certificate> certificates;
