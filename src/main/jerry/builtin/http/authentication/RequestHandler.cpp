@@ -287,19 +287,19 @@ void RequestHandler::processRequestJWT(std::set<std::string>& authDataTypes, Req
 	std::string tmpStr;
 
 	tmpStr = esl::utility::String::fromBase64(jwtSplit[0]);
-	logger.debug << "jwt-header: " << tmpStr << "\n";
+	logger.trace << "jwt-header: " << tmpStr << "\n";
 	settings["jwt-header"] = std::move(tmpStr);
 
 	tmpStr = esl::utility::String::fromBase64(jwtSplit[1]);
-	logger.debug << "jwt-payload: " << tmpStr << "\n";
+	logger.trace << "jwt-payload: " << tmpStr << "\n";
 	settings["jwt-payload"] = std::move(tmpStr);
 
 	tmpStr = jwtSplit[0] + "." + jwtSplit[1];
-	logger.debug << "jwt-data: " << tmpStr << "\n";
+	logger.trace << "jwt-data: " << tmpStr << "\n";
 	settings["jwt-data"] = std::move(tmpStr);
 
 	if(jwtSplit.size() >= 3) {
-		logger.debug << "jwt-signature: " << jwtSplit[2] << "\n";
+		logger.trace << "jwt-signature: " << jwtSplit[2] << "\n";
 		settings["jwt-signature"] = esl::utility::String::fromBase64(jwtSplit[2]);
 	}
 	else {

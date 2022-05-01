@@ -111,66 +111,11 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 		return;
 	}
 
-    std::time_t currentTime = std::time(nullptr);
-
 	/* **************** *
 	 * Verification JWT *
 	 * **************** */
-	if(authProperties->get().count("jwt-signature") != 0) {
-		std::string jwtHeaderStr = authProperties->get().at("jwt-header");
-		rapidjson::Document document;
-		document.Parse(jwtHeaderStr.c_str());
 
-		if(!document.IsObject()) {
-			logger.warn << "JWT header content is not a JSON object.\n";
-			return;
-		}
-
-		std::string kid;
-		if(overrideFields.count("kid") != 0) {
-			kid = overrideFields.at("kid");
-		}
-		else if(document.HasMember("kid") && document["kid"].IsString()) {
-			kid = document["kid"].GetString();
-		}
-		else {
-			logger.warn << "Field \"kid\" is missing in JWT header.\n";
-		}
-
-		std::string alg;
-		if(overrideFields.count("alg") != 0) {
-			alg = overrideFields.at("alg");
-		}
-		else if(document.HasMember("alg") && document["alg"].IsString()) {
-			alg = document["alg"].GetString();
-		}
-		else {
-			logger.warn << "Field \"alg\" is missing in JWT header.\n";
-		}
-
-		std::pair<gtx::PublicKey*, std::string> publicKey = getPublicKeyById(kid);
-		if(publicKey.first) {
-			std::string data = authProperties->get().at("jwt-data");
-			std::string signature = authProperties->get().at("jwt-signature");
-
-			if(alg.empty()) {
-				alg = publicKey.second;
-			}
-
-			if(publicKey.first->verifySignature(data, signature, alg) == false) {
-				logger.warn << "JWT verification failed because signature is invalid.\n";
-				return;
-			}
-			logger.warn << "JWT verification SUCCESSFUL.\n";
-		}
-		else if(kid.empty()) {
-			return;
-		}
-		else {
-			logger.warn << "JWT verification failed because public key is not available.\n";
-			return;
-		}
-	}
+    std::time_t currentTime = std::time(nullptr);
 
 	/* iss  Issuer           Der Aussteller des Tokens
 	 * sub  Subject          Definiert für welches Subjekt die Claims gelten. Das sub-Feld definiert also für wen oder was die Claims getätigt werden.
@@ -194,7 +139,7 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	 * ************ */
 	std::string aud;
 	if(dropFields.count("aud") != 0) {
-		aud == authProperties->get().at("jwt-aud");
+		aud = authProperties->get().at("jwt-aud");
 	}
 	else if(overrideFields.count("aud") != 0) {
 		aud = overrideFields.at("aud");
@@ -246,6 +191,69 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 		return;
 	}
 
+	/* **************** *
+	 * verify signature *
+	 * **************** */
+	if(authProperties->get().count("jwt-signature") != 0) {
+		std::string jwtHeaderStr = authProperties->get().at("jwt-header");
+		rapidjson::Document document;
+		document.Parse(jwtHeaderStr.c_str());
+
+		if(!document.IsObject()) {
+			logger.warn << "JWT header content is not a JSON object.\n";
+			return;
+		}
+
+		std::string kid;
+		if(overrideFields.count("kid") != 0) {
+			kid = overrideFields.at("kid");
+		}
+		else if(document.HasMember("kid") && document["kid"].IsString()) {
+			kid = document["kid"].GetString();
+		}
+		else {
+			logger.warn << "Field \"kid\" is missing in JWT header.\n";
+		}
+
+		std::string alg;
+		if(overrideFields.count("alg") != 0) {
+			alg = overrideFields.at("alg");
+		}
+		else if(document.HasMember("alg") && document["alg"].IsString()) {
+			alg = document["alg"].GetString();
+		}
+		else {
+			logger.warn << "Field \"alg\" is missing in JWT header.\n";
+		}
+
+		std::pair<gtx::PublicKey*, std::string> publicKey = getPublicKeyById(kid);
+		if(publicKey.first) {
+			std::string data = authProperties->get().at("jwt-data");
+			std::string signature = authProperties->get().at("jwt-signature");
+
+			if(alg.empty()) {
+				alg = publicKey.second;
+			}
+			logger.trace << "JWT kid : \"" << kid << "\"\n";
+			logger.trace << "JWT alg : \"" << alg << "\"\n";
+			logger.trace << "JWT data: \"" << data << "\" (" << data.size() << " bytes)\n";
+			logger.trace << "JWT sign: \"...\" (" << signature.size() << " bytes)\n";
+
+			if(publicKey.first->verifySignature(data, signature, alg) == false) {
+				logger.warn << "JWT verification failed because signature is invalid.\n";
+				return;
+			}
+			logger.warn << "JWT verification SUCCESSFUL.\n";
+		}
+		else if(kid.empty()) {
+			return;
+		}
+		else {
+			logger.warn << "JWT verification failed because public key is not available.\n";
+			return;
+		}
+	}
+
 	/* ****************** *
 	 * fetch 'identified' *
 	 * ****************** */
@@ -261,7 +269,6 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	else {
 		authProperties->get()["identified"] = "";
 	}
-
 }
 
 void Procedure::procedureCancel() {
@@ -334,19 +341,20 @@ std::pair<gtx::PublicKey*, std::string> Procedure::getPublicKeyById(const std::s
 					logger.warn << "JWK object has no string member \"n\".\n";
 					continue;
 				}
-				std::string modulus = (*iter)["n"].GetString();
+				std::string modulus = esl::utility::String::fromBase64((*iter)["n"].GetString());
 
 				if(!iter->HasMember("e") || !(*iter)["e"].IsString()) {
 					logger.warn << "JWK object has no string member \"e\".\n";
 					continue;
 				}
-				std::string exponent = (*iter)["e"].GetString();
+				std::string exponent = esl::utility::String::fromBase64((*iter)["e"].GetString());
 
 				std::string alg = "RS256";
 				if(iter->HasMember("alg") && (*iter)["alg"].IsString()) {
 					alg = (*iter)["alg"].GetString();
 				}
 
+				logger.info << "Store public key for KID \"" << kid << "\" with algorithm \"" << alg << "\"\n";
 				publicKeyById.insert(std::make_pair(kid, std::make_pair(gtx::PublicKey::createRSA(exponent, modulus), alg)));
 			}
 			else if(kty == "EC") {
