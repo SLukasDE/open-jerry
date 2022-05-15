@@ -27,7 +27,7 @@
 #include <esl/Stacktrace.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
-#include <esl/system/SignalHandler.h>
+#include <esl/system/signal/Signal.h>
 #include <esl/utility/String.h>
 
 #include <set>
@@ -263,11 +263,13 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 	 * Install stop signal handler.                                                                           *
 	 * This should be done before initializing object to be able to terminate initialization (std::terminate) *
 	 * ****************************************************************************************************** */
+#if 0
 	std::function<void()> signalFunction = [this]() {
 		// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
 		/* wake up signal thread to call "procedureCancel()" */
 		signalThreadCondVar.notify_one();
 	};
+#endif
 	if(!stopSignals.empty()) {
 		std::thread signalThread([this](std::unique_lock<std::mutex> signalThreadRunningLock) {
 			try {
@@ -299,11 +301,12 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 		signalThread.detach();
 	}
 
+	std::vector<std::unique_ptr<esl::object::Interface::Object>> signalHandles;
 	try {
 		ProcessLockGuard processLockGuard(*this);
 
 		for(auto signalType : stopSignals) {
-			esl::system::SignalHandler::install(signalType, signalFunction);
+			signalHandles.push_back(esl::system::signal::Signal::install(*this, signalType));
 		}
 
 		/* ************************* *
@@ -365,9 +368,11 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 	/* ************************************************************************** *
 	 * Remove stop signal handler and wait for signal thread has been terminated. *
 	 * ************************************************************************** */
-	for(auto signalType : stopSignals) {
-		esl::system::SignalHandler::remove(signalType, signalFunction);
-	}
+	//for(auto signalType : stopSignals) {
+	//	esl::system::SignalHandler::remove(signalType, signalFunction);
+	//}
+	signalHandles.clear();
+
 	if(!stopSignals.empty()) {
 		/* wake up signal thread to check "getProcessCount() == 0" and following stop signal thread */
 		signalThreadCondVar.notify_one();
@@ -424,6 +429,16 @@ void Context::procedureCancel() {
 	}
 
 	logger.debug << "Stopping initiated for all procedures.\n";
+}
+
+void Context::onEvent(const esl::object::Interface::Object& object) {
+	const esl::object::Value<esl::system::Interface::SignalType>* signalTypeObject = dynamic_cast<const esl::object::Value<esl::system::Interface::SignalType>*>(&object);
+
+	if(signalTypeObject && stopSignals.count(signalTypeObject->get())) {
+		// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
+		/* wake up signal thread to call "procedureCancel()" */
+		signalThreadCondVar.notify_one();
+	}
 }
 
 void Context::setProcessRegistry(ProcessRegistry* processRegistry) {

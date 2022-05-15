@@ -27,6 +27,7 @@
 #include <jerry/engine/ProcessRegistry.h>
 
 #include <esl/object/Interface.h>
+#include <esl/object/Event.h>
 #include <esl/processing/procedure/Interface.h>
 #include <esl/system/Interface.h>
 #include <esl/logging/appender/Interface.h>
@@ -48,7 +49,7 @@ namespace jerry {
 namespace engine {
 namespace main {
 
-class Context final : public ObjectContext, public ProcessRegistry, public esl::processing::procedure::Interface::Procedure {
+class Context final : public ObjectContext, public ProcessRegistry, public esl::processing::procedure::Interface::Procedure, public esl::object::Event {
 public:
 	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -79,6 +80,8 @@ public:
 
 	void procedureRun(esl::object::ObjectContext& objectContext) override;
 	void procedureCancel() override;
+
+	void onEvent(const esl::object::Interface::Object& object) override;
 
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
