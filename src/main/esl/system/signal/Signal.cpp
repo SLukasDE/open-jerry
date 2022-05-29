@@ -161,7 +161,11 @@ void Signal::run() {
 			auto events = instance->registry.find(*message);
 			if(events != instance->registry.end()) {
 				for(auto& event : events->second) {
-					event->onEvent(signalTypeObject);
+					try {
+						event->onEvent(signalTypeObject);
+					}
+					catch(...) {
+					}
 				}
 			}
 		}
