@@ -23,9 +23,11 @@
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 
+#include <memory>
 #include <set>
 #include <string>
-#include <memory>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -38,9 +40,9 @@ public:
 		return "jerry/dump";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	RequestHandler(const esl::module::Interface::Settings& settings);
+	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;

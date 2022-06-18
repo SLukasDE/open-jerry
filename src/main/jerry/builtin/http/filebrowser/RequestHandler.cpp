@@ -25,8 +25,9 @@
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/exception/StatusCode.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 #include <esl/utility/String.h>
+#include <esl/utility/HttpMethod.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -35,7 +36,6 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <memory>
 
 namespace jerry {
 namespace builtin {
@@ -57,11 +57,11 @@ const std::string PAGE_301(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	bool hasBrowsable = false;
 
 	for(const auto& setting : settings) {
@@ -109,18 +109,18 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 		}
 		*/
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
 	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
-	if(requestContext.getRequest().getMethod() != "GET") {
+	if(requestContext.getRequest().getMethod() != esl::utility::HttpMethod::Type::httpGet) {
 		if(ignoreError) {
 			return esl::io::Input();
 		}
 
-		logger.trace << "Method \"" << requestContext.getRequest().getMethod() << "\" is not supported\n";
+		logger.trace << "Method \"" << requestContext.getRequest().getMethod().toString() << "\" is not supported\n";
 		throw esl::com::http::server::exception::StatusCode(405);
 	}
 
@@ -144,7 +144,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 		logger.trace << "Original path " << path << " is a directory\n";
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
     	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
-    		esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
+    		esl::com::http::server::Response response(301, esl::utility::MIME::Type::textHtml);
     		response.addHeader("Location", requestContext.getRequest().getPath() + "/");
     		esl::io::Output output = esl::io::output::Memory::create(PAGE_301.data(), PAGE_301.size());
     		requestContext.getConnection().send(response, std::move(output));
@@ -183,7 +183,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
     		}
     		outputContent += "</body></html>";
 
-    		esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
+    		esl::com::http::server::Response response(200, esl::utility::MIME::Type::textHtml);
     		esl::io::Output output = esl::io::output::String::create(std::move(outputContent));
     		requestContext.getConnection().send(response, std::move(output));
     		return esl::io::input::Closed::create();

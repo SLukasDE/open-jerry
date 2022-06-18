@@ -77,7 +77,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	for(const auto jwksConnectionFactoryId : jwksConnectionFactoryIds) {
 		esl::com::http::client::Interface::ConnectionFactory* connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(jwksConnectionFactoryId);
 		if(!connectionFactory) {
@@ -87,7 +87,7 @@ void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	Properties* authProperties = objectContext.findObject<Properties>("authenticated");
 	if(!authProperties) {
 		return;
@@ -285,7 +285,7 @@ std::pair<gtx::PublicKey*, std::string> Procedure::getPublicKeyById(const std::s
 			logger.warn << "Could not get an connection object for JWKS server with id \"" << jwksConnectionFactory.first << "\".\n";
 			continue;
 		}
-		esl::com::http::client::Request request("", esl::utility::HttpMethod::httpGet, esl::utility::MIME());
+		esl::com::http::client::Request request("", esl::utility::HttpMethod::Type::httpGet, esl::utility::MIME());
 		esl::io::input::String inputString;
 
 		esl::com::http::client::Response response = connection->send(request, esl::io::Output(), esl::io::Input(inputString));

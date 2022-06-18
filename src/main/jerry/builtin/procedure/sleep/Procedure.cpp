@@ -64,7 +64,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	logger.debug << "before sleep\n";
 #if 0
 	// on linux/gcc sleep_for gets interrupted by receiving a signal

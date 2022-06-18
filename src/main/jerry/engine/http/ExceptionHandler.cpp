@@ -27,7 +27,7 @@
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
 #include <esl/utility/MIME.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <sstream>
 
@@ -68,15 +68,15 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 	if(errorDocument) {
 		esl::utility::URL url(errorDocument->getPath());
 
-		if(url.getScheme() == esl::utility::Protocol::http || url.getScheme() == esl::utility::Protocol::https) {
-			esl::com::http::server::Response response(301, esl::utility::MIME::textHtml);
+		if(url.getScheme() == esl::utility::Protocol::Type::http || url.getScheme() == esl::utility::Protocol::Type::https) {
+			esl::com::http::server::Response response(301, esl::utility::MIME::Type::textHtml);
 			response.addHeader("Location", errorDocument->getPath());
 			addHeaders(response, headersContext);
 			connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::Memory(PAGE_301.data(), PAGE_301.size())));
 
 			return;
 		}
-		if(!url.getScheme() || url.getScheme() == esl::utility::Protocol::file) {
+		if(!url.getScheme() || url.getScheme() == esl::utility::Protocol::Type::file) {
 			/* if we don't need to parse the file, then we are done very quick */
 			if(errorDocument->getLanguage().empty()) {
 				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
@@ -102,10 +102,10 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
     bool showStacktrace = errorHandlingContext ? errorHandlingContext->getShowStacktrace() : false;
 
     std::string content;
-	if(httpContentType == esl::utility::MIME::textHtml) {
+	if(httpContentType == esl::utility::MIME::Type::textHtml) {
 	    content = getHTMLContent(showException, showStacktrace);
 	}
-	else if(httpContentType == esl::utility::MIME::textPlain) {
+	else if(httpContentType == esl::utility::MIME::Type::textPlain) {
 	    content = getTextContent(showException, showStacktrace);
 	}
 	else {
@@ -121,7 +121,7 @@ void ExceptionHandler::initializeMessage() const {
 	jerry::ExceptionHandler::initializeMessage();
 
 	httpStatusCode = 500;
-	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "Unknown Exception Error";
 	httpMessage = "unknown exception";
 }
@@ -144,7 +144,7 @@ void ExceptionHandler::initializeMessage(const esl::database::exception::SqlErro
 	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
-	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "SQL Error";
 	httpMessage = e.what();
 }
@@ -153,7 +153,7 @@ void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
 	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
-	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "Runtime error";
 	httpMessage = e.what();
 }
@@ -162,7 +162,7 @@ void ExceptionHandler::initializeMessage(const std::exception& e) const {
 	jerry::ExceptionHandler::initializeMessage(e);
 
 	httpStatusCode = 500;
-	httpContentType = esl::utility::MIME(esl::utility::MIME::textHtml);
+	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "Exception";
 	httpMessage = e.what();
 }

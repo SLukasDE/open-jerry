@@ -23,7 +23,7 @@
 
 #include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Cloneable.h>
 #include <esl/object/Value.h>
@@ -52,14 +52,14 @@ public:
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
-	void procedureRun(esl::object::ObjectContext& objectContext) override;
+	void procedureRun(esl::object::Context& objectContext) override;
 	void procedureCancel() override;
 
 private:
 	using Properties = esl::object::Value<std::map<std::string, std::string>>;
-	using SessionPool = eslx::utility::SessionPool<esl::object::Cloneable, std::string, esl::object::ObjectContext>;
+	using SessionPool = eslx::utility::SessionPool<esl::object::Cloneable, std::string, esl::object::Context>;
 
 	std::string authorizedObjectId = "authorized";
 	std::string authorizingProcedureId;
@@ -69,7 +69,7 @@ private:
 
 	std::unique_ptr<SessionPool> sessionPool;
 
-	std::unique_ptr<esl::object::Cloneable> createAuthorizationObject(const esl::object::ObjectContext& objectContext);
+	std::unique_ptr<esl::object::Cloneable> createAuthorizationObject(const esl::object::Context& objectContext);
 };
 
 } /* namespace cache */

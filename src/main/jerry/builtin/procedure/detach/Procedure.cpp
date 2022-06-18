@@ -22,7 +22,7 @@
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -70,7 +70,7 @@ Procedure::~Procedure() {
 	});
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext&) {
+void Procedure::procedureRun(esl::object::Context&) {
 	std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);
 	if(runningProceduresCancel) {
 		return;
@@ -113,7 +113,7 @@ void Procedure::procedureCancel() {
 	}
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
 	if(procedure == nullptr) {
 		throw std::runtime_error("Cannot find procedure with id \"" + procedureId + "\"");
@@ -121,7 +121,7 @@ void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
 
 	engine::ObjectContext* engineObjectContext = dynamic_cast<engine::ObjectContext*>(&objectContext);
 	if(engineObjectContext == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Engine error"));
+		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Engine error"));
 	}
 	processRegistry = engineObjectContext->getProcessRegistry();
 }

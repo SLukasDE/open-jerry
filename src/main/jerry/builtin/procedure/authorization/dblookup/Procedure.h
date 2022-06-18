@@ -22,7 +22,7 @@
 #include <esl/processing/procedure/Interface.h>
 #include <esl/module/Interface.h>
 #include <esl/database/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
 
@@ -50,10 +50,10 @@ public:
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	void procedureRun(esl::object::ObjectContext& objectContext) override;
+	void procedureRun(esl::object::Context& objectContext) override;
 	void procedureCancel() override { };
 
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
 private:
 	std::string authorizedObjectId = "authorized";

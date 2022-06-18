@@ -144,7 +144,7 @@ void Context::loadLibraries() {
 	for(auto& library : libraries) {
 		/*
 		if(library.second) {
-			throw esl::addStacktrace(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
+			throw esl::stacktrace::Stacktrace::add(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
 		}
 		*/
 		library.second = &esl::module::Library::load(library.first);

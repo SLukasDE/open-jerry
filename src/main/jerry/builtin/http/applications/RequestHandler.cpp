@@ -87,7 +87,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return applications->accept(requestContext, application, refObject);
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	applications = objectContext.findObject<object::applications::Object>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find applications object with id \"" + applicationsId + "\"");

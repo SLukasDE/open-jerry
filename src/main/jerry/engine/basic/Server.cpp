@@ -19,7 +19,7 @@
 #include <jerry/engine/basic/Server.h>
 #include <jerry/Logger.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -47,7 +47,7 @@ void Server::initializeContext() {
 	getContext().initializeContext();
 }
 
-void Server::procedureRun(esl::object::ObjectContext&) {
+void Server::procedureRun(esl::object::Context&) {
 	try {
 		processRegistry.processRegister(*this);
 		socket.listen(requestHandler, [this] {

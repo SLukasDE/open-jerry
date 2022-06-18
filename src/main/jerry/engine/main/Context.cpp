@@ -24,11 +24,12 @@
 #include <jerry/Module.h>
 
 #include <esl/Module.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
-#include <esl/system/signal/Signal.h>
+#include <esl/system/signal/Interface.h>
 #include <esl/utility/String.h>
+#include <esl/utility/Signal.h>
 
 #include <set>
 #include <fstream>
@@ -87,20 +88,7 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 
 	for(const auto& setting : settings) {
 		if(setting.first == "stop-signal") {
-			esl::system::Interface::SignalType signalType = esl::system::Interface::SignalType::unknown;
-			if(setting.second == "interrupt") {
-				signalType = esl::system::Interface::SignalType::interrupt;
-			}
-			else if(setting.second == "terminate") {
-				signalType = esl::system::Interface::SignalType::terminate;
-			}
-			else if(setting.second == "pipe") {
-				signalType = esl::system::Interface::SignalType::pipe;
-			}
-			else {
-				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'stop-signal'");
-			}
-			stopSignals.insert(signalType);
+			stopSignals.insert(esl::utility::Signal(setting.second));
 		}
 		else if(setting.first == "terminate-counter") {
 			if(terminateCounter >= 0) {
@@ -202,24 +190,6 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Context
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
-void Context::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
-	if(id.empty()) {
-		if(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get())) {
-			addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure>(static_cast<esl::processing::procedure::Interface::Procedure*>(object.release())));
-			return;
-		}
-/*
-		if(dynamic_cast<procedure::Context*>(object.get())) {
-			std::unique_ptr<procedure::Context> procedureContext(static_cast<procedure::Context*>(object.release()));
-			procedureContext->ObjectContext::setParent(this);
-			addProcedureContext(std::move(procedureContext));
-			return;
-		}
-*/
-	}
-	ObjectContext::addObject(id, std::move(object));
-}
-
 void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
@@ -256,7 +226,7 @@ void Context::addProcedureContext(const std::string& refId) {
 	entries.emplace_back(new EntryImpl(*context));
 }
 
-void Context::procedureRun(esl::object::ObjectContext& objectContext) {
+void Context::procedureRun(esl::object::Context& objectContext) {
 	logger.debug << "Starting all threads ...\n";
 
 	/* ****************************************************************************************************** *
@@ -301,12 +271,19 @@ void Context::procedureRun(esl::object::ObjectContext& objectContext) {
 		signalThread.detach();
 	}
 
-	std::vector<std::unique_ptr<esl::object::Interface::Object>> signalHandles;
+	std::vector<esl::system::signal::Interface::Signal::Handler> signalHandles;
 	try {
 		ProcessLockGuard processLockGuard(*this);
 
 		for(auto signalType : stopSignals) {
-			signalHandles.push_back(esl::system::signal::Signal::install(*this, signalType));
+			//signalHandles.push_back(esl::system::signal::Signal::install(*this, signalType));
+			signalHandles.push_back(signal.createHandler(signalType, [this, signalType]() {
+				if(stopSignals.count(signalType)) {
+					// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
+					/* wake up signal thread to call "procedureCancel()" */
+					signalThreadCondVar.notify_one();
+				}
+			}));
 		}
 
 		/* ************************* *
@@ -431,15 +408,15 @@ void Context::procedureCancel() {
 	logger.debug << "Stopping initiated for all procedures.\n";
 }
 
-void Context::onEvent(const esl::object::Interface::Object& object) {
-	const esl::object::Value<esl::system::Interface::SignalType>* signalTypeObject = dynamic_cast<const esl::object::Value<esl::system::Interface::SignalType>*>(&object);
-
-	if(signalTypeObject && stopSignals.count(signalTypeObject->get())) {
+#if 0
+void Context::onSignal(const esl::utility::Signal& signal) {
+	if(stopSignals.count(signal)) {
 		// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
 		/* wake up signal thread to call "procedureCancel()" */
 		signalThreadCondVar.notify_one();
 	}
 }
+#endif
 
 void Context::setProcessRegistry(ProcessRegistry* processRegistry) {
 	ObjectContext::setProcessRegistry(processRegistry);
@@ -473,6 +450,26 @@ void Context::processUnregister(esl::processing::procedure::Interface::Procedure
 			signalThreadCondVar.notify_one();
 		}
 	}
+}
+
+void Context::addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	if(id.empty()) {
+		//esl::processing::procedure::Interface::Procedure* procedure = dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get());
+		//if(procedure) {
+		if(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get())) {
+			addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure>(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.release())));
+			return;
+		}
+/*
+		if(dynamic_cast<procedure::Context*>(object.get())) {
+			std::unique_ptr<procedure::Context> procedureContext(static_cast<procedure::Context*>(object.release()));
+			procedureContext->ObjectContext::setParent(this);
+			addProcedureContext(std::move(procedureContext));
+			return;
+		}
+*/
+	}
+	ObjectContext::addRawObject(id, std::move(object));
 }
 
 void Context::initializeContext() {

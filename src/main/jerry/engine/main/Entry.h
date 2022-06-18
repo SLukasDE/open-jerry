@@ -21,7 +21,7 @@
 
 #include <jerry/engine/ProcessRegistry.h>
 
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 
 #include <string>
 
@@ -36,7 +36,7 @@ public:
 	virtual ~Entry() = default;
 
 	virtual void initializeContext(Context& ownerContext) = 0;
-	virtual void procedureRun(esl::object::ObjectContext& objectContext) = 0;
+	virtual void procedureRun(esl::object::Context& objectContext) = 0;
 	virtual void dumpTree(std::size_t depth) const = 0;
 	virtual void setProcessRegistry(ProcessRegistry* processRegistry) = 0;
 };

@@ -89,7 +89,7 @@ std::set<std::string> RequestHandler::getNotifiers() const {
 	return std::set<std::string>();
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	applications = objectContext.findObject<object::applications::Object>(applicationsId);
 	if(applications == nullptr) {
 		throw std::runtime_error("Cannot find applications object with id \"" + applicationsId + "\"");

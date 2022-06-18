@@ -54,7 +54,7 @@ protected:
 private:
 
 	mutable unsigned short httpStatusCode = 500;
-	mutable esl::utility::MIME httpContentType = esl::utility::MIME::textHtml;
+	mutable esl::utility::MIME httpContentType = esl::utility::MIME::Type::textHtml;
 	mutable std::string httpTitle;
 	mutable std::string httpMessage;
 

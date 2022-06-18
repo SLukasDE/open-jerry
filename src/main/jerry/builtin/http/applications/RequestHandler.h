@@ -27,7 +27,7 @@
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 
 #include <memory>
 #include <string>
@@ -51,7 +51,7 @@ public:
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
 private:
 	std::string applicationsId;

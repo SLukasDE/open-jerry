@@ -96,7 +96,7 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 	}
 }
 
-void EntryImpl::procedureRun(esl::object::ObjectContext& objectContext) {
+void EntryImpl::procedureRun(esl::object::Context& objectContext) {
 	if(procedure) {
 		/* *************** *
 		 * start procedure *

@@ -52,7 +52,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	Properties* authProperties = objectContext.findObject<Properties>("authenticated");
 	if(!authProperties) {
 		return;

@@ -69,7 +69,7 @@ engine::ObjectContext& Object::getObjectContext() const noexcept {
 	return *objectContext;
 }
 */
-void Object::initializeContext(esl::object::ObjectContext& aObjectContext) {
+void Object::initializeContext(esl::object::Context& aObjectContext) {
 	objectContext = dynamic_cast<engine::ObjectContext*>(&aObjectContext);
 	if(objectContext == nullptr) {
 		throw std::runtime_error("Initialization error: Object context is not an engine object context");
@@ -118,7 +118,7 @@ esl::io::Input Object::accept(esl::com::basic::server::RequestContext& requestCo
 	return esl::io::Input();
 }
 
-void Object::procedureRun(esl::object::ObjectContext& objectContext, const Application* application, const esl::object::Interface::Object* object) const {
+void Object::procedureRun(esl::object::Context& objectContext, const Application* application, const esl::object::Interface::Object* object) const {
 	for(auto& applicationEntry : applications) {
 		if(application && application != applicationEntry.second.get()) {
 			continue;

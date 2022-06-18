@@ -31,7 +31,7 @@
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/object/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/processing/procedure/Interface.h>
 
 #include <memory>
@@ -59,7 +59,7 @@ public:
 
 	esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) override;
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) override;
-	void procedureRun(esl::object::ObjectContext& objectContext, const esl::object::Interface::Object* object) override;
+	void procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) override;
 	void procedureCancel() override;
 
 	void dumpTree(std::size_t depth) const override;

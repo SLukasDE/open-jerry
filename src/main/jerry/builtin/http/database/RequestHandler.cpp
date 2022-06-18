@@ -26,7 +26,7 @@
 #include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -61,11 +61,11 @@ const std::string PAGE_500(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "connection-id") {
 			if(!connectionId.empty()) {
@@ -106,7 +106,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	std::unique_ptr<esl::database::Connection> connection = connectionFactory->createConnection();
 	if(!connection) {
 		//throw esl::com::http::server::exception::StatusCode(503, "no connection available");
-		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
+		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::Type::textHtml));
 		esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
 		requestContext.getConnection().send(response, std::move(output));
 		logger.debug << "Failure\n";
@@ -119,7 +119,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	    preparedStatement.execute();
 	}
 	catch(...) {
-		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::textHtml));
+		esl::com::http::server::Response response(500, esl::utility::MIME(esl::utility::MIME::Type::textHtml));
 		esl::io::Output output = esl::io::output::Memory::create(PAGE_500.data(), PAGE_500.size());
 		requestContext.getConnection().send(response, std::move(output));
 		logger.debug << "Failure\n";
@@ -128,7 +128,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	}
 
 
-	esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::textHtml));
+	esl::com::http::server::Response response(200, esl::utility::MIME(esl::utility::MIME::Type::textHtml));
 	esl::io::Output output = esl::io::output::Memory::create(PAGE_200.data(), PAGE_200.size());
 	requestContext.getConnection().send(response, std::move(output));
 	logger.debug << "OK\n";
@@ -136,10 +136,10 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return esl::io::input::Closed::create();
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\""));
+		throw std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\"");
 	}
 }
 

@@ -191,7 +191,7 @@ esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& reques
 	return esl::io::Input();
 }
 
-void EntryImpl::procedureRun(esl::object::ObjectContext& objectContext, const esl::object::Interface::Object* object) {
+void EntryImpl::procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) {
 	if(procedure && (object == nullptr || object == procedure.get())) {
 		/* *************** *
 		 * start procedure *

@@ -25,7 +25,7 @@
 #include <esl/com/http/client/Request.h>
 #include <esl/com/http/client/Response.h>
 //#include <esl/http/client/ResponseHandler.h>
-#include <esl/system/Interface.h>
+//#include <esl/system/Interface.h>
 //#include <esl/system/process/Arguments.h>
 //#include <esl/system/process/Environment.h>
 #include <esl/utility/URL.h>

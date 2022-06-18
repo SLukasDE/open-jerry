@@ -25,7 +25,7 @@
 #include <esl/com/http/server/RequestContext.h>
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/Request.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 
 #include <string>
 
@@ -42,7 +42,7 @@ public:
 	const esl::com::http::server::Request& getRequest() const override;
 	void setPath(std::string path);
 	const std::string& getPath() const override;
-	esl::object::ObjectContext& getObjectContext() override;
+	esl::object::Context& getObjectContext() override;
 
 	void setHeadersContext(const Context* headersContext);
 	const Context* getHeadersContext() const;

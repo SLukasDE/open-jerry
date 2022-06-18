@@ -21,7 +21,7 @@
 
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -69,7 +69,7 @@ ExceptionDocument::ExceptionDocument(const std::string& fileName, const tinyxml2
 
 	if(parser) {
 		esl::utility::URL url(path);
-		if(url.getScheme() && url.getScheme() != esl::utility::Protocol::file) {
+		if(url.getScheme() && url.getScheme() != esl::utility::Protocol::Type::file) {
 			throw XMLException(*this, "Attribute parse=\"true\" is only allowed with file protocol specified for attribute 'path'.");
 		}
 	}

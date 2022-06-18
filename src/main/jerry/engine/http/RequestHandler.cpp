@@ -46,7 +46,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& ba
 
 	try {
 		/* Access log */
-		logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
+		logger.info << "Request for hostname " << baseRequestContext.getRequest().getHostName() << ": " << baseRequestContext.getRequest().getMethod().toString() << " \"" << baseRequestContext.getRequest().getPath() << "\" received from " << baseRequestContext.getRequest().getRemoteAddress() << "\n";
 
 		esl::io::Input input = context.accept(*requestContext);
 		if(input) {

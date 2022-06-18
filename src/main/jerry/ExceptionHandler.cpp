@@ -20,7 +20,7 @@
 #include <jerry/http/StatusCode.h>
 #include <jerry/Logger.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <memory>
 #include <ostream>
@@ -31,7 +31,7 @@ namespace jerry {
 namespace {
 Logger logger("jerry::engine::ExceptionHandler");
 
-std::string createStackstrace(const esl::Stacktrace* stacktrace) {
+std::string createStackstrace(const esl::stacktrace::Stacktrace* stacktrace) {
 	std::stringstream sstream;
 	if(stacktrace) {
 		stacktrace->dump(sstream);
@@ -109,7 +109,7 @@ void ExceptionHandler::initializeMessage() const {
 }
 
 void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
-	stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::stacktrace::Stacktrace::get(e));
 
 	plainException = "esl::com::http::server::exception::StatusCode " + std::to_string(e.getStatusCode());
 	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
@@ -121,7 +121,7 @@ void ExceptionHandler::initializeMessage(const esl::com::http::server::exception
 }
 
 void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
-	stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::stacktrace::Stacktrace::get(e));
 
 	plainException = "esl::database::exception::SqlError";
 	plainWhat = e.what();
@@ -132,18 +132,18 @@ void ExceptionHandler::initializeMessage(const esl::database::exception::SqlErro
 	diagnostics.dump(s);
 	plainDetails += s.str();
 
-	stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::stacktrace::Stacktrace::get(e));
 }
 
 void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
-	stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::stacktrace::Stacktrace::get(e));
 
 	plainException = "std::runtime_error";
 	plainWhat = e.what();
 }
 
 void ExceptionHandler::initializeMessage(const std::exception& e) const {
-	stacktrace = createStackstrace(esl::getStacktrace(e));
+	stacktrace = createStackstrace(esl::stacktrace::Stacktrace::get(e));
 
 	plainException = "std::exception";
 	plainWhat = e.what();

@@ -19,6 +19,9 @@
 #include <jerry/cgi/server/Socket.h>
 
 #include <cstdlib>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace cgi {
@@ -32,11 +35,11 @@ std::string getEnvVar(std::string const & key) {
 }
 
 
-std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::Interface::Socket>(new Socket(settings));
 }
 
-Socket::Socket(const esl::module::Interface::Settings& settings)
+Socket::Socket(const std::vector<std::pair<std::string, std::string>>& settings)
 { }
 
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
@@ -46,10 +49,6 @@ void Socket::listen(const esl::com::http::server::requesthandler::Interface::Req
 }
 
 void Socket::release() {
-}
-
-bool Socket::wait(std::uint32_t ms) {
-	return true;
 }
 
 

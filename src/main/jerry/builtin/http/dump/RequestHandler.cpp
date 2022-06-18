@@ -22,7 +22,7 @@
 
 #include <esl/com/http/server/Request.h>
 #include <esl/io/Input.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -41,7 +41,7 @@ std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandle
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 	}
 }
 
@@ -53,7 +53,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	logger.info << "LOCAL_PATH:     " << requestContext.getPath() << "\n";
 	logger.info << "FULL_PATH:      " << request.getPath() << "\n";
 	logger.info << "HTTP_VERSION:   " << request.getHTTPVersion() << "\n";
-	logger.info << "METHOD:         " << request.getMethod() << "\n";
+	logger.info << "METHOD:         " << request.getMethod().toString() << "\n";
 	logger.info << "HOST_ADDRESS:   " << request.getHostAddress() << "\n";
 	logger.info << "HOST_PORT:      " << request.getHostPort() << "\n";
 	logger.info << "REMOTE_ADDRESS: " << request.getRemoteAddress() << "\n";

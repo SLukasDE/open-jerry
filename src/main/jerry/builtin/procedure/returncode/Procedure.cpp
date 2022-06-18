@@ -65,7 +65,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	ReturnCodeObject* returnCodeObject = objectContext.findObject<ReturnCodeObject>("return-code");
 	if(!returnCodeObject) {
 	    objectContext.addObject("return-code", std::unique_ptr<esl::object::Interface::Object>(new ReturnCodeObject(returnCode)));

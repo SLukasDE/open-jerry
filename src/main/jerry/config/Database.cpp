@@ -22,6 +22,8 @@
 #include <esl/database/Interface.h>
 #include <esl/module/Interface.h>
 
+#include <utility>
+
 namespace jerry {
 namespace config {
 
@@ -85,7 +87,7 @@ void Database::install(engine::ObjectContext& engineObjectContext) const {
 }
 
 std::unique_ptr<esl::object::Interface::Object> Database::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}

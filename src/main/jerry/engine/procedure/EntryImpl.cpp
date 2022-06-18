@@ -108,7 +108,7 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 	}
 }
 
-void EntryImpl::procedureRun(esl::object::ObjectContext& objectContext) {
+void EntryImpl::procedureRun(esl::object::Context& objectContext) {
 	if(procedure) {
 		/* ************* *
 		 * run procedure *

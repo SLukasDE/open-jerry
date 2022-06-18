@@ -21,7 +21,7 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>

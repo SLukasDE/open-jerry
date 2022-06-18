@@ -50,7 +50,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	logger.debug << "Initialize: Lookup " << procedureIds.size() << " procedure-ids\n";
 	for(const auto& procedureId : procedureIds) {
 		esl::processing::procedure::Interface::Procedure* procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
@@ -62,7 +62,7 @@ void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
 	logger.debug << procedures.size() << " procedures\n";
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	for(auto procedure : procedures) {
 		{
 			std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);

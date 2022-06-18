@@ -19,7 +19,7 @@
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 

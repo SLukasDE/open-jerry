@@ -24,7 +24,7 @@
 #include <jerry/engine/ProcessRegistry.h>
 
 #include <esl/com/basic/server/Socket.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/processing/procedure/Interface.h>
 
 #include <cstdint>
@@ -43,7 +43,7 @@ public:
 
 	void initializeContext();
 
-	void procedureRun(esl::object::ObjectContext&) override;
+	void procedureRun(esl::object::Context&) override;
 	void procedureCancel() override;
 
 	Context& getContext() noexcept;

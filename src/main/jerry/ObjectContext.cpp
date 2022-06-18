@@ -20,8 +20,14 @@
 
 namespace jerry {
 
-void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
-	objects[id] = std::move(object);
+std::set<std::string> ObjectContext::getObjectIds() const {
+	std::set<std::string> rv;
+
+	for(const auto& object : objects) {
+		rv.insert(object.first);
+	}
+
+	return rv;
 }
 
 esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {
@@ -32,6 +38,10 @@ esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& 
 const esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
 	auto iter = objects.find(id);
 	return iter == std::end(objects) ? nullptr : iter->second.get();
+}
+
+void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	objects[id] = std::move(object);
 }
 
 } /* namespace jerry */

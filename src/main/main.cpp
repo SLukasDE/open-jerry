@@ -119,17 +119,17 @@ int main(int argc, const char *argv[]) {
 		settings.push_back(std::make_pair("stop-signal", "interrupt"));
 		settings.push_back(std::make_pair("stop-signal", "terminate"));
 		settings.push_back(std::make_pair("stop-signal", "pipe"));
-		jerry::engine::main::Context procedure(settings);
+		jerry::engine::main::Context mainContext(settings);
 
 		boost::filesystem::path serverConfigPath(serverConfigFile);
-		jerry::config::main::Context config(serverConfigPath);
+		jerry::config::main::Context mainConfig(serverConfigPath);
 		if(isVerbose) {
 			/* show configuration */
-			config.save(std::cout);
+			mainConfig.save(std::cout);
 			std::cout << "\n\n";
 		}
 
-		config.loadLibraries();
+		mainConfig.loadLibraries();
 
 		if(isVerbose) {
 			/* show loaded modules and interfaces */
@@ -157,12 +157,12 @@ int main(int argc, const char *argv[]) {
 			loggerConfig.install();
 		}
 
-		config.install(procedure);
+		mainConfig.install(mainContext);
 
 		jerry::ObjectContext objectContext;
 
 		if(!isDryRun) {
-			procedure.procedureRun(objectContext);
+			mainContext.procedureRun(objectContext);
 		}
 
 		ReturnCodeObject* returnCodeObject = objectContext.findObject<ReturnCodeObject>("return-code");

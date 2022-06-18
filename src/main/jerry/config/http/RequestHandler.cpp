@@ -21,7 +21,9 @@
 
 #include <esl/module/Interface.h>
 
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace jerry {
 namespace config {
@@ -80,7 +82,7 @@ void RequestHandler::install(engine::http::Context& context) const {
 #if 1
 	context.addRequestHandler(create());
 #else
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
@@ -101,7 +103,7 @@ void RequestHandler::install(engine::http::Context& context) const {
 }
 
 std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}

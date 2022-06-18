@@ -47,7 +47,7 @@ public:
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
 
-	void procedureRun(esl::object::ObjectContext& objectContext);
+	void procedureRun(esl::object::Context& objectContext);
 	void procedureCancel();
 
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;

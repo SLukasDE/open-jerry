@@ -24,7 +24,7 @@
 #include <esl/io/Input.h>
 #include <esl/module/Interface.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/object/Value.h>
 #include <esl/processing/procedure/Interface.h>
 
@@ -52,7 +52,7 @@ public:
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
 private:
 	using Properties = esl::object::Value<std::map<std::string, std::string>>;
@@ -78,7 +78,7 @@ private:
 	void processRequestBasicAuth(std::set<std::string>& authDataTypes, Settings& settings, esl::com::http::server::RequestContext& requestContext) const;
 	void processRequestJWT(std::set<std::string>& authDataTypes, Settings& settings, esl::com::http::server::RequestContext& requestContext) const;
 
-	void processIdentify(esl::object::ObjectContext& objectContext) const;
+	void processIdentify(esl::object::Context& objectContext) const;
 
 	esl::io::Input processResponse(esl::com::http::server::RequestContext& requestContext) const;
 };

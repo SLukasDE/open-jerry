@@ -117,7 +117,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return processResponse(requestContext);
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	for(const auto& authenticationProcedureId : authenticationProceduresId) {
 		esl::processing::procedure::Interface::Procedure* authenticationProcedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(authenticationProcedureId);
 		if(authenticationProcedure == nullptr) {
@@ -159,7 +159,7 @@ void RequestHandler::processRequest(esl::com::http::server::RequestContext& requ
 	}
 	settings["type"] = std::move(typeStr);
 
-	esl::object::ObjectContext& objectContext = requestContext.getObjectContext();
+	esl::object::Context& objectContext = requestContext.getObjectContext();
 	std::unique_ptr<esl::object::Interface::Object> properties(new Properties(settings));
 	objectContext.addObject("authenticated", std::move(properties));
 
@@ -316,7 +316,7 @@ void RequestHandler::processRequestJWT(std::set<std::string>& authDataTypes, Req
 	}
 }
 
-void RequestHandler::processIdentify(esl::object::ObjectContext& objectContext) const {
+void RequestHandler::processIdentify(esl::object::Context& objectContext) const {
 	Properties* authProperties = objectContext.findObject<Properties>("authenticated");
 	if(authProperties == nullptr) {
 		return;

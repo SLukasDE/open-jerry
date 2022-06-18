@@ -109,7 +109,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	Properties* authProperties = objectContext.findObject<Properties>("authenticated");
 	if(!authProperties) {
 		return;
@@ -172,7 +172,7 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 void Procedure::procedureCancel() {
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
 		throw std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\"");

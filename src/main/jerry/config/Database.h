@@ -27,10 +27,10 @@
 
 #include <tinyxml2/tinyxml2.h>
 
+#include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
-#include <ostream>
-#include <memory>
 
 namespace jerry {
 namespace config {

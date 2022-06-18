@@ -83,7 +83,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	if(connectionFactory == nullptr) {
 		logger.warn << "No DB connection factory initialized.\n";
 		return;
@@ -129,7 +129,7 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 	objectContext.addObject(authorizedObjectId, std::unique_ptr<esl::object::Interface::Object>(new Properties(std::move(authorizationProperites))));
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
 		throw std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\"");

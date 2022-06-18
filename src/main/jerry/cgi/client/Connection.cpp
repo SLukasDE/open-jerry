@@ -28,7 +28,7 @@
 #include <esl/system/Process.h>
 #include <esl/utility/Protocol.h>
 #include <esl/utility/String.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -41,17 +41,17 @@ Logger logger("jerry::cgi::client::Connection");
 }
 
 std::unique_ptr<esl::http::client::Interface::Connection> Connection::create(const esl::utility::URL& hostUrl, const esl::object::Values<std::string>& values) {
-	if(hostUrl.getScheme() != esl::utility::Protocol::protocolHttp && hostUrl.getScheme() != esl::utility::Protocol::protocolHttps) {
-        throw esl::addStacktrace(std::runtime_error("jerry::cgi::client: Unknown scheme \"" + hostUrl.getScheme().toString() + "\" in URL."));
+	if(hostUrl.getScheme() != esl::utility::Protocol::Type::protocolHttp && hostUrl.getScheme() != esl::utility::Protocol::Type::protocolHttps) {
+        throw esl::stacktrace::Stacktrace::add(std::runtime_error("jerry::cgi::client: Unknown scheme \"" + hostUrl.getScheme().toString() + "\" in URL."));
 	}
 
 	if(values.hasValue("executable") == false) {
-        throw esl::addStacktrace(std::runtime_error("jerry::cgi::client: No executable specified."));
+        throw esl::stacktrace::Stacktrace::add(std::runtime_error("jerry::cgi::client: No executable specified."));
 	}
 
 	esl::system::process::Arguments arguments(values.getValue("executable"));
 	if(arguments.getArgc() < 1) {
-        throw esl::addStacktrace(std::runtime_error("jerry::cgi::client: Specified executable is empty."));
+        throw esl::stacktrace::Stacktrace::add(std::runtime_error("jerry::cgi::client: Specified executable is empty."));
 	}
 
 	return std::unique_ptr<esl::http::client::Interface::Connection>(new Connection(hostUrl, std::move(arguments), values));
@@ -135,16 +135,16 @@ esl::http::client::Response Connection::send(const esl::http::client::Request& r
 	environment.push_back(std::make_pair("SERVER_NAME", hostUrl.getHostname()));
 	environment.push_back(std::make_pair("SERVER_PROTOCOL", serverProtocol));
 	environment.push_back(std::make_pair("SERVER_PORT", hostUrl.getPort()));
-	if(hostUrl.getScheme() == esl::utility::Protocol::protocolHttps) {
+	if(hostUrl.getScheme() == esl::utility::Protocol::Type::protocolHttps) {
 		environment.push_back(std::make_pair("SERVER_PORT_SECURE", "1"));
 		environment.push_back(std::make_pair("HTTPS", "on"));
 	}
 	else {
 		environment.push_back(std::make_pair("SERVER_PORT_SECURE", "0"));
 		environment.push_back(std::make_pair("HTTPS", "off"));
-		if(hostUrl.getScheme() != esl::utility::Protocol::protocolHttp) {
+		if(hostUrl.getScheme() != esl::utility::Protocol::Type::protocolHttp) {
 			logger.warn << "Unknown scheme \"" << hostUrl.getScheme().toString() << "\" in URL.";
-	        //throw esl::addStacktrace(std::runtime_error("cgi4esl: Unknown scheme \"" + hostUrl.getScheme().toString() + "\" in URL."));
+	        //throw esl::stacktrace::Stacktrace::add(std::runtime_error("cgi4esl: Unknown scheme \"" + hostUrl.getScheme().toString() + "\" in URL."));
 		}
 	}
 	environment.push_back(std::make_pair("HTTP_ACCEPT", "*/*"));

@@ -21,7 +21,7 @@
 
 #include <esl/io/Consumer.h>
 #include <esl/io/Reader.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -65,11 +65,11 @@ private:
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "show-context") {
 			if(setting.second == "true") {
@@ -104,7 +104,7 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw esl::stacktrace::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
 

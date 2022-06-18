@@ -135,7 +135,7 @@ esl::io::Input Application::accept(esl::com::basic::server::RequestContext& requ
 	return input;
 }
 
-void Application::procedureRun(esl::object::ObjectContext& objectContext, const esl::object::Interface::Object* object) const {
+void Application::procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) const {
 	for(auto& entry : entries) {
 		entry->procedureRun(objectContext, object);
 	}

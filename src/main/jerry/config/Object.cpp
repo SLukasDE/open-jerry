@@ -21,7 +21,7 @@
 
 #include <esl/module/Interface.h>
 
-#include <memory>
+#include <utility>
 
 namespace jerry {
 namespace config {
@@ -86,12 +86,12 @@ void Object::save(std::ostream& oStream, std::size_t spaces) const {
 	oStream << makeSpaces(spaces) << "</object>\n";
 }
 
-void Object::install(esl::object::ObjectContext& engineObjectContext) const {
+void Object::install(esl::object::Context& engineObjectContext) const {
 	engineObjectContext.addObject(id, create());
 }
 
 std::unique_ptr<esl::object::Interface::Object> Object::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}

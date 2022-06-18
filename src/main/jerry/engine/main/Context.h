@@ -29,7 +29,8 @@
 #include <esl/object/Interface.h>
 #include <esl/object/Event.h>
 #include <esl/processing/procedure/Interface.h>
-#include <esl/system/Interface.h>
+#include <esl/system/signal/Signal.h>
+#include <esl/utility/Signal.h>
 #include <esl/logging/appender/Interface.h>
 
 #include <atomic>
@@ -49,7 +50,7 @@ namespace jerry {
 namespace engine {
 namespace main {
 
-class Context final : public ObjectContext, public ProcessRegistry, public esl::processing::procedure::Interface::Procedure, public esl::object::Event {
+class Context final : public ObjectContext, public ProcessRegistry, public esl::processing::procedure::Interface::Procedure { //, public esl::object::Event {
 public:
 	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -62,7 +63,6 @@ public:
 	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
 	/* context specific methods */
-	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
 	//void addReference(const std::string& id, esl::object::Interface::Object& object);
 
 	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
@@ -78,10 +78,10 @@ public:
 	void initializeContext() override;
 	void dumpTree(std::size_t depth) const override;
 
-	void procedureRun(esl::object::ObjectContext& objectContext) override;
+	void procedureRun(esl::object::Context& objectContext) override;
 	void procedureCancel() override;
 
-	void onEvent(const esl::object::Interface::Object& object) override;
+	//void onSignal(const esl::utility::Signal& signal);
 
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
@@ -89,9 +89,12 @@ public:
 	void processRegister(esl::processing::procedure::Interface::Procedure& procedureRunning) override;
 	void processUnregister(esl::processing::procedure::Interface::Procedure& procedureRunning) override;
 
+protected:
+	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override;
+
 private:
 	std::atomic<int> terminateCounter{-1};
-	std::set<esl::system::Interface::SignalType> stopSignals;
+	std::set<esl::utility::Signal> stopSignals;
 	bool verbose = false;
 
 	bool catchException = true;
@@ -99,6 +102,7 @@ private:
 	bool hasExceptionReturnCode = false;
 	int exceptionReturnCode = -1;
 
+	esl::system::signal::Signal signal;
 	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
 
 	std::vector<std::unique_ptr<Entry>> entries;

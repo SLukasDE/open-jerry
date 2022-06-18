@@ -24,7 +24,7 @@
 #include <esl/com/http/server/Response.h>
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/io/input/Closed.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -40,11 +40,11 @@ namespace {
 Logger logger("jerry::builtin::http::file::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "path") {
 			path = setting.second;
@@ -54,11 +54,11 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 				httpStatus = std::stoi(setting.second);
 			}
 			catch(...) {
-				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+				throw std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer");
 			}
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
 	}
 }

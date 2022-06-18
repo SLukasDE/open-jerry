@@ -26,11 +26,10 @@
 #include <esl/io/Output.h>
 #include <esl/io/Consumer.h>
 #include <esl/io/Reader.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
-#include <stdexcept>
 #include <chrono>
-#include <thread>
+#include <stdexcept>
 
 namespace jerry {
 namespace builtin {
@@ -88,11 +87,11 @@ private:
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "notifier") {
 			if(notifier != "") {
@@ -109,14 +108,14 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 				msDelay = std::stoul(setting.second);
 			}
 			catch(...) {
-				throw esl::addStacktrace(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+				throw esl::stacktrace::Stacktrace::add(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
 			}
 		}
 		else if(setting.first == "connection-factory-id") {
 			connectionFactoryId = setting.second;
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw esl::stacktrace::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
 
@@ -125,16 +124,16 @@ RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings)
 	}
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	connectionFactory = objectContext.findObject<esl::com::basic::client::Interface::ConnectionFactory>(connectionFactoryId);
 	if(connectionFactory == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));
+		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));
 	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
 	if(connectionFactory == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Initialization failed"));
+		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Initialization failed"));
 	}
 
 	logger.trace << "ECHO: Check notifier...\n";

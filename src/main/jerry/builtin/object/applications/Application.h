@@ -63,7 +63,7 @@ public:
 
 	esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) const;
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) const;
-	void procedureRun(esl::object::ObjectContext& objectContext, const esl::object::Interface::Object* object) const;
+	void procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) const;
 	void procedureCancel() const;
 
 private:

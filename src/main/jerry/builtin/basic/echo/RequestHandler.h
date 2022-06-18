@@ -24,11 +24,11 @@
 #include <esl/com/basic/client/Interface.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 
-#include <string>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 #include <utility>
 
@@ -43,13 +43,13 @@ public:
 		return "jerry/echo";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	RequestHandler(const esl::module::Interface::Settings& settings);
+	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
 private:
 	std::string notifier;

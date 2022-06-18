@@ -19,9 +19,10 @@
 #include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace jerry {
 namespace config {
@@ -80,7 +81,7 @@ void RequestHandler::install(engine::basic::Context& context) const {
 #if 1
 	context.addRequestHandler(create());
 #else
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
@@ -113,7 +114,7 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 }
 
 std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}

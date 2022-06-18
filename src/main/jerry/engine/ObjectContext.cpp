@@ -41,22 +41,22 @@ ObjectContext::ObjectContext(ProcessRegistry* aProcessRegistry)
 : processRegistry(aProcessRegistry)
 { }
 
-void ObjectContext::setParent(esl::object::ObjectContext* objectContext) {
+void ObjectContext::setParent(esl::object::Context* objectContext) {
 	parent = objectContext;
 }
 
-void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
-	logger.trace << "Adding object with id=\"" << id << "\"\n";
+std::set<std::string> ObjectContext::getObjectIds() const {
+	std::set<std::string> rv;
 
-	if(id.empty()) {
-		throw std::runtime_error("Add an object with empty id is not allowed.");
-	}
-	if(!object) {
-		throw std::runtime_error("Cannot add an empty object with id '" + id + "'.");
+	if(parent) {
+		rv = parent->getObjectIds();
 	}
 
-	addReference(id, *object);
-	objects[id] = std::move(object);
+	for(const auto& object : objectRefsById) {
+		rv.insert(object.first);
+	}
+
+	return rv;
 }
 
 void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {
@@ -188,6 +188,20 @@ const esl::object::Interface::Object* ObjectContext::findRawObject(const std::st
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
 	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
+}
+
+void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+	logger.trace << "Adding object with id=\"" << id << "\"\n";
+
+	if(id.empty()) {
+		throw std::runtime_error("Add an object with empty id is not allowed.");
+	}
+	if(!object) {
+		throw std::runtime_error("Cannot add an empty object with id '" + id + "'.");
+	}
+
+	addReference(id, *object);
+	objects[id] = std::move(object);
 }
 
 } /* namespace engine */

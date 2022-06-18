@@ -25,7 +25,7 @@
 #include <esl/com/http/server/RequestContext.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Interface.h>
 
@@ -54,21 +54,21 @@ public:
 	const std::map<std::string, std::unique_ptr<Application>>& getApplications() const noexcept;
 	//engine::ObjectContext& getObjectContext() const noexcept;
 
-	void initializeContext(esl::object::ObjectContext& objectContext) override;
+	void initializeContext(esl::object::Context& objectContext) override;
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext, const Application* application, const esl::object::Interface::Object* object) const;
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const Application* application, const esl::object::Interface::Object* object) const;
 	std::set<std::string> getNotifiers() const;
 
-	void procedureRun(esl::object::ObjectContext& objectContext, const Application* application, const esl::object::Interface::Object* object) const;
+	void procedureRun(esl::object::Context& objectContext, const Application* application, const esl::object::Interface::Object* object) const;
 	void procedureCancel() const;
 
 private:
 	std::string path;
 	engine::ObjectContext* objectContext = nullptr;
 	//std::unique_ptr<engine::ObjectContext> objectContext;
-	//std::unique_ptr<esl::object::ObjectContext> objectContext;
+	//std::unique_ptr<esl::object::Context> objectContext;
 	std::map<std::string, std::unique_ptr<Application>> applications;
 
 	void scan();

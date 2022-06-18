@@ -26,7 +26,7 @@
 #include <jerry/engine/procedure/Context.h>
 #include <jerry/engine/ProcessRegistry.h>
 
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 #include <esl/processing/procedure/Interface.h>
 
 #include <memory>
@@ -47,7 +47,7 @@ public:
 	EntryImpl(std::unique_ptr<http::Server> httpServer);
 
 	void initializeContext(Context& ownerContext) override;
-	void procedureRun(esl::object::ObjectContext& objectContext) override;
+	void procedureRun(esl::object::Context& objectContext) override;
 	void dumpTree(std::size_t depth) const override;
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 

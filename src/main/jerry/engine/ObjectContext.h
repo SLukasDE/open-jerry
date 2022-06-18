@@ -22,27 +22,28 @@
 #include <jerry/engine/ProcessRegistry.h>
 
 #include <esl/object/Interface.h>
-#include <esl/object/ObjectContext.h>
+#include <esl/object/Context.h>
 
-#include <string>
-#include <map>
-#include <vector>
-#include <memory>
 #include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace jerry {
 namespace engine {
 
-class ObjectContext : public esl::object::ObjectContext {
+class ObjectContext : public esl::object::Context {
 public:
 	ObjectContext(const ObjectContext&) = delete;
 	ObjectContext(ProcessRegistry* processRegistry);
 
 	ObjectContext& operator=(const ObjectContext&) = delete;
 
-	void setParent(esl::object::ObjectContext* objectContext);
+	void setParent(esl::object::Context* objectContext);
 
-	void addObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object); // final;
+	std::set<std::string> getObjectIds() const override;
 	void addReference(const std::string& id, esl::object::Interface::Object& object);
 
 	virtual void initializeContext();
@@ -56,10 +57,11 @@ public:
 protected:
 	esl::object::Interface::Object* findRawObject(const std::string& id) override;
 	const esl::object::Interface::Object* findRawObject(const std::string& id) const override;
+	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) override; // final;
 
 private:
 	ProcessRegistry* processRegistry;
-	esl::object::ObjectContext* parent = nullptr;
+	esl::object::Context* parent = nullptr;
 	std::map<std::string, std::unique_ptr<esl::object::Interface::Object>> objects;
 	std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>> objectRefsById;
 };

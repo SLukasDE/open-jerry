@@ -27,10 +27,9 @@
 #endif
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Request.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
-#include <string>
 
 namespace jerry {
 namespace builtin {
@@ -56,7 +55,7 @@ public:
 		const auto& request = requestContext.getRequest();
 		content += "FULL_PATH:      " + request.getPath() + "\n";
 		content += "HTTP_VERSION:   " + request.getHTTPVersion() + "\n";
-		content += "METHOD:         " + request.getMethod() + "\n";
+		content += "METHOD:         " + request.getMethod().toString() + "\n";
 		content += "HOST_ADDRESS:   " + request.getHostAddress() + "\n";
 		content += "HOST_PORT:      " + std::to_string(request.getHostPort()) + "\n";
 		content += "REMOTE_ADDRESS: " + request.getRemoteAddress() + "\n";
@@ -76,7 +75,7 @@ public:
 		content += "\n";
 		content += getString();
 
-		esl::com::http::server::Response response(200, esl::utility::MIME::textPlain);
+		esl::com::http::server::Response response(200, esl::utility::MIME::Type::textPlain);
 		esl::io::Output output = esl::io::output::String::create(std::move(content));
 		requestContext.getConnection().send(response, std::move(output));
 	}
@@ -87,9 +86,9 @@ private:
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 	}
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler());
 }
@@ -149,7 +148,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	content += "</body>\n";
 	content += "</html>\n";
 
-	esl::com::http::server::Response response(200, esl::utility::MIME::textHtml);
+	esl::com::http::server::Response response(200, esl::utility::MIME::Type::textHtml);
 #else
 	content += "LOCAL_PATH:     " + requestContext.getPath() + "\n";
 
@@ -171,7 +170,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 		content += header.first + "=" + header.second + "\n";
 	}
 
-	esl::com::http::server::Response response(200, esl::utility::MIME::textPlain);
+	esl::com::http::server::Response response(200, esl::utility::MIME::Type::textPlain);
 #endif
 
 	esl::io::Output output = esl::io::output::String::create(std::move(content));

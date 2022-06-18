@@ -29,7 +29,7 @@
 #include <esl/io/input/Closed.h>
 #include <esl/io/output/String.h>
 #include <esl/utility/MIME.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -42,17 +42,17 @@ namespace {
 Logger logger("jerry::builtin::http::proxy::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		if(setting.first == "http-client-id") {
 			httpClientId = setting.second;
 		}
 		else {
-			throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
 	}
 }
@@ -67,7 +67,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 		throw esl::com::http::server::exception::StatusCode(503, "no client connection available");
 	}
 
-	esl::com::http::client::Request clientRequest(requestContext.getPath(), esl::utility::HttpMethod::httpGet, esl::utility::MIME());
+	esl::com::http::client::Request clientRequest(requestContext.getPath(), esl::utility::HttpMethod::Type::httpGet, esl::utility::MIME());
 	esl::io::input::String clientString;
 	esl::com::http::client::Response clientResponse = connection->send(clientRequest, esl::io::Output(), esl::io::Input(clientString));
 
@@ -78,10 +78,10 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	return esl::io::input::Closed::create();
 }
 
-void RequestHandler::initializeContext(esl::object::ObjectContext& objectContext) {
+void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(httpClientId);
 	if(connectionFactory == nullptr) {
-		throw esl::addStacktrace(std::runtime_error("Cannot find http-client with id \"" + httpClientId + "\""));
+		throw std::runtime_error("Cannot find http-client with id \"" + httpClientId + "\"");
 	}
 }
 

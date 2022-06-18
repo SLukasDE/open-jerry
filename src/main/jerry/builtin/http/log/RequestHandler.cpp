@@ -22,7 +22,7 @@
 
 #include <esl/com/http/server/Request.h>
 #include <esl/io/Input.h>
-#include <esl/Stacktrace.h>
+#include <esl/stacktrace/Stacktrace.h>
 
 #include <time.h>
 
@@ -38,13 +38,13 @@ namespace {
 Logger logger("jerry::builtin::http::log::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const esl::module::Interface::Settings& settings) {
+std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
 }
 
-RequestHandler::RequestHandler(const esl::module::Interface::Settings& settings) {
+RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
-		throw esl::addStacktrace(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+		throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 	}
 }
 
@@ -63,7 +63,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 			timePtr->tm_hour,
 			timePtr->tm_min,
 			timePtr->tm_sec);
-	std::cout << timeStr << "Request for hostname " << requestContext.getRequest().getHostName() << ": " << requestContext.getRequest().getMethod() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getRemoteAddress() << std::endl;
+	std::cout << timeStr << "Request for hostname " << requestContext.getRequest().getHostName() << ": " << requestContext.getRequest().getMethod().toString() << " \"" << requestContext.getRequest().getPath() << "\" received from " << requestContext.getRequest().getRemoteAddress() << std::endl;
 	return esl::io::Input();
 }
 

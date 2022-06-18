@@ -83,7 +83,7 @@ void Context::dumpTree(std::size_t depth) const {
 	}
 }
 
-void Context::procedureRun(esl::object::ObjectContext& objectContext) {
+void Context::procedureRun(esl::object::Context& objectContext) {
 	for(auto& entry : entries) {
 		{
 			std::lock_guard<std::mutex> runningProceduresLock(runningProceduresMutex);

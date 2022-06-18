@@ -24,6 +24,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <utility>
 
 namespace jerry {
 namespace config {
@@ -156,7 +157,7 @@ void Appender::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 std::unique_ptr<esl::logging::appender::Interface::Appender> Appender::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(auto const& setting : parameters) {
 		eslSettings.push_back(std::make_pair(setting.key, setting.value));
 	}

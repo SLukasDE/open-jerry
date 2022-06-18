@@ -24,9 +24,11 @@
 #include <esl/io/Input.h>
 #include <esl/module/Interface.h>
 
-#include <set>
-#include <string>
 #include <memory>
+#include <string>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace builtin {
@@ -39,9 +41,9 @@ public:
 		return "jerry/filebrowser";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	RequestHandler(const esl::module::Interface::Settings& settings);
+	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 

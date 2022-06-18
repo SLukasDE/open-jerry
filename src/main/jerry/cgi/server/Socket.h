@@ -26,7 +26,6 @@
 #include <esl/module/Interface.h>
 
 #include <cstdint>
-#include <string>
 #include <map>
 
 namespace jerry {
@@ -39,15 +38,15 @@ public:
 		return "cgi4esl";
 	}
 
-	static std::unique_ptr<esl::com::http::server::Interface::Socket> create(const esl::module::Interface::Settings& settings);
+	static std::unique_ptr<esl::com::http::server::Interface::Socket> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
-	Socket(const esl::module::Interface::Settings& settings);
+	Socket(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) override;
 
 	void listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) override;
 	void release() override;
-	bool wait(std::uint32_t ms) override;
+	//bool wait(std::uint32_t ms) override;
 
 private:
 };

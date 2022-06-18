@@ -22,6 +22,8 @@
 #include <esl/module/Interface.h>
 #include <esl/logging/layout/Layout.h>
 
+#include <utility>
+
 namespace jerry {
 namespace config {
 namespace logging {
@@ -88,7 +90,7 @@ void Layout::save(std::ostream& oStream, std::size_t spaces) const {
 }
 
 std::unique_ptr<esl::logging::layout::Interface::Layout> Layout::create() const {
-	esl::module::Interface::Settings eslSettings;
+	std::vector<std::pair<std::string, std::string>> eslSettings;
 
 	for(auto const& setting : parameters) {
 		eslSettings.push_back(std::make_pair(setting.key, setting.value));

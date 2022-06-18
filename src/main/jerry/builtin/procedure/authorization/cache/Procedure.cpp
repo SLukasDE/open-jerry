@@ -103,7 +103,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 	}
 }
 
-void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
+void Procedure::procedureRun(esl::object::Context& objectContext) {
 	/* we are done just for the case a previous procedure created already an authorization object */
 	if(objectContext.findObject<esl::object::Interface::Object>(authorizedObjectId)) {
 		return;
@@ -149,20 +149,20 @@ void Procedure::procedureRun(esl::object::ObjectContext& objectContext) {
 void Procedure::procedureCancel() {
 }
 
-void Procedure::initializeContext(esl::object::ObjectContext& objectContext) {
+void Procedure::initializeContext(esl::object::Context& objectContext) {
 	authorizingProcedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(authorizingProcedureId);
 	if(authorizingProcedure == nullptr) {
 		throw std::runtime_error("Cannot find procedure with id \"" + authorizingProcedureId + "\"");
 	}
 
-	sessionPool.reset(new SessionPool([this](const esl::object::ObjectContext& objectContext) {
+	sessionPool.reset(new SessionPool([this](const esl::object::Context& objectContext) {
 		return createAuthorizationObject(objectContext);
 	}, 10, lifetimeMs, lifetimeRenew, false));
 }
 
-std::unique_ptr<esl::object::Cloneable> Procedure::createAuthorizationObject(const esl::object::ObjectContext& objectContext) {
+std::unique_ptr<esl::object::Cloneable> Procedure::createAuthorizationObject(const esl::object::Context& objectContext) {
 	/* call procedure to create a new authorization object with id 'authorizedObjectId' */
-	authorizingProcedure->procedureRun(const_cast<esl::object::ObjectContext&>(objectContext));
+	authorizingProcedure->procedureRun(const_cast<esl::object::Context&>(objectContext));
 
 	/* lookup for object with id 'authorizedObjectId' */
 	const esl::object::Interface::Object* authorizationObjectPtr = objectContext.findObject<esl::object::Interface::Object>(authorizedObjectId);
