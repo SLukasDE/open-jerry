@@ -19,7 +19,7 @@
 #ifndef JERRY_BUILTIN_BASIC_DUMP_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_BASIC_DUMP_REQUESTHANDLER_H_
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/com/basic/server/RequestHandler.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 
@@ -34,13 +34,13 @@ namespace builtin {
 namespace basic {
 namespace dump {
 
-class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
+class RequestHandler final : public esl::com::basic::server::RequestHandler {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/dump";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::basic::server::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 

@@ -19,8 +19,8 @@
 #include <jerry/config/main/Procedure.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/processing/procedure/Interface.h>
-#include <esl/module/Interface.h>
+#include <esl/processing/Procedure.h>
+#include <esl/object/Object.h>
 
 namespace jerry {
 namespace config {
@@ -28,13 +28,13 @@ namespace main {
 
 void Procedure::install(engine::main::Context& engineMainContext) const {
 	if(getRefId().empty()) {
-		std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure = create();
+		std::unique_ptr<esl::processing::Procedure> procedure = create();
 
 		if(getId().empty()) {
 			engineMainContext.addProcedure(std::move(procedure));
 		}
 		else {
-			engineMainContext.addObject(getId(), std::unique_ptr<esl::object::Interface::Object>(procedure.release()));
+			engineMainContext.addObject(getId(), std::unique_ptr<esl::object::Object>(procedure.release()));
 		}
 	}
 	else {

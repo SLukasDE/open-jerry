@@ -112,7 +112,7 @@ void BasicContext::install(engine::ObjectContext& engineObjectContext) const {
 	std::unique_ptr<engine::basic::Context> context(new engine::basic::Context(engineObjectContext.getProcessRegistry()));
 	engine::basic::Context& contextRef = *context;
 
-	engineObjectContext.addObject(getId(), std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	engineObjectContext.addObject(getId(), std::unique_ptr<esl::object::Object>(context.release()));
 
 	if(getInherit()) {
 		contextRef.ObjectContext::setParent(&engineObjectContext);

@@ -40,7 +40,7 @@ void HttpContext::install(Application& engineApplicationContext) const {
 			engineApplicationContext.addHttpContext(std::move(context));
 		}
 		else {
-			engineApplicationContext.addObject(getId(), std::unique_ptr<esl::object::Interface::Object>(context.release()));
+			engineApplicationContext.addObject(getId(), std::unique_ptr<esl::object::Object>(context.release()));
 		}
 
 		/* *****************

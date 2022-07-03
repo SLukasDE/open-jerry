@@ -22,11 +22,11 @@
 #include <jerry/builtin/object/applications/Object.h>
 #include <jerry/builtin/object/applications/Application.h>
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/com/basic/server/RequestHandler.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/object/Context.h>
 
 #include <memory>
@@ -40,20 +40,20 @@ namespace builtin {
 namespace basic {
 namespace application {
 
-class RequestHandler final : public virtual esl::com::basic::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
+class RequestHandler final : public virtual esl::com::basic::server::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/applications";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::basic::server::RequestHandler> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
 
-	void initializeContext(esl::object::Context& objectContext) override;
+	void initializeContext(esl::object::Context& context) override;
 
 private:
 	std::string applicationsId;
@@ -62,7 +62,7 @@ private:
 
 	object::applications::Object* applications = nullptr;
 	object::applications::Application* application = nullptr;
-	esl::object::Interface::Object* refObject = nullptr;
+	esl::object::Object* refObject = nullptr;
 };
 
 } /* namespace application */

@@ -48,8 +48,8 @@ std::string makeValue(const std::vector<std::pair<std::string, std::string>>& se
 }
 } /* anonymous namespace */
 
-std::unique_ptr<esl::object::Interface::Object> String::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new String(settings));
+std::unique_ptr<esl::object::Object> String::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::object::Object>(new String(settings));
 }
 
 String::String(const std::vector<std::pair<std::string, std::string>>& settings)

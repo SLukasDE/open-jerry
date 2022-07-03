@@ -26,7 +26,7 @@
 #include <esl/io/output/Memory.h>
 #include <esl/io/input/Closed.h>
 #include <esl/utility/MIME.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -61,8 +61,8 @@ const std::string PAGE_500(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::http::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -137,7 +137,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 }
 
 void RequestHandler::initializeContext(esl::object::Context& objectContext) {
-	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
+	connectionFactory = objectContext.findObject<esl::database::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
 		throw std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\"");
 	}

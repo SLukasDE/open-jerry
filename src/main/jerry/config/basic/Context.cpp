@@ -22,7 +22,7 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/object/Object.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -144,7 +144,7 @@ void Context::install(engine::basic::Context& engineBasicContext) const {
 			engineBasicContext.addContext(std::move(basicContext));
 		}
 		else {
-			engineBasicContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(basicContext.release()));
+			engineBasicContext.addObject(id, std::unique_ptr<esl::object::Object>(basicContext.release()));
 		}
 
 		/* *****************

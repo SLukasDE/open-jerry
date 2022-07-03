@@ -19,7 +19,7 @@
 #ifndef JERRY_EXCEPTIONMESSAGE_H_
 #define JERRY_EXCEPTIONMESSAGE_H_
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <string>
 #include <memory>
@@ -30,7 +30,7 @@ struct ExceptionMessage final {
 	std::string title;
 	std::string message;
 
-	std::unique_ptr<esl::stacktrace::Stacktrace> stacktrace;
+	std::unique_ptr<esl::system::Stacktrace> stacktrace;
 };
 
 } /* namespace jerry */

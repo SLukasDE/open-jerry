@@ -35,8 +35,8 @@ namespace {
 Logger logger("jerry::builtin::object::applications::Object");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::object::Interface::Object> Object::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new Object(settings));
+std::unique_ptr<esl::object::Object> Object::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::object::Object>(new Object(settings));
 }
 
 
@@ -69,8 +69,8 @@ engine::ObjectContext& Object::getObjectContext() const noexcept {
 	return *objectContext;
 }
 */
-void Object::initializeContext(esl::object::Context& aObjectContext) {
-	objectContext = dynamic_cast<engine::ObjectContext*>(&aObjectContext);
+void Object::initializeContext(esl::object::Context& aContext) {
+	objectContext = dynamic_cast<engine::ObjectContext*>(&aContext);
 	if(objectContext == nullptr) {
 		throw std::runtime_error("Initialization error: Object context is not an engine object context");
 	}
@@ -78,7 +78,7 @@ void Object::initializeContext(esl::object::Context& aObjectContext) {
 	scan();
 }
 
-esl::io::Input Object::accept(esl::com::http::server::RequestContext& baseRequestContext, const Application* application, const esl::object::Interface::Object* object) const {
+esl::io::Input Object::accept(esl::com::http::server::RequestContext& baseRequestContext, const Application* application, const esl::object::Object* object) const {
 	std::unique_ptr<engine::http::RequestContext> requestContext(new engine::http::RequestContext(baseRequestContext));
 
 //	try {
@@ -103,7 +103,7 @@ esl::io::Input Object::accept(esl::com::http::server::RequestContext& baseReques
 	return esl::io::Input();
 }
 
-esl::io::Input Object::accept(esl::com::basic::server::RequestContext& requestContext, const Application* application, const esl::object::Interface::Object* object) const {
+esl::io::Input Object::accept(esl::com::basic::server::RequestContext& requestContext, const Application* application, const esl::object::Object* object) const {
 	for(auto& applicationEntry : applications) {
 		if(application && application != applicationEntry.second.get()) {
 			continue;
@@ -118,13 +118,13 @@ esl::io::Input Object::accept(esl::com::basic::server::RequestContext& requestCo
 	return esl::io::Input();
 }
 
-void Object::procedureRun(esl::object::Context& objectContext, const Application* application, const esl::object::Interface::Object* object) const {
+void Object::procedureRun(esl::object::Context& context, const Application* application, const esl::object::Object* object) const {
 	for(auto& applicationEntry : applications) {
 		if(application && application != applicationEntry.second.get()) {
 			continue;
 		}
 
-		applicationEntry.second->procedureRun(objectContext, object);
+		applicationEntry.second->procedureRun(context, object);
 	}
 }
 

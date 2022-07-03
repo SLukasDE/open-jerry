@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_BASIC_REQUESTHANDLER_H_
 #define JERRY_ENGINE_BASIC_REQUESTHANDLER_H_
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/com/basic/server/RequestHandler.h>
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 
@@ -32,7 +32,7 @@ namespace basic {
 
 class Context;
 
-class RequestHandler final : public esl::com::basic::server::requesthandler::Interface::RequestHandler {
+class RequestHandler final : public esl::com::basic::server::RequestHandler {
 public:
 	RequestHandler(Context& context);
 

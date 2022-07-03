@@ -19,8 +19,7 @@
 #include <jerry/config/Procedure.h>
 #include <jerry/config/XMLException.h>
 
-//#include <esl/processing/procedure/Interface.h>
-#include <esl/module/Interface.h>
+#include <esl/plugin/Registry.h>
 
 namespace jerry {
 namespace config {
@@ -122,15 +121,15 @@ const std::string& Procedure::getRefId() const noexcept {
 	return refId;
 }
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create() const {
+std::unique_ptr<esl::processing::Procedure> Procedure::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
+	std::unique_ptr<esl::processing::Procedure> procedure;
 	try {
-		procedure = esl::getModule().getInterface<esl::processing::procedure::Interface>(implementation).createProcedure(eslSettings);
+		procedure = esl::plugin::Registry::get().create<esl::processing::Procedure>(implementation, eslSettings);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());

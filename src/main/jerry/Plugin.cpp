@@ -16,7 +16,7 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/Module.h>
+#include <jerry/Plugin.h>
 
 /* *************** *
  * jerry procedure *
@@ -70,183 +70,182 @@
 #include <jerry/builtin/object/standard/VectorString.h>
 #include <jerry/builtin/object/applications/Object.h>
 
-#include <eslx/Module.h>
+#include <eslx/Plugin.h>
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
-#include <esl/processing/procedure/Interface.h>
-#include <esl/object/Interface.h>
-#include <esl/logging/appender/Interface.h>
-#include <esl/logging/layout/Interface.h>
-#include <esl/Module.h>
+#include <esl/com/basic/server/RequestHandler.h>
+#include <esl/com/http/server/RequestHandler.h>
+#include <esl/processing/Procedure.h>
+#include <esl/object/Object.h>
+#include <esl/logging/Appender.h>
+#include <esl/logging/Layout.h>
+#include <esl/plugin/Registry.h>
+
+#include <esl/com/http/client/ConnectionFactory.h>
+
+#include <memory>
 
 namespace jerry {
 
-void Module::install(esl::module::Module& module) {
-	esl::setModule(module);
+void Plugin::install(esl::plugin::Registry& registry, const char* data) {
+	esl::plugin::Registry::set(registry);
 
-	eslx::Module::install(module);
+	eslx::Plugin::install(registry, data);
 
 	/* ***************************** *
 	 * builtin basic request handlers *
 	 * ***************************** */
 
-	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
-			"jerry/dump", // builtin::basic::dump::RequestHandler::getImplementation(),
-			&builtin::basic::dump::RequestHandler::createRequestHandler));
+	registry.addPlugin<esl::com::basic::server::RequestHandler>(
+			"jerry/dump",
+			builtin::basic::dump::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::basic::server::RequestHandler>(
 			"jerry/echo", // builtin::basic::echo::RequestHandler::getImplementation(),
-			&builtin::basic::echo::RequestHandler::createRequestHandler));
+			&builtin::basic::echo::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::basic::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::basic::server::RequestHandler>(
 			"jerry/applications", // builtin::basic::application::RequestHandler::getImplementation(),
-			&builtin::basic::application::RequestHandler::create));
+			&builtin::basic::application::RequestHandler::create);
 
 	/* ***************************** *
 	 * builtin http request handlers *
 	 * ***************************** */
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/applications", // builtin::http::applications::RequestHandler::getImplementation(),
-			&builtin::http::applications::RequestHandler::create));
+			&builtin::http::applications::RequestHandler::create);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/authentication", // builtin::http::authentication::RequestHandler::getImplementation(),
-			&builtin::http::authentication::RequestHandler::createRequestHandler));
+			&builtin::http::authentication::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/database", // builtin::http::database::RequestHandler::getImplementation(),
-			&builtin::http::database::RequestHandler::createRequestHandler));
+			&builtin::http::database::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/dump", // builtin::http::dump::RequestHandler::getImplementation(),
-			&builtin::http::dump::RequestHandler::createRequestHandler));
+			&builtin::http::dump::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/filebrowser", // builtin::http::filebrowser::RequestHandler::getImplementation(),
-			&builtin::http::filebrowser::RequestHandler::createRequestHandler));
+			&builtin::http::filebrowser::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/file", // builtin::http::file::RequestHandler::getImplementation(),
-			&builtin::http::file::RequestHandler::createRequestHandler));
+			&builtin::http::file::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/log", // builtin::http::file::RequestHandler::getImplementation(),
-			&builtin::http::log::RequestHandler::createRequestHandler));
+			&builtin::http::log::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/self", // builtin::http::self::RequestHandler::getImplementation(),
-			&builtin::http::self::RequestHandler::createRequestHandler));
+			&builtin::http::self::RequestHandler::createRequestHandler);
 
-	module.addInterface(esl::com::http::server::requesthandler::Interface::createInterface(
+	registry.addPlugin<esl::com::http::server::RequestHandler>(
 			"jerry/proxy", // builtin::http::proxy::RequestHandler::getImplementation(),
-			&builtin::http::proxy::RequestHandler::createRequestHandler));
+			&builtin::http::proxy::RequestHandler::createRequestHandler);
 
 	/* ****************** *
 	 * builtin procedures *
 	 * ****************** */
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authentication-basic-dblookup", // builtin::procedure::authentication::basic::dblookup::Procedure::getImplementation(),
-			&builtin::procedure::authentication::basic::dblookup::Procedure::create));
+			&builtin::procedure::authentication::basic::dblookup::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authentication-basic-stable", // builtin::procedure::authentication::basic::stable::Procedure::getImplementation(),
-			&builtin::procedure::authentication::basic::stable::Procedure::create));
+			&builtin::procedure::authentication::basic::stable::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authentication-jwt", // builtin::procedure::authentication::jwt::Procedure::getImplementation(),
-			&builtin::procedure::authentication::jwt::Procedure::create));
+			&builtin::procedure::authentication::jwt::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authorization-cache", // builtin::procedure::authorization::cache::Procedure::getImplementation(),
-			&builtin::procedure::authorization::cache::Procedure::create));
+			&builtin::procedure::authorization::cache::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authorization-dblookup", // builtin::procedure::authorization::dblookup::Procedure::getImplementation(),
-			&builtin::procedure::authorization::dblookup::Procedure::create));
+			&builtin::procedure::authorization::dblookup::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/authorization-jwt", // builtin::procedure::authorization::jwt::Procedure::getImplementation(),
-			&builtin::procedure::authorization::jwt::Procedure::create));
+			&builtin::procedure::authorization::jwt::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/detach", // builtin::procedure::list::Procedure::getImplementation(),
-			&builtin::procedure::detach::Procedure::create));
+			&builtin::procedure::detach::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/list", // builtin::procedure::list::Procedure::getImplementation(),
-			&builtin::procedure::list::Procedure::create));
+			&builtin::procedure::list::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/return-code", // builtin::procedure::returncode::Procedure::getImplementation(),
-			&builtin::procedure::returncode::Procedure::create));
+			&builtin::procedure::returncode::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry/sleep", // builtin::procedure::sleep::Procedure::getImplementation(),
-			&builtin::procedure::sleep::Procedure::create));
+			&builtin::procedure::sleep::Procedure::create);
 
-	module.addInterface(esl::processing::procedure::Interface::createInterface(
+	registry.addPlugin<esl::processing::Procedure>(
 			"jerry", // Procedure::getImplementation(),
-			&engine::main::Context::create));
+			&engine::main::Context::create);
 
 	/* *************** *
 	 * builtin objects *
 	 * *************** */
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/int",
-			&builtin::object::standard::Int::create));
+			&builtin::object::standard::Int::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/map<string,string>",
-			&builtin::object::standard::MapStringString::create));
+			&builtin::object::standard::MapStringString::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/set<int>",
-			&builtin::object::standard::SetInt::create));
+			&builtin::object::standard::SetInt::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/set<string>",
-			&builtin::object::standard::SetString::create));
+			&builtin::object::standard::SetString::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/string",
-			&builtin::object::standard::String::create));
+			&builtin::object::standard::String::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/vector<int>",
-			&builtin::object::standard::VectorInt::create));
+			&builtin::object::standard::VectorInt::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/vector<pair<string,string>>",
-			&builtin::object::standard::VectorPairStringString::create));
+			&builtin::object::standard::VectorPairStringString::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"std/vector<string>",
-			&builtin::object::standard::VectorString::create));
+			&builtin::object::standard::VectorString::create);
 
-	module.addInterface(esl::object::Interface::createInterface(
+	registry.addPlugin<esl::object::Object>(
 			"jerry/applications",
-			&builtin::object::applications::Object::create));
+			&builtin::object::applications::Object::create);
 
 
 
-	/* ************************* *
-	 * builtin logging appenders *
-	 * ************************* */
-	module.addInterface(esl::logging::appender::Interface::createInterface(
-			"jerry/membuffer",
-			esl::getModule().getInterface<esl::logging::appender::Interface>("eslx/membuffer").createAppender));
-
-	module.addInterface(esl::logging::appender::Interface::createInterface(
-			"jerry/ostream",
-			esl::getModule().getInterface<esl::logging::appender::Interface>("eslx/ostream").createAppender));
-
+	/* ************ *
+	 * esl::logging *
+	 * ************ */
 	/* *********************** *
 	 * builtin logging layouts *
 	 * *********************** */
-	module.addInterface(esl::logging::layout::Interface::createInterface(
-			"jerry/default",
-			esl::getModule().getInterface<esl::logging::layout::Interface>("eslx/default").createLayout));
+	registry.copyPlugin<esl::logging::Layout>("eslx/logging/DefaultLayout", "jerry/default");
+	/* ************************* *
+	 * builtin logging appenders *
+	 * ************************* */
+	registry.copyPlugin<esl::logging::Appender>("eslx/logging/MemBufferAppender", "jerry/membuffer");
+	registry.copyPlugin<esl::logging::Appender>("eslx/logging/OStreamAppender", "jerry/ostream");
 
 }
 

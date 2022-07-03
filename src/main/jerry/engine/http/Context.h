@@ -24,11 +24,9 @@
 #include <jerry/engine/ObjectContext.h>
 #include <jerry/engine/ProcessRegistry.h>
 
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/module/Interface.h>
-#include <esl/processing/procedure/Interface.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <string>
 #include <map>
@@ -56,14 +54,14 @@ public:
 	void setParent(Context* context);
 	const Context* getParent() const;
 
-	void addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
+	void addProcedure(std::unique_ptr<esl::processing::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
 	void addContext(const std::string& refId);
 	void addContext(std::unique_ptr<Context> context);
 	void addEndpoint(std::unique_ptr<Endpoint> endpoint);
 	void addHost(std::unique_ptr<Host> host);
-	void addRequestHandler(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
+	void addRequestHandler(std::unique_ptr<esl::com::http::server::RequestHandler> requestHandler);
 
 	void setShowException(OptionalBool showException);
 	bool getShowException() const;

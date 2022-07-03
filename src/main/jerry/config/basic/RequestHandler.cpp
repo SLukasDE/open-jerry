@@ -19,7 +19,7 @@
 #include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/plugin/Registry.h>
 
 #include <stdexcept>
 #include <utility>
@@ -113,15 +113,15 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 	}
 }
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::create() const {
+std::unique_ptr<esl::com::basic::server::RequestHandler> RequestHandler::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> requestHandler;
+	std::unique_ptr<esl::com::basic::server::RequestHandler> requestHandler;
 	try {
-		requestHandler = esl::getModule().getInterface<esl::com::basic::server::requesthandler::Interface>(implementation).createRequestHandler(eslSettings);
+		requestHandler = esl::plugin::Registry::get().create<esl::com::basic::server::RequestHandler>(implementation, eslSettings);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());

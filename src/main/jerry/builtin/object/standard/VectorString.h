@@ -20,7 +20,7 @@
 #define JERRY_BUILTIN_OBJECT_STANDARD_VECTORSTRING_H_
 
 #include <esl/object/Value.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <vector>
 #include <string>
@@ -37,7 +37,7 @@ public:
 		return "std/vector<string>";
 	}
 
-	static std::unique_ptr<esl::object::Interface::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::object::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	VectorString(const std::vector<std::pair<std::string, std::string>>& settings);
 };

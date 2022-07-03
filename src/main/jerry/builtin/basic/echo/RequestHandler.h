@@ -19,9 +19,9 @@
 #ifndef JERRY_BUILTIN_BASIC_ECHO_REQUESTHANDLER_H_
 #define JERRY_BUILTIN_BASIC_ECHO_REQUESTHANDLER_H_
 
-#include <esl/com/basic/server/requesthandler/Interface.h>
+#include <esl/com/basic/server/RequestHandler.h>
 #include <esl/com/basic/server/RequestContext.h>
-#include <esl/com/basic/client/Interface.h>
+#include <esl/com/basic/client/ConnectionFactory.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Context.h>
@@ -37,25 +37,25 @@ namespace builtin {
 namespace basic {
 namespace echo {
 
-class RequestHandler final : public virtual esl::com::basic::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
+class RequestHandler final : public virtual esl::com::basic::server::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/echo";
 	}
 
-	static std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::basic::server::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext) const override;
 	std::set<std::string> getNotifiers() const override;
-	void initializeContext(esl::object::Context& objectContext) override;
+	void initializeContext(esl::object::Context& context) override;
 
 private:
 	std::string notifier;
 	unsigned long msDelay = 0;
 	std::string connectionFactoryId;
-	esl::com::basic::client::Interface::ConnectionFactory* connectionFactory = nullptr;
+	esl::com::basic::client::ConnectionFactory* connectionFactory = nullptr;
 };
 
 } /* namespace echo */

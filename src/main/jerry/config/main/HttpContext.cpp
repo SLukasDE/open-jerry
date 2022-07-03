@@ -112,7 +112,7 @@ void HttpContext::install(engine::ObjectContext& engineObjectContext) const {
 	std::unique_ptr<engine::http::Context> context(new engine::http::Context(engineObjectContext.getProcessRegistry()));
 	engine::http::Context& contextRef = *context;
 
-	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(context.release()));
+	engineObjectContext.addObject(id, std::unique_ptr<esl::object::Object>(context.release()));
 
 	if(inherit) {
 		contextRef.ObjectContext::setParent(&engineObjectContext);

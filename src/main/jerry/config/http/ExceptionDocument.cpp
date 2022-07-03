@@ -21,7 +21,7 @@
 
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
-#include <esl/stacktrace/Stacktrace.h>
+//#include <esl/stacktrace/Stacktrace.h>
 
 #include <stdexcept>
 

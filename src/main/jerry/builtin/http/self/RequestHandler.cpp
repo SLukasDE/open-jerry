@@ -27,7 +27,7 @@
 #endif
 #include <esl/io/output/String.h>
 #include <esl/com/http/server/Request.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -86,11 +86,11 @@ private:
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
 	for(const auto& setting : settings) {
 		throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 	}
-	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler());
+	return std::unique_ptr<esl::com::http::server::RequestHandler>(new RequestHandler());
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {

@@ -20,10 +20,10 @@
 #define JERRY_BUILTIN_HTTP_PROXY_REQUESTHANDLER_H_
 
 #include <esl/com/http/server/RequestContext.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
-#include <esl/com/http/client/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
+#include <esl/com/http/client/ConnectionFactory.h>
 #include <esl/io/Input.h>
-#include <esl/module/Interface.h>
+//#include <esl/module/Interface.h>
 #include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 
@@ -37,13 +37,13 @@ namespace builtin {
 namespace http {
 namespace proxy {
 
-class RequestHandler final : public virtual esl::com::http::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
+class RequestHandler final : public virtual esl::com::http::server::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/proxy";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::http::server::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -53,7 +53,7 @@ public:
 
 private:
 	std::string httpClientId;
-	esl::com::http::client::Interface::ConnectionFactory* connectionFactory = nullptr;
+	esl::com::http::client::ConnectionFactory* connectionFactory = nullptr;
 };
 
 } /* namespace proxy */

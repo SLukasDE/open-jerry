@@ -20,6 +20,7 @@
 #include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/XMLException.h>
 
+#include <esl/object/Object.h>
 #include <esl/utility/String.h>
 
 namespace jerry {
@@ -145,7 +146,7 @@ void Context::install(engine::http::Context& engineHttpContext) const {
 			engineHttpContext.addContext(std::move(httpContext));
 		}
 		else {
-			engineHttpContext.addObject(id, std::unique_ptr<esl::object::Interface::Object>(httpContext.release()));
+			engineHttpContext.addObject(id, std::unique_ptr<esl::object::Object>(httpContext.release()));
 		}
 
 		/* *****************

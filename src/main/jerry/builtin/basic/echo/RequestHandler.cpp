@@ -19,14 +19,13 @@
 #include <jerry/builtin/basic/echo/RequestHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/com/basic/client/Interface.h>
 #include <esl/com/basic/client/Connection.h>
 #include <esl/io/output/String.h>
 #include <esl/io/Producer.h>
 #include <esl/io/Output.h>
 #include <esl/io/Consumer.h>
 #include <esl/io/Reader.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <chrono>
 #include <stdexcept>
@@ -41,7 +40,7 @@ Logger logger("jerry::builtin::basic::echo::RequestHandler");
 
 class RequestConsumer : public esl::io::Consumer {
 public:
-	RequestConsumer(esl::com::basic::server::RequestContext& aRequestContext, esl::com::basic::client::Interface::ConnectionFactory& aConnectionFactory, unsigned long aMsDelay)
+	RequestConsumer(esl::com::basic::server::RequestContext& aRequestContext, esl::com::basic::client::ConnectionFactory& aConnectionFactory, unsigned long aMsDelay)
 	: requestContext(aRequestContext),
 	  msDelay(aMsDelay),
 	  connectionFactory(aConnectionFactory)
@@ -81,14 +80,14 @@ public:
 private:
 	esl::com::basic::server::RequestContext& requestContext;
 	unsigned long msDelay;
-	esl::com::basic::client::Interface::ConnectionFactory& connectionFactory;
+	esl::com::basic::client::ConnectionFactory& connectionFactory;
 	std::string message;
 };
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::basic::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::basic::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -108,14 +107,14 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 				msDelay = std::stoul(setting.second);
 			}
 			catch(...) {
-				throw esl::stacktrace::Stacktrace::add(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
+				throw esl::system::Stacktrace::add(std::runtime_error("Invalid value \"" + setting.second + "\" for parameter key=\"" + setting.first + "\". Value must be an integer"));
 			}
 		}
 		else if(setting.first == "connection-factory-id") {
 			connectionFactoryId = setting.second;
 		}
 		else {
-			throw esl::stacktrace::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw esl::system::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
 
@@ -125,15 +124,15 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 }
 
 void RequestHandler::initializeContext(esl::object::Context& objectContext) {
-	connectionFactory = objectContext.findObject<esl::com::basic::client::Interface::ConnectionFactory>(connectionFactoryId);
+	connectionFactory = objectContext.findObject<esl::com::basic::client::ConnectionFactory>(connectionFactoryId);
 	if(connectionFactory == nullptr) {
-		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));
+		throw esl::system::Stacktrace::add(std::runtime_error("Cannot find basic-client-factory with id \"" + connectionFactoryId + "\""));
 	}
 }
 
 esl::io::Input RequestHandler::accept(esl::com::basic::server::RequestContext& requestContext) const {
 	if(connectionFactory == nullptr) {
-		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Initialization failed"));
+		throw esl::system::Stacktrace::add(std::runtime_error("Initialization failed"));
 	}
 
 	logger.trace << "ECHO: Check notifier...\n";

@@ -20,9 +20,8 @@
 #define JERRY_BUILTIN_HTTP_SELF_REQUESTHANDLER_H_
 
 #include <esl/com/http/server/RequestContext.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/module/Interface.h>
 
 #include <memory>
 #include <string>
@@ -34,13 +33,13 @@ namespace builtin {
 namespace http {
 namespace self {
 
-class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
+class RequestHandler final : public esl::com::http::server::RequestHandler {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/self";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::http::server::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext) const override;
 };

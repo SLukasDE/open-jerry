@@ -27,7 +27,7 @@
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
 #include <esl/utility/MIME.h>
-#include <esl/stacktrace/Stacktrace.h>
+//#include <esl/stacktrace/Stacktrace.h>
 
 #include <sstream>
 

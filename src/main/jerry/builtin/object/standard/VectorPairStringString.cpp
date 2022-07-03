@@ -23,8 +23,8 @@ namespace builtin {
 namespace object {
 namespace standard {
 
-std::unique_ptr<esl::object::Interface::Object> VectorPairStringString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new VectorPairStringString(settings));
+std::unique_ptr<esl::object::Object> VectorPairStringString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::object::Object>(new VectorPairStringString(settings));
 }
 
 VectorPairStringString::VectorPairStringString(const std::vector<std::pair<std::string, std::string>>& settings)

@@ -25,9 +25,10 @@
 
 #include <esl/com/http/server/Socket.h>
 #include <esl/object/Context.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 #include <utility>
@@ -36,7 +37,7 @@ namespace jerry {
 namespace engine {
 namespace http {
 
-class Server final : public esl::processing::procedure::Interface::Procedure {
+class Server final : public esl::processing::Procedure {
 public:
 	Server(ProcessRegistry& processRegistry, bool https, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
@@ -52,7 +53,7 @@ public:
 	void dumpTree(std::size_t depth) const;
 
 private:
-	esl::com::http::server::Socket socket;
+	std::unique_ptr<esl::com::http::server::Socket> socket;
 	ProcessRegistry& processRegistry;
 	Context context;
 	RequestHandler requestHandler;

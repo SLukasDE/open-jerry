@@ -19,7 +19,7 @@
 #include <jerry/config/logging/Appender.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/logging/appender/Appender.h>
+#include <esl/plugin/Registry.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -56,13 +56,13 @@ Appender::Appender(const std::string& fileName, const tinyxml2::XMLElement& elem
 			std::string recordLevelStr = esl::utility::String::toUpper(attribute->Value());
 
 			if(recordLevelStr == "ALL") {
-				recordLevel = esl::logging::appender::Interface::Appender::RecordLevel::ALL;
+				recordLevel = esl::logging::Appender::RecordLevel::ALL;
 			}
 			else if(recordLevelStr == "SELECTED") {
-				recordLevel = esl::logging::appender::Interface::Appender::RecordLevel::SELECTED;
+				recordLevel = esl::logging::Appender::RecordLevel::SELECTED;
 			}
 			else if(recordLevelStr == "OFF") {
-				recordLevel = esl::logging::appender::Interface::Appender::RecordLevel::OFF;
+				recordLevel = esl::logging::Appender::RecordLevel::OFF;
 			}
 			else {
 				throw XMLException(*this, "Value \"" + std::string(attribute->Value()) + "\" of attribute 'record' is invalid. "
@@ -131,13 +131,13 @@ void Appender::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 
 	switch(recordLevel) {
-	case esl::logging::appender::Interface::Appender::RecordLevel::ALL:
+	case esl::logging::Appender::RecordLevel::ALL:
 		oStream << " record=\"ALL\"";
 		break;
-	case esl::logging::appender::Interface::Appender::RecordLevel::SELECTED:
+	case esl::logging::Appender::RecordLevel::SELECTED:
 		oStream << " record=\"SELECTED\"";
 		break;
-	case esl::logging::appender::Interface::Appender::RecordLevel::OFF:
+	case esl::logging::Appender::RecordLevel::OFF:
 		oStream << " record=\"OFF\"";
 		break;
 	}
@@ -156,13 +156,13 @@ void Appender::save(std::ostream& oStream, std::size_t spaces) const {
 	}
 }
 
-std::unique_ptr<esl::logging::appender::Interface::Appender> Appender::create() const {
+std::unique_ptr<esl::logging::Appender> Appender::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(auto const& setting : parameters) {
 		eslSettings.push_back(std::make_pair(setting.key, setting.value));
 	}
 
-	std::unique_ptr<esl::logging::appender::Interface::Appender> appender(new esl::logging::appender::Appender(eslSettings, implementation));
+	std::unique_ptr<esl::logging::Appender> appender(esl::plugin::Registry::get().create<esl::logging::Appender>(implementation, eslSettings));
 	appender->setRecordLevel(recordLevel);
 
 	return appender;

@@ -19,10 +19,9 @@
 #ifndef JERRY_BUILTIN_PROCEDURE_LIST_PROCEDURE_H_
 #define JERRY_BUILTIN_PROCEDURE_LIST_PROCEDURE_H_
 
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Context.h>
-#include <esl/module/Interface.h>
 
 #include <map>
 #include <memory>
@@ -36,13 +35,13 @@ namespace builtin {
 namespace procedure {
 namespace list {
 
-class Procedure final : public virtual esl::processing::procedure::Interface::Procedure, public esl::object::InitializeContext {
+class Procedure final : public virtual esl::processing::Procedure, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/list";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -53,10 +52,10 @@ public:
 
 private:
 	std::vector<std::string> procedureIds;
-	std::vector<esl::processing::procedure::Interface::Procedure*> procedures;
+	std::vector<esl::processing::Procedure*> procedures;
 
 	std::mutex runningProceduresMutex;
-	std::map<esl::processing::procedure::Interface::Procedure*, std::size_t> runningProcedures;
+	std::map<esl::processing::Procedure*, std::size_t> runningProcedures;
 	bool runningProceduresCancel = false;
 };
 

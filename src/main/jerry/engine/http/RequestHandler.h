@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_HTTP_REQUESTHANDLER_H_
 #define JERRY_ENGINE_HTTP_REQUESTHANDLER_H_
 
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/com/http/server/RequestContext.h>
 #include <esl/io/Input.h>
 
@@ -30,7 +30,7 @@ namespace http {
 
 class Context;
 
-class RequestHandler final : public esl::com::http::server::requesthandler::Interface::RequestHandler {
+class RequestHandler final : public esl::com::http::server::RequestHandler {
 public:
 	RequestHandler(Context& context);
 

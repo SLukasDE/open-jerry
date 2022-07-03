@@ -21,8 +21,7 @@
 
 #include <eslx/utility/SessionPool.h>
 
-#include <esl/processing/procedure/Interface.h>
-#include <esl/module/Interface.h>
+#include <esl/processing/Procedure.h>
 #include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Cloneable.h>
@@ -42,13 +41,13 @@ namespace procedure {
 namespace authorization {
 namespace cache {
 
-class Procedure final : public virtual esl::processing::procedure::Interface::Procedure, public esl::object::InitializeContext {
+class Procedure final : public virtual esl::processing::Procedure, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/authorization-cache";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -63,7 +62,7 @@ private:
 
 	std::string authorizedObjectId = "authorized";
 	std::string authorizingProcedureId;
-	esl::processing::procedure::Interface::Procedure* authorizingProcedure = nullptr;
+	esl::processing::Procedure* authorizingProcedure = nullptr;
 	std::chrono::milliseconds lifetimeMs = std::chrono::milliseconds(0);
 	bool lifetimeRenew = false;
 

@@ -20,13 +20,12 @@
 #define JERRY_BUILTIN_HTTP_AUTHENTICATION_REQUESTHANDLER_H_
 
 #include <esl/com/http/server/RequestContext.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/module/Interface.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Context.h>
 #include <esl/object/Value.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <map>
 #include <memory>
@@ -40,13 +39,13 @@ namespace builtin {
 namespace http {
 namespace authentication {
 
-class RequestHandler final : public virtual esl::com::http::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
+class RequestHandler final : public virtual esl::com::http::server::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/authentication";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::http::server::RequestHandler> createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -59,7 +58,7 @@ private:
 	using Settings = std::map<std::string, std::string>;
 
 	std::set<std::string> authenticationProceduresId;
-	std::vector<esl::processing::procedure::Interface::Procedure*> authenticationProcedures;
+	std::vector<esl::processing::Procedure*> authenticationProcedures;
 
 	enum {
 		reply,

@@ -27,7 +27,7 @@
 #include <esl/io/Input.h>
 #include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <map>
 #include <memory>
@@ -47,7 +47,7 @@ public:
 		return "jerry/applications";
 	}
 
-	static std::unique_ptr<esl::object::Interface::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::object::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Object(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -56,12 +56,12 @@ public:
 
 	void initializeContext(esl::object::Context& objectContext) override;
 
-	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext, const Application* application, const esl::object::Interface::Object* object) const;
+	esl::io::Input accept(esl::com::http::server::RequestContext& requestContext, const Application* application, const esl::object::Object* object) const;
 
-	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const Application* application, const esl::object::Interface::Object* object) const;
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const Application* application, const esl::object::Object* object) const;
 	std::set<std::string> getNotifiers() const;
 
-	void procedureRun(esl::object::Context& objectContext, const Application* application, const esl::object::Interface::Object* object) const;
+	void procedureRun(esl::object::Context& objectContext, const Application* application, const esl::object::Object* object) const;
 	void procedureCancel() const;
 
 private:

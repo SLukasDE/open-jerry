@@ -20,7 +20,7 @@
 #define JERRY_BUILTIN_OBJECT_STANDARD_SETSTRING_H_
 
 #include <esl/object/Value.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <vector>
 #include <set>
@@ -39,7 +39,7 @@ public:
 		return "std/set<string>";
 	}
 
-	static std::unique_ptr<esl::object::Interface::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::object::Object> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	SetString(const std::vector<std::pair<std::string, std::string>>& settings);
 };

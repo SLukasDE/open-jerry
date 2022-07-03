@@ -16,12 +16,12 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/Module.h>
+#include <jerry/Plugin.h>
 
-#include <esl/Module.h>
+#include <esl/plugin/Registry.h>
 
-extern "C" void esl__module__library__install(esl::module::Module* module) {
-	if(module != nullptr) {
-		jerry::Module::install(*module);
+extern "C" void esl__plugin__library__install(esl::plugin::Registry* registry, const char* data) {
+	if(registry != nullptr) {
+		jerry::Plugin::install(*registry, data);
 	}
 }

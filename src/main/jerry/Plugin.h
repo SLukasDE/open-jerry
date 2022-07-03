@@ -16,18 +16,19 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_MODULE_H_
-#define JERRY_MODULE_H_
+#ifndef JERRY_PLUGIN_H_
+#define JERRY_PLUGIN_H_
 
-#include <esl/module/Module.h>
+#include <esl/plugin/Registry.h>
 
 namespace jerry {
 
-struct Module final {
-	Module() = delete;
-	static void install(esl::module::Module& module);
+class Plugin final {
+public:
+	Plugin() = delete;
+	static void install(esl::plugin::Registry& registry, const char* data);
 };
 
 } /* namespace jerry */
 
-#endif /* JERRY_MODULE_H_ */
+#endif /* JERRY_PLUGIN_H_ */

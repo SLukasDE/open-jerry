@@ -60,7 +60,7 @@ void ProcedureContext::install(engine::main::Context& engineContext) const {
 			engineContext.addProcedureContext(std::move(context));
 		}
 		else {
-			engineContext.addObject(getId(), std::unique_ptr<esl::object::Interface::Object>(context.release()));
+			engineContext.addObject(getId(), std::unique_ptr<esl::object::Object>(context.release()));
 		}
 
 		/* *****************

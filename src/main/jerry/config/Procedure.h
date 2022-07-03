@@ -22,8 +22,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 
-//#include <esl/object/Interface.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -45,7 +44,7 @@ public:
 	const std::string& getRefId() const noexcept;
 
 protected:
-	std::unique_ptr<esl::processing::procedure::Interface::Procedure> create() const;
+	std::unique_ptr<esl::processing::Procedure> create() const;
 
 private:
 	std::string id;

@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_INPUTPROXY_H_
 #define JERRY_ENGINE_INPUTPROXY_H_
 
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/io/Input.h>
 #include <esl/io/Consumer.h>
 #include <esl/io/Writer.h>
@@ -31,7 +31,7 @@
 namespace jerry {
 namespace engine {
 
-class InputProxy: public esl::object::Interface::Object {
+class InputProxy: public esl::object::Object {
 public:
 	static esl::io::Input create(esl::io::Input&& input);
 

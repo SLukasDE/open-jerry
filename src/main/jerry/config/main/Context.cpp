@@ -23,10 +23,10 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-#include <esl/Module.h>
-#include <esl/logging/appender/Appender.h>
-#include <esl/logging/layout/Layout.h>
+//#include <esl/logging/Appender.h>
+//#include <esl/logging/Layout.h>
 #include <esl/logging/Logger.h>
+#include <esl/plugin/Registry.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -110,8 +110,8 @@ void Context::loadLibraries() {
 			throw esl::stacktrace::Stacktrace::add(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
 		}
 		*/
-		library.second = &esl::module::Library::load(library.first);
-		library.second->install(esl::getModule());
+		library.second = &esl::plugin::Library::load(library.first);
+		library.second->install(esl::plugin::Registry::get(), "");
 	}
 }
 

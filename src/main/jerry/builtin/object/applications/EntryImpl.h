@@ -30,9 +30,9 @@
 
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/object/Context.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <memory>
 
@@ -43,8 +43,8 @@ namespace applications {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
-	EntryImpl(esl::processing::procedure::Interface::Procedure& refProcedure);
+	EntryImpl(std::unique_ptr<esl::processing::Procedure> procedure);
+	EntryImpl(esl::processing::Procedure& refProcedure);
 
 	EntryImpl(std::unique_ptr<engine::procedure::Context> procedureContext);
 	EntryImpl(engine::procedure::Context& refProcedureContext);
@@ -57,16 +57,16 @@ public:
 
 	void initializeContext(Application& ownerContext) override;
 
-	esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) override;
-	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) override;
-	void procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) override;
+	esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Object* object) override;
+	esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Object* object) override;
+	void procedureRun(esl::object::Context& objectContext, const esl::object::Object* object) override;
 	void procedureCancel() override;
 
 	void dumpTree(std::size_t depth) const override;
 
 private:
-	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
-	esl::processing::procedure::Interface::Procedure* refProcedure = nullptr;
+	std::unique_ptr<esl::processing::Procedure> procedure;
+	esl::processing::Procedure* refProcedure = nullptr;
 
 	std::unique_ptr<engine::procedure::Context> procedureContext;
 	engine::procedure::Context* refProcedureContext = nullptr;

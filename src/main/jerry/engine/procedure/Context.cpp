@@ -32,12 +32,12 @@ namespace {
 Logger logger("jerry::engine::procedure::Context");
 } /* anonymous namespace */
 
-void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
+void Context::addProcedure(std::unique_ptr<esl::processing::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
 
 void Context::addProcedure(const std::string& refId) {
-	esl::processing::procedure::Interface::Procedure* procedure = findObject<esl::processing::procedure::Interface::Procedure>(refId);
+	esl::processing::Procedure* procedure = findObject<esl::processing::Procedure>(refId);
 
 	if(procedure == nullptr) {
 	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");

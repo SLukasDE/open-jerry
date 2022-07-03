@@ -21,9 +21,10 @@
 #include <jerry/engine/main/Context.h>
 #include <jerry/ObjectContext.h>
 #include <jerry/ExceptionHandler.h>
-#include <jerry/Module.h>
+#include <jerry/Plugin.h>
 
 #include <esl/object/Value.h>
+#include <esl/plugin/Registry.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -64,7 +65,7 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 }
 
 int main(int argc, const char *argv[]) {
-	jerry::Module::install(esl::getModule());
+	jerry::Plugin::install(esl::plugin::Registry::get(), "");
 
 	std::cout << "jerry version " << jerryVersionStr << std::endl;
 
@@ -132,6 +133,9 @@ int main(int argc, const char *argv[]) {
 		mainConfig.loadLibraries();
 
 		if(isVerbose) {
+#if 1
+			esl::plugin::Registry::get().dump();
+#else
 			/* show loaded modules and interfaces */
 			std::cout << "Interfaces:\n";
 			std::cout << "-----------\n";
@@ -143,6 +147,7 @@ int main(int argc, const char *argv[]) {
 				std::cout << "\n";
 			}
 			std::cout << "\n\n";
+#endif
 		}
 
 		if(!loggerConfigFile.empty()) {

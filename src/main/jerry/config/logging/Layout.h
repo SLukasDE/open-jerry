@@ -22,7 +22,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 
-#include <esl/logging/layout/Interface.h>
+#include <esl/logging/Layout.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -42,7 +42,7 @@ public:
 	const std::string& getId() const noexcept;
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-	std::unique_ptr<esl::logging::layout::Interface::Layout> create() const;
+	std::unique_ptr<esl::logging::Layout> create() const;
 
 private:
 	std::string id;

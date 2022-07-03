@@ -21,7 +21,7 @@
 
 #include <esl/io/Consumer.h>
 #include <esl/io/Reader.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -65,8 +65,8 @@ private:
 
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::basic::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::basic::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -104,7 +104,7 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 			}
 		}
 		else {
-			throw esl::stacktrace::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
+			throw esl::system::Stacktrace::add(std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\""));
 		}
 	}
 

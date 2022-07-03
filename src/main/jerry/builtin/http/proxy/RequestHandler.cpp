@@ -29,7 +29,7 @@
 #include <esl/io/input/Closed.h>
 #include <esl/io/output/String.h>
 #include <esl/utility/MIME.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -42,8 +42,8 @@ namespace {
 Logger logger("jerry::builtin::http::proxy::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::http::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -79,7 +79,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 }
 
 void RequestHandler::initializeContext(esl::object::Context& objectContext) {
-	connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(httpClientId);
+	connectionFactory = objectContext.findObject<esl::com::http::client::ConnectionFactory>(httpClientId);
 	if(connectionFactory == nullptr) {
 		throw std::runtime_error("Cannot find http-client with id \"" + httpClientId + "\"");
 	}

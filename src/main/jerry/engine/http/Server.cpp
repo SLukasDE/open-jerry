@@ -21,9 +21,10 @@
 #include <jerry/engine/ProcessRegistry.h>
 #include <jerry/Logger.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+//#include <esl/stacktrace/Stacktrace.h>
+#include <esl/plugin/Registry.h>
 
-#include <memory>
+//#include <memory>
 #include <stdexcept>
 
 namespace jerry {
@@ -36,7 +37,7 @@ Logger logger("jerry::engine::http::Server");
 }
 
 Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
-: socket(aSettings, aImplementation),
+: socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation, aSettings)),
   processRegistry(aProcessRegistry),
   context(nullptr),
   requestHandler(context),
@@ -54,7 +55,7 @@ void Server::initializeContext() {
 void Server::procedureRun(esl::object::Context&) {
 	try {
 		processRegistry.processRegister(*this);
-		socket.listen(requestHandler, [this] {
+		socket->listen(requestHandler, [this] {
 			processRegistry.processUnregister(*this);
 		});
 	}
@@ -65,11 +66,11 @@ void Server::procedureRun(esl::object::Context&) {
 }
 
 void Server::procedureCancel()  {
-	socket.release();
+	socket->release();
 }
 
 void Server::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
-	socket.addTLSHost(hostname, std::move(certificate), std::move(key));
+	socket->addTLSHost(hostname, std::move(certificate), std::move(key));
 }
 
 bool Server::isHttps() const noexcept {

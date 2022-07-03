@@ -24,8 +24,7 @@
 #include <jerry/engine/http/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/Module.h>
-#include <esl/object/InitializeContext.h>
+//#include <esl/object/IInitializeContext.h>
 
 #include <stdexcept>
 
@@ -54,12 +53,12 @@ const Context* Context::getParent() const {
 	return parent;
 }
 
-void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
+void Context::addProcedure(std::unique_ptr<esl::processing::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
 
 void Context::addProcedure(const std::string& refId) {
-	esl::processing::procedure::Interface::Procedure* procedure = findObject<esl::processing::procedure::Interface::Procedure>(refId);
+	esl::processing::Procedure* procedure = findObject<esl::processing::Procedure>(refId);
 
 	if(procedure == nullptr) {
 	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");
@@ -90,7 +89,7 @@ void Context::addHost(std::unique_ptr<Host> host) {
 	entries.emplace_back(new EntryImpl(std::move(host)));
 }
 
-void Context::addRequestHandler(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler) {
+void Context::addRequestHandler(std::unique_ptr<esl::com::http::server::RequestHandler> requestHandler) {
 	entries.emplace_back(new EntryImpl(std::move(requestHandler)));
 }
 

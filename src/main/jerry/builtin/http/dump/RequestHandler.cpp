@@ -22,7 +22,7 @@
 
 #include <esl/com/http/server/Request.h>
 #include <esl/io/Input.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -35,8 +35,8 @@ namespace {
 Logger logger("jerry::builtin::http::dump::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::http::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {

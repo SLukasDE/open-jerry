@@ -24,7 +24,7 @@
 #include <jerry/builtin/object/applications/xmlconfig/Entry.h>
 //#include <jerry/builtin/object/applications/Object.h>
 
-#include <esl/module/Library.h>
+#include <esl/plugin/Library.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -53,7 +53,7 @@ private:
 	tinyxml2::XMLDocument xmlDocument;
 	std::string appName;
 	const boost::filesystem::path path;
-	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
+	std::vector<std::pair<std::string, esl::plugin::Library*>> libraries;
 
 	std::vector<std::unique_ptr<Entry>> entries;
 

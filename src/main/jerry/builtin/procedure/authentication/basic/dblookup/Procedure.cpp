@@ -34,8 +34,8 @@ namespace {
 Logger logger("jerry::builtin::procedure::authentication::basic::dblookup2::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -173,7 +173,7 @@ void Procedure::procedureCancel() {
 }
 
 void Procedure::initializeContext(esl::object::Context& objectContext) {
-	connectionFactory = objectContext.findObject<esl::database::Interface::ConnectionFactory>(connectionId);
+	connectionFactory = objectContext.findObject<esl::database::ConnectionFactory>(connectionId);
 	if(connectionFactory == nullptr) {
 		throw std::runtime_error("Cannot find connection factory with id \"" + connectionId + "\"");
 	}

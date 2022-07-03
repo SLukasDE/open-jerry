@@ -19,7 +19,7 @@
 #include <jerry/config/http/RequestHandler.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/module/Interface.h>
+#include <esl/plugin/Registry.h>
 
 #include <string>
 #include <utility>
@@ -102,15 +102,15 @@ void RequestHandler::install(engine::http::Context& context) const {
 #endif
 }
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::create() const {
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
+	std::unique_ptr<esl::com::http::server::RequestHandler> requestHandler;
 	try {
-		requestHandler = esl::getModule().getInterface<esl::com::http::server::requesthandler::Interface>(implementation).createRequestHandler(eslSettings);
+		requestHandler = esl::plugin::Registry::get().create<esl::com::http::server::RequestHandler>(implementation, eslSettings);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());

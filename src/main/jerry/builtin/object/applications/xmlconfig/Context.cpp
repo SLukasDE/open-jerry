@@ -4,7 +4,7 @@
 #include <jerry/config/XMLException.h>
 #include <jerry/Logger.h>
 
-#include <esl/Module.h>
+//#include <esl/Module.h>
 
 namespace jerry {
 namespace builtin {
@@ -147,8 +147,8 @@ void Context::loadLibraries() {
 			throw esl::stacktrace::Stacktrace::add(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
 		}
 		*/
-		library.second = &esl::module::Library::load(library.first);
-		library.second->install(esl::getModule());
+		library.second = &esl::plugin::Library::load(library.first);
+		library.second->install(esl::plugin::Registry::get(), "");
 	}
 }
 

@@ -30,8 +30,8 @@ namespace {
 Logger logger("jerry::builtin::procedure::list::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -53,7 +53,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 void Procedure::initializeContext(esl::object::Context& objectContext) {
 	logger.debug << "Initialize: Lookup " << procedureIds.size() << " procedure-ids\n";
 	for(const auto& procedureId : procedureIds) {
-		esl::processing::procedure::Interface::Procedure* procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
+		esl::processing::Procedure* procedure = objectContext.findObject<esl::processing::Procedure>(procedureId);
 		if(procedure == nullptr) {
 			throw std::runtime_error("Cannot find procedure with id \"" + procedureId + "\"");
 		}

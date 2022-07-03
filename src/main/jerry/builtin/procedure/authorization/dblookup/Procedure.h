@@ -19,9 +19,8 @@
 #ifndef JERRY_BUILTIN_PROCEDURE_AUTHORIZATION_DBLOOKUP_PROCEDURE_H_
 #define JERRY_BUILTIN_PROCEDURE_AUTHORIZATION_DBLOOKUP_PROCEDURE_H_
 
-#include <esl/processing/procedure/Interface.h>
-#include <esl/module/Interface.h>
-#include <esl/database/Interface.h>
+#include <esl/processing/Procedure.h>
+#include <esl/database/ConnectionFactory.h>
 #include <esl/object/Context.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
@@ -38,7 +37,7 @@ namespace procedure {
 namespace authorization {
 namespace dblookup {
 
-class Procedure final : public virtual esl::processing::procedure::Interface::Procedure, public esl::object::InitializeContext {
+class Procedure final : public virtual esl::processing::Procedure, public esl::object::InitializeContext {
 public:
 	using Properties = esl::object::Value<std::map<std::string, std::string>>;
 
@@ -46,7 +45,7 @@ public:
 		return "jerry/authorization-dblookup";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -59,7 +58,7 @@ private:
 	std::string authorizedObjectId = "authorized";
 	std::string connectionId;
 	std::string sql;
-	esl::database::Interface::ConnectionFactory* connectionFactory = nullptr;
+	esl::database::ConnectionFactory* connectionFactory = nullptr;
 };
 
 } /* namespace dblookup */

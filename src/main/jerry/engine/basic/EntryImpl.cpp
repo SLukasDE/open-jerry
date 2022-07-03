@@ -30,11 +30,11 @@ namespace {
 Logger logger("jerry::engine::basic::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure)
+EntryImpl::EntryImpl(std::unique_ptr<esl::processing::Procedure> aProcedure)
 : procedure(std::move(aProcedure))
 { }
 
-EntryImpl::EntryImpl(esl::processing::procedure::Interface::Procedure& aRefProcedure)
+EntryImpl::EntryImpl(esl::processing::Procedure& aRefProcedure)
 : refProcedure(&aRefProcedure)
 { }
 
@@ -46,7 +46,7 @@ EntryImpl::EntryImpl(Context& aRefContext)
 : refContext(&aRefContext)
 { }
 
-EntryImpl::EntryImpl(std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> aRequestHandler)
+EntryImpl::EntryImpl(std::unique_ptr<esl::com::basic::server::RequestHandler> aRequestHandler)
 : requestHandler(std::move(aRequestHandler))
 { }
 

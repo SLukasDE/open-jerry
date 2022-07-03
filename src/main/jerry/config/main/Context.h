@@ -27,9 +27,7 @@
 #include <jerry/engine/main/Context.h>
 #include <jerry/config/logging/Logger.h>
 
-#include <esl/logging/appender/Interface.h>
-#include <esl/logging/layout/Interface.h>
-#include <esl/module/Library.h>
+#include <esl/plugin/Library.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -59,7 +57,7 @@ private:
 	tinyxml2::XMLDocument xmlDocument;
 	bool isJBoot;
 
-	std::vector<std::pair<std::string, esl::module::Library*>> libraries;
+	std::vector<std::pair<std::string, esl::plugin::Library*>> libraries;
 	std::vector<Certificate> certificates;
 
 	std::vector<std::unique_ptr<Entry>> entries;

@@ -19,8 +19,7 @@
 #ifndef JERRY_BUILTIN_PROCEDURE_AUTHORIZATION_JWT_PROCEDURE_H_
 #define JERRY_BUILTIN_PROCEDURE_AUTHORIZATION_JWT_PROCEDURE_H_
 
-#include <esl/processing/procedure/Interface.h>
-#include <esl/module/Interface.h>
+#include <esl/processing/Procedure.h>
 #include <esl/object/Context.h>
 #include <esl/object/Value.h>
 
@@ -37,13 +36,13 @@ namespace procedure {
 namespace authorization {
 namespace jwt {
 
-class Procedure final : public esl::processing::procedure::Interface::Procedure {
+class Procedure final : public esl::processing::Procedure {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/authorization-jwt";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 

@@ -24,7 +24,7 @@
 #include <esl/com/basic/server/RequestContext.h>
 #include <esl/io/Input.h>
 #include <esl/object/Context.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <string>
 
@@ -41,9 +41,9 @@ public:
 
 	virtual void initializeContext(Application& ownerContext) = 0;
 
-	virtual esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) = 0;
-	virtual esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) = 0;
-	virtual void procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) = 0;
+	virtual esl::io::Input accept(engine::http::RequestContext& requestContext, const esl::object::Object* object) = 0;
+	virtual esl::io::Input accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Object* object) = 0;
+	virtual void procedureRun(esl::object::Context& objectContext, const esl::object::Object* object) = 0;
 	virtual void procedureCancel() = 0;
 
 	virtual void dumpTree(std::size_t depth) const = 0;

@@ -25,9 +25,9 @@
 #include <jerry/engine/http/Host.h>
 #include <jerry/engine/http/RequestContext.h>
 
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <string>
 #include <memory>
@@ -39,21 +39,21 @@ namespace http {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure);
-	EntryImpl(esl::processing::procedure::Interface::Procedure& refProcedure);
+	EntryImpl(std::unique_ptr<esl::processing::Procedure> procedure);
+	EntryImpl(esl::processing::Procedure& refProcedure);
 	EntryImpl(std::unique_ptr<Context> context);
 	EntryImpl(Context& refContext);
 	EntryImpl(std::unique_ptr<Endpoint> endpoint);
 	EntryImpl(std::unique_ptr<Host> host);
-	EntryImpl(std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler);
+	EntryImpl(std::unique_ptr<esl::com::http::server::RequestHandler> requestHandler);
 
 	void initializeContext(Context& ownerContext) override;
 	void dumpTree(std::size_t depth) const override;
 	esl::io::Input accept(RequestContext& requestContext) override;
 
 private:
-	std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure;
-	esl::processing::procedure::Interface::Procedure* refProcedure = nullptr;
+	std::unique_ptr<esl::processing::Procedure> procedure;
+	esl::processing::Procedure* refProcedure = nullptr;
 
 	std::unique_ptr<Context> context;
 	Context* refContext = nullptr;
@@ -61,7 +61,7 @@ private:
 	std::unique_ptr<Endpoint> endpoint;
 	std::unique_ptr<Host> host;
 
-	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> requestHandler;
+	std::unique_ptr<esl::com::http::server::RequestHandler> requestHandler;
 };
 
 

@@ -21,7 +21,7 @@
 
 #include <jerry/engine/http/RequestContext.h>
 
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/io/Input.h>
 #include <esl/io/Consumer.h>
 #include <esl/io/Writer.h>
@@ -35,7 +35,7 @@ namespace engine {
 namespace http {
 
 
-class InputProxy : public esl::object::Interface::Object {
+class InputProxy : public esl::object::Object {
 public:
 	static esl::io::Input create(esl::io::Input&& input, std::unique_ptr<RequestContext> requestContext);
 

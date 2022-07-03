@@ -41,8 +41,8 @@ std::map<std::string, std::string> makeValue(const std::vector<std::pair<std::st
 }
 } /* anonymous namespace */
 
-std::unique_ptr<esl::object::Interface::Object> MapStringString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new MapStringString(settings));
+std::unique_ptr<esl::object::Object> MapStringString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::object::Object>(new MapStringString(settings));
 }
 
 MapStringString::MapStringString(const std::vector<std::pair<std::string, std::string>>& settings)

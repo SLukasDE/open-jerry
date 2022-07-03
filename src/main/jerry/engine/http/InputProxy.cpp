@@ -33,7 +33,7 @@ esl::io::Input InputProxy::create(esl::io::Input&& input, std::unique_ptr<Reques
 	std::unique_ptr<InputProxy> inputProxy(new InputProxy(std::move(input), std::move(requestContext)));
 	esl::io::Consumer& consumer = inputProxy->getConsumer();
 	esl::io::Writer& writer = inputProxy->getWriter();
-	return esl::io::Input(std::unique_ptr<esl::object::Interface::Object>(inputProxy.release()), consumer, writer);
+	return esl::io::Input(std::unique_ptr<esl::object::Object>(inputProxy.release()), consumer, writer);
 }
 
 InputProxy::InputProxy(esl::io::Input&& aInput, std::unique_ptr<RequestContext> aRequestContext)

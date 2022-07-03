@@ -33,8 +33,8 @@ using ReturnCodeObject = esl::object::Value<int>;
 Logger logger("jerry::builtin::procedure::returncode::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -68,7 +68,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 void Procedure::procedureRun(esl::object::Context& objectContext) {
 	ReturnCodeObject* returnCodeObject = objectContext.findObject<ReturnCodeObject>("return-code");
 	if(!returnCodeObject) {
-	    objectContext.addObject("return-code", std::unique_ptr<esl::object::Interface::Object>(new ReturnCodeObject(returnCode)));
+	    objectContext.addObject("return-code", std::unique_ptr<esl::object::Object>(new ReturnCodeObject(returnCode)));
 	}
 	else if(returnCode != 0) {
 		*returnCodeObject = returnCode;

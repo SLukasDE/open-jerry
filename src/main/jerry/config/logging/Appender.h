@@ -22,7 +22,7 @@
 #include <jerry/config/Config.h>
 #include <jerry/config/Setting.h>
 
-#include <esl/logging/appender/Interface.h>
+#include <esl/logging/Appender.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -44,11 +44,11 @@ public:
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
 
-	std::unique_ptr<esl::logging::appender::Interface::Appender> create() const;
+	std::unique_ptr<esl::logging::Appender> create() const;
 
 private:
 	std::string name;
-	esl::logging::appender::Interface::Appender::RecordLevel recordLevel = esl::logging::appender::Interface::Appender::RecordLevel::SELECTED;
+	esl::logging::Appender::RecordLevel recordLevel = esl::logging::Appender::RecordLevel::SELECTED;
 	std::string layoutId;
 	std::string implementation;
 	std::vector<Setting> parameters;

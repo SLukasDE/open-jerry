@@ -23,7 +23,7 @@
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/io/input/Closed.h>
 #include <esl/io/output/Memory.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/utility/String.h>
 #include <esl/utility/MIME.h>
 
@@ -51,8 +51,8 @@ const std::string PAGE_401(
 		"</html>\n");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::createRequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::http::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -119,7 +119,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 
 void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 	for(const auto& authenticationProcedureId : authenticationProceduresId) {
-		esl::processing::procedure::Interface::Procedure* authenticationProcedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(authenticationProcedureId);
+		esl::processing::Procedure* authenticationProcedure = objectContext.findObject<esl::processing::Procedure>(authenticationProcedureId);
 		if(authenticationProcedure == nullptr) {
 			throw std::runtime_error("Cannot find authentication-procedure with id \"" + authenticationProcedureId + "\"");
 		}
@@ -160,7 +160,7 @@ void RequestHandler::processRequest(esl::com::http::server::RequestContext& requ
 	settings["type"] = std::move(typeStr);
 
 	esl::object::Context& objectContext = requestContext.getObjectContext();
-	std::unique_ptr<esl::object::Interface::Object> properties(new Properties(settings));
+	std::unique_ptr<esl::object::Object> properties(new Properties(settings));
 	objectContext.addObject("authenticated", std::move(properties));
 
 	Properties* authProperties = objectContext.findObject<Properties>("authenticated");

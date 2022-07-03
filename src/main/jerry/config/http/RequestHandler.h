@@ -23,7 +23,7 @@
 #include <jerry/config/Setting.h>
 #include <jerry/engine/http/Context.h>
 
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -44,7 +44,7 @@ private:
 	std::string implementation;
 	std::vector<Setting> settings;
 
-	std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> create() const;
+	std::unique_ptr<esl::com::http::server::RequestHandler> create() const;
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 

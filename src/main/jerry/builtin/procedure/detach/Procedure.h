@@ -21,8 +21,8 @@
 
 #include <jerry/engine/ProcessRegistry.h>
 
-#include <esl/processing/procedure/Interface.h>
-#include <esl/object/Interface.h>
+#include <esl/processing/Procedure.h>
+#include <esl/object/Object.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Context.h>
 
@@ -38,13 +38,13 @@ namespace builtin {
 namespace procedure {
 namespace detach {
 
-class Procedure final : public virtual esl::processing::procedure::Interface::Procedure, public esl::object::InitializeContext {
+class Procedure final : public virtual esl::processing::Procedure, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/detach";
 	}
 
-	static std::unique_ptr<esl::processing::procedure::Interface::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Procedure(const std::vector<std::pair<std::string, std::string>>& settings);
 	~Procedure();
@@ -56,7 +56,7 @@ public:
 
 private:
 	std::string procedureId;
-	esl::processing::procedure::Interface::Procedure* procedure = nullptr;
+	esl::processing::Procedure* procedure = nullptr;
 	engine::ProcessRegistry* processRegistry = nullptr;
 
 	std::mutex runningProceduresMutex;

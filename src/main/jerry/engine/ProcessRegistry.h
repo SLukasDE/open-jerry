@@ -19,7 +19,7 @@
 #ifndef JERRY_ENGINE_PROCESSREGISTRY_H_
 #define JERRY_ENGINE_PROCESSREGISTRY_H_
 
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 namespace jerry {
 namespace engine {
@@ -28,8 +28,8 @@ class ProcessRegistry {
 public:
 	virtual ~ProcessRegistry() = default;
 
-	virtual void processRegister(esl::processing::procedure::Interface::Procedure& procedureRunning) = 0;
-	virtual void processUnregister(esl::processing::procedure::Interface::Procedure& procedureRunning) = 0;
+	virtual void processRegister(esl::processing::Procedure& procedureRunning) = 0;
+	virtual void processUnregister(esl::processing::Procedure& procedureRunning) = 0;
 };
 
 } /* namespace engine */

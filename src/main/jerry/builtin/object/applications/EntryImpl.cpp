@@ -34,11 +34,11 @@ namespace {
 Logger logger("jerry::builtin::object::applications::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(std::unique_ptr<esl::processing::procedure::Interface::Procedure> aProcedure)
+EntryImpl::EntryImpl(std::unique_ptr<esl::processing::Procedure> aProcedure)
 : procedure(std::move(aProcedure))
 { }
 
-EntryImpl::EntryImpl(esl::processing::procedure::Interface::Procedure& aRefProcedure)
+EntryImpl::EntryImpl(esl::processing::Procedure& aRefProcedure)
 : refProcedure(&aRefProcedure)
 { }
 
@@ -99,7 +99,7 @@ void EntryImpl::initializeContext(Application& ownerContext) {
 	}
 }
 
-esl::io::Input EntryImpl::accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) {
+esl::io::Input EntryImpl::accept(engine::http::RequestContext& requestContext, const esl::object::Object* object) {
 	if(procedure && (object == nullptr || object == procedure.get())) {
 		/* *************** *
 		 * start procedure *
@@ -145,7 +145,7 @@ esl::io::Input EntryImpl::accept(engine::http::RequestContext& requestContext, c
 	return esl::io::Input();
 }
 
-esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) {
+esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Object* object) {
 	if(procedure && (object == nullptr || object == procedure.get())) {
 		/* *************** *
 		 * start procedure *
@@ -191,7 +191,7 @@ esl::io::Input EntryImpl::accept(esl::com::basic::server::RequestContext& reques
 	return esl::io::Input();
 }
 
-void EntryImpl::procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) {
+void EntryImpl::procedureRun(esl::object::Context& objectContext, const esl::object::Object* object) {
 	if(procedure && (object == nullptr || object == procedure.get())) {
 		/* *************** *
 		 * start procedure *

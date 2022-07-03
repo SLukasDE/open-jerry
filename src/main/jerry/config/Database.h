@@ -23,7 +23,7 @@
 #include <jerry/config/Setting.h>
 #include <jerry/engine/ObjectContext.h>
 
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -47,7 +47,7 @@ private:
 	std::string implementation;
 	std::vector<Setting> settings;
 
-	std::unique_ptr<esl::object::Interface::Object> create() const;
+	std::unique_ptr<esl::object::Object> create() const;
 	void parseInnerElement(const tinyxml2::XMLElement& element);
 };
 

@@ -45,8 +45,8 @@ namespace {
 Logger logger("jerry::builtin::procedure::authentication::jwt::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -79,7 +79,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 
 void Procedure::initializeContext(esl::object::Context& objectContext) {
 	for(const auto jwksConnectionFactoryId : jwksConnectionFactoryIds) {
-		esl::com::http::client::Interface::ConnectionFactory* connectionFactory = objectContext.findObject<esl::com::http::client::Interface::ConnectionFactory>(jwksConnectionFactoryId);
+		esl::com::http::client::ConnectionFactory* connectionFactory = objectContext.findObject<esl::com::http::client::ConnectionFactory>(jwksConnectionFactoryId);
 		if(!connectionFactory) {
 			throw std::runtime_error("HTTP client with id \"" + jwksConnectionFactoryId + "\" not found");
 		}

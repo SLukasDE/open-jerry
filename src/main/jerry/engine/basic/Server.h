@@ -25,19 +25,20 @@
 
 #include <esl/com/basic/server/Socket.h>
 #include <esl/object/Context.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/processing/Procedure.h>
 
 #include <cstdint>
-#include <string>
-#include <vector>
-#include <utility>
+#include <memory>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace jerry {
 namespace engine {
 namespace basic {
 
-class Server final : public esl::processing::procedure::Interface::Procedure {
+class Server final : public esl::processing::Procedure {
 public:
 	Server(ProcessRegistry& processRegistry, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
@@ -50,7 +51,7 @@ public:
 	void dumpTree(std::size_t depth) const;
 
 private:
-	esl::com::basic::server::Socket socket;
+	std::unique_ptr<esl::com::basic::server::Socket> socket;
 	ProcessRegistry& processRegistry;
 	Context context;
 	RequestHandler requestHandler;

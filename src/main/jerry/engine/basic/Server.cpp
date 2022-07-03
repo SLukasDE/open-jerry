@@ -19,7 +19,8 @@
 #include <jerry/engine/basic/Server.h>
 #include <jerry/Logger.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+//#include <esl/stacktrace/Stacktrace.h>
+#include <esl/plugin/Registry.h>
 
 #include <stdexcept>
 
@@ -33,7 +34,7 @@ Logger logger("jerry::engine::basic::Server");
 }
 
 Server::Server(ProcessRegistry& aProcessRegistry, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
-: socket(aSettings, aImplementation),
+: socket(esl::plugin::Registry::get().create<esl::com::basic::server::Socket>(aImplementation, aSettings)),
   processRegistry(aProcessRegistry),
   context(nullptr),
   requestHandler(context),
@@ -50,7 +51,7 @@ void Server::initializeContext() {
 void Server::procedureRun(esl::object::Context&) {
 	try {
 		processRegistry.processRegister(*this);
-		socket.listen(requestHandler, [this] {
+		socket->listen(requestHandler, [this] {
 			processRegistry.processUnregister(*this);
 		});
 	}
@@ -61,7 +62,7 @@ void Server::procedureRun(esl::object::Context&) {
 }
 
 void Server::procedureCancel()  {
-	socket.release();
+	socket->release();
 }
 
 Context& Server::getContext() noexcept {

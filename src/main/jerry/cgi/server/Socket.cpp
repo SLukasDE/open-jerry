@@ -35,8 +35,8 @@ std::string getEnvVar(std::string const & key) {
 }
 
 
-std::unique_ptr<esl::com::http::server::Interface::Socket> Socket::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::http::server::Interface::Socket>(new Socket(settings));
+std::unique_ptr<esl::com::http::server::Socket> Socket::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::http::server::Socket>(new Socket(settings));
 }
 
 Socket::Socket(const std::vector<std::pair<std::string, std::string>>& settings)
@@ -45,7 +45,7 @@ Socket::Socket(const std::vector<std::pair<std::string, std::string>>& settings)
 void Socket::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
 }
 
-void Socket::listen(const esl::com::http::server::requesthandler::Interface::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
+void Socket::listen(const esl::com::http::server::RequestHandler& requestHandler, std::function<void()> onReleasedHandler) {
 }
 
 void Socket::release() {

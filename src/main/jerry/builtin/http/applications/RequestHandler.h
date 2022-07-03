@@ -23,10 +23,10 @@
 #include <jerry/builtin/object/applications/Application.h>
 
 #include <esl/com/http/server/RequestContext.h>
-#include <esl/com/http/server/requesthandler/Interface.h>
+#include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
 #include <esl/object/InitializeContext.h>
-#include <esl/object/Interface.h>
+#include <esl/object/Object.h>
 #include <esl/object/Context.h>
 
 #include <memory>
@@ -39,13 +39,13 @@ namespace builtin {
 namespace http {
 namespace applications {
 
-class RequestHandler final : public virtual esl::com::http::server::requesthandler::Interface::RequestHandler, public esl::object::InitializeContext {
+class RequestHandler final : public virtual esl::com::http::server::RequestHandler, public esl::object::InitializeContext {
 public:
 	static inline const char* getImplementation() {
 		return "jerry/applications";
 	}
 
-	static std::unique_ptr<esl::com::http::server::requesthandler::Interface::RequestHandler> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::com::http::server::RequestHandler> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -60,7 +60,7 @@ private:
 
 	object::applications::Object* applications = nullptr;
 	object::applications::Application* application = nullptr;
-	esl::object::Interface::Object* refObject = nullptr;
+	esl::object::Object* refObject = nullptr;
 };
 
 } /* namespace applications */

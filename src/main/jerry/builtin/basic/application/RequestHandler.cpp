@@ -33,8 +33,8 @@ namespace {
 Logger logger("jerry::builtin::basic::application::RequestHandler");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler> RequestHandler::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::com::basic::server::requesthandler::Interface::RequestHandler>(new RequestHandler(settings));
+std::unique_ptr<esl::com::basic::server::RequestHandler> RequestHandler::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::com::basic::server::RequestHandler>(new RequestHandler(settings));
 }
 
 RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -106,14 +106,14 @@ void RequestHandler::initializeContext(esl::object::Context& objectContext) {
 		}
 
 		if(!refId.empty()) {
-			refObject = application->findObject<esl::object::Interface::Object>(refId);
+			refObject = application->findObject<esl::object::Object>(refId);
 			if(refObject) {
 				throw std::runtime_error("Reference id '" + refId + "' not available in applications object with id '" + applicationsId + "' and application name '" + applicationName + "'");
 			}
 
 			if(dynamic_cast<engine::basic::Context*>(refObject) == nullptr
 			&& dynamic_cast<engine::procedure::Context*>(refObject) == nullptr
-			&& dynamic_cast<esl::processing::procedure::Interface::Procedure*>(refObject)) {
+			&& dynamic_cast<esl::processing::Procedure*>(refObject)) {
 				throw std::runtime_error("Reference id '" + refId + "' has been found in applications object with id '" + applicationsId + "' and application name '" + applicationName + "', but type is not compatible");
 			}
 		}

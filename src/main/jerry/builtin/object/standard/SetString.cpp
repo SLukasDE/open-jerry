@@ -43,8 +43,8 @@ std::set<std::string> makeValue(const std::vector<std::pair<std::string, std::st
 }
 } /* anonymous namespace */
 
-std::unique_ptr<esl::object::Interface::Object> SetString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::object::Interface::Object>(new SetString(settings));
+std::unique_ptr<esl::object::Object> SetString::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::object::Object>(new SetString(settings));
 }
 
 SetString::SetString(const std::vector<std::pair<std::string, std::string>>& settings)

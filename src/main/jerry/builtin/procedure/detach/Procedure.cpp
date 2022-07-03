@@ -22,7 +22,7 @@
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
 
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 
@@ -35,8 +35,8 @@ namespace {
 Logger logger("jerry::builtin::procedure::detach::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -114,14 +114,14 @@ void Procedure::procedureCancel() {
 }
 
 void Procedure::initializeContext(esl::object::Context& objectContext) {
-	procedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(procedureId);
+	procedure = objectContext.findObject<esl::processing::Procedure>(procedureId);
 	if(procedure == nullptr) {
 		throw std::runtime_error("Cannot find procedure with id \"" + procedureId + "\"");
 	}
 
 	engine::ObjectContext* engineObjectContext = dynamic_cast<engine::ObjectContext*>(&objectContext);
 	if(engineObjectContext == nullptr) {
-		throw esl::stacktrace::Stacktrace::add(std::runtime_error("Engine error"));
+		throw esl::system::Stacktrace::add(std::runtime_error("Engine error"));
 	}
 	processRegistry = engineObjectContext->getProcessRegistry();
 }

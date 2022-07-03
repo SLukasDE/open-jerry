@@ -18,8 +18,7 @@
 
 #include <jerry/Logger.h>
 
-#include <esl/logging/layout/Interface.h>
-#include <esl/logging/appender/Interface.h>
+#include <esl/logging/Config.h>
 
 #include <iostream>
 #include <map>
@@ -33,8 +32,8 @@
 namespace jerry {
 
 namespace {
-std::map<std::string, std::unique_ptr<esl::logging::layout::Interface::Layout>> layouts;
-std::vector<std::pair<std::string, std::unique_ptr<esl::logging::appender::Interface::Appender>>> appenders;
+std::map<std::string, std::unique_ptr<esl::logging::Layout>> layouts;
+std::vector<std::pair<std::string, std::unique_ptr<esl::logging::Appender>>> appenders;
 }
 
 void Logger::flush() {
@@ -51,13 +50,13 @@ void Logger::flush() {
 	}
 }
 
-void Logger::addLayout(const std::string& id, std::unique_ptr<esl::logging::layout::Interface::Layout> layout) {
+void Logger::addLayout(const std::string& id, std::unique_ptr<esl::logging::Layout> layout) {
 	if(layouts.insert(std::make_pair(id, std::move(layout))).second == false) {
 		throw std::runtime_error("Cannot add layout with id \"" + id + "\" because it exists already");
 	}
 }
 
-void Logger::addAppender(const std::string& name, const std::string& layoutRefId, std::unique_ptr<esl::logging::appender::Interface::Appender> appender) {
+void Logger::addAppender(const std::string& name, const std::string& layoutRefId, std::unique_ptr<esl::logging::Appender> appender) {
 	auto iter = layouts.find(layoutRefId);
 	if(iter == std::end(layouts)) {
 		throw std::runtime_error("Appender is referencing an undefined layout \"" + layoutRefId + "\"");
@@ -65,7 +64,7 @@ void Logger::addAppender(const std::string& name, const std::string& layoutRefId
 
 	appender->setLayout(iter->second.get());
 
-    esl::logging::addAppender(*appender);
+    esl::logging::Config::addAppender(*appender);
     appenders.push_back(std::make_pair(name, std::move(appender)));
 }
 

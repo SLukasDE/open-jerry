@@ -53,12 +53,12 @@ void Application::initializeContext() {
 	}
 }
 
-void Application::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
+void Application::addProcedure(std::unique_ptr<esl::processing::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
 
 void Application::addProcedure(const std::string& refId) {
-	esl::processing::procedure::Interface::Procedure* procedure = findObject<esl::processing::procedure::Interface::Procedure>(refId);
+	esl::processing::Procedure* procedure = findObject<esl::processing::Procedure>(refId);
 
 	if(procedure == nullptr) {
 	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");
@@ -109,7 +109,7 @@ void Application::addHttpContext(const std::string& refId) {
 	entries.emplace_back(new EntryImpl(*context));
 }
 
-esl::io::Input Application::accept(engine::http::RequestContext& requestContext, const esl::object::Interface::Object* object) const {
+esl::io::Input Application::accept(engine::http::RequestContext& requestContext, const esl::object::Object* object) const {
 	esl::io::Input input;
 
 	for(auto& entry : entries) {
@@ -122,7 +122,7 @@ esl::io::Input Application::accept(engine::http::RequestContext& requestContext,
 	return input;
 }
 
-esl::io::Input Application::accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Interface::Object* object) const {
+esl::io::Input Application::accept(esl::com::basic::server::RequestContext& requestContext, const esl::object::Object* object) const {
 	esl::io::Input input;
 
 	for(auto& entry : entries) {
@@ -135,7 +135,7 @@ esl::io::Input Application::accept(esl::com::basic::server::RequestContext& requ
 	return input;
 }
 
-void Application::procedureRun(esl::object::Context& objectContext, const esl::object::Interface::Object* object) const {
+void Application::procedureRun(esl::object::Context& objectContext, const esl::object::Object* object) const {
 	for(auto& entry : entries) {
 		entry->procedureRun(objectContext, object);
 	}

@@ -20,7 +20,8 @@
 #include <jerry/config/XMLException.h>
 #include <jerry/Logger.h>
 
-#include <esl/com/http/client/Interface.h>
+#include <esl/com/http/client/ConnectionFactory.h>
+#include <esl/plugin/Registry.h>
 
 #include <stdexcept>
 
@@ -93,16 +94,16 @@ void Client::install(engine::ObjectContext& engineObjectContext) const {
 	engineObjectContext.addObject(id, install());
 }
 
-std::unique_ptr<esl::object::Interface::Object> Client::install() const {
+std::unique_ptr<esl::object::Object> Client::install() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
 	logger.trace << "Adding http-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
-	std::unique_ptr<esl::com::http::client::Interface::ConnectionFactory> connectionFactory;
+	std::unique_ptr<esl::com::http::client::ConnectionFactory> connectionFactory;
 	try {
-		connectionFactory = esl::getModule().getInterface<esl::com::http::client::Interface>(implementation).createConnectionFactory(eslSettings);
+		connectionFactory = esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation, eslSettings);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());
@@ -115,7 +116,7 @@ std::unique_ptr<esl::object::Interface::Object> Client::install() const {
 		throw std::runtime_error("Cannot create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
 	}
 
-	return std::unique_ptr<esl::object::Interface::Object>(connectionFactory.release());
+	return std::unique_ptr<esl::object::Object>(connectionFactory.release());
 }
 
 void Client::parseInnerElement(const tinyxml2::XMLElement& element) {

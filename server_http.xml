@@ -11,11 +11,11 @@
 		</requesthandler>
 	</http-context>
 	
-	<http-client id="http-client-1" implementation="curl4esl">
+	<http-client id="http-client-1" implementation="curl4esl/com/http/client/ConnectionFactory">
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<database id="my-db" implementation="sqlite4esl">
+	<database id="my-db" implementation="sqlite4esl/database/ConnectionFactory">
 		<parameter key="URI" value="file:my.db?mode=rw"/>
 	</database>
 	

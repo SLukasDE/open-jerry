@@ -19,7 +19,7 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/XMLException.h>
 
-#include <esl/module/Interface.h>
+#include <esl/plugin/Registry.h>
 
 #include <utility>
 
@@ -90,15 +90,15 @@ void Object::install(esl::object::Context& engineObjectContext) const {
 	engineObjectContext.addObject(id, create());
 }
 
-std::unique_ptr<esl::object::Interface::Object> Object::create() const {
+std::unique_ptr<esl::object::Object> Object::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	std::unique_ptr<esl::object::Interface::Object> eslObject;
+	std::unique_ptr<esl::object::Object> eslObject;
 	try {
-		eslObject = esl::getModule().getInterface<esl::object::Interface>(implementation).createObject(eslSettings);
+		eslObject = esl::plugin::Registry::get().create<esl::object::Object>(implementation, eslSettings);
 	}
 	catch(const std::exception& e) {
 		throw XMLException(*this, e.what());

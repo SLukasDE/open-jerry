@@ -23,9 +23,9 @@
 #include <jerry/engine/http/Host.h>
 #include <jerry/Logger.h>
 
-#include <esl/com/basic/client/Interface.h>
-#include <esl/com/http/client/Interface.h>
-#include <esl/processing/procedure/Interface.h>
+#include <esl/com/basic/client/ConnectionFactory.h>
+#include <esl/com/http/client/ConnectionFactory.h>
+#include <esl/processing/Procedure.h>
 #include <esl/object/InitializeContext.h>
 
 #include <stdexcept>
@@ -59,7 +59,7 @@ std::set<std::string> ObjectContext::getObjectIds() const {
 	return rv;
 }
 
-void ObjectContext::addReference(const std::string& id, esl::object::Interface::Object& object) {
+void ObjectContext::addReference(const std::string& id, esl::object::Object& object) {
 	logger.trace << "Adding object reference with id=\"" << id << "\"\n";
 
 	if(id.empty()) {
@@ -91,7 +91,7 @@ void ObjectContext::initializeContext() {
 
 void ObjectContext::dumpTree(std::size_t depth) const {
 	for(const auto& entry : objectRefsById) {
-		const esl::object::Interface::Object* objectPtr = &entry.second.get();
+		const esl::object::Object* objectPtr = &entry.second.get();
 		bool isReference = objects.count(entry.first) == 0;
 		std::string isReferenceStr = isReference ? " (reference)" : "";
 
@@ -100,9 +100,9 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 		const http::Endpoint* httpEndpointPtr = dynamic_cast<const http::Endpoint*>(objectPtr);
 		const http::Host* httpHostPtr = dynamic_cast<const http::Host*>(objectPtr);
 
-		const esl::processing::procedure::Interface::Procedure* procedurePtr = dynamic_cast<const esl::processing::procedure::Interface::Procedure*>(objectPtr);
-		const esl::com::basic::client::Interface::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::Interface::ConnectionFactory*>(objectPtr);
-		const esl::com::http::client::Interface::ConnectionFactory* httpConnectionFactory = dynamic_cast<const esl::com::http::client::Interface::ConnectionFactory*>(objectPtr);
+		const esl::processing::Procedure* procedurePtr = dynamic_cast<const esl::processing::Procedure*>(objectPtr);
+		const esl::com::basic::client::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::ConnectionFactory*>(objectPtr);
+		const esl::com::http::client::ConnectionFactory* httpConnectionFactory = dynamic_cast<const esl::com::http::client::ConnectionFactory*>(objectPtr);
 
 		const ObjectContext* objectContext = dynamic_cast<const ObjectContext*>(objectPtr);
 
@@ -152,7 +152,7 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 	}
 }
 
-const std::map<std::string, std::reference_wrapper<esl::object::Interface::Object>>& ObjectContext::getObjects() const {
+const std::map<std::string, std::reference_wrapper<esl::object::Object>>& ObjectContext::getObjects() const {
 	return objectRefsById;
 }
 
@@ -168,7 +168,7 @@ const ProcessRegistry* ObjectContext::getProcessRegistry() const {
 	return processRegistry;
 }
 
-esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) {
+esl::object::Object* ObjectContext::findRawObject(const std::string& id) {
 	// check if ID exist in objectsById
 	auto iter = objectRefsById.find(id);
 	if(iter != std::end(objectRefsById)) {
@@ -176,10 +176,10 @@ esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& 
 	}
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
-	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
+	return parent ? parent->findObject<esl::object::Object>(id) : nullptr;
 }
 
-const esl::object::Interface::Object* ObjectContext::findRawObject(const std::string& id) const {
+const esl::object::Object* ObjectContext::findRawObject(const std::string& id) const {
 	// check if ID exist in objectsById
 	auto iter = objectRefsById.find(id);
 	if(iter != std::end(objectRefsById)) {
@@ -187,10 +187,10 @@ const esl::object::Interface::Object* ObjectContext::findRawObject(const std::st
 	}
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
-	return parent ? parent->findObject<esl::object::Interface::Object>(id) : nullptr;
+	return parent ? parent->findObject<esl::object::Object>(id) : nullptr;
 }
 
-void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) {
 	logger.trace << "Adding object with id=\"" << id << "\"\n";
 
 	if(id.empty()) {

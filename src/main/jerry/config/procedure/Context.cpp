@@ -60,7 +60,7 @@ void Context::install(engine::procedure::Context& engineContext) const {
 			engineContext.addContext(std::move(context));
 		}
 		else {
-			engineContext.addObject(getId(), std::unique_ptr<esl::object::Interface::Object>(context.release()));
+			engineContext.addObject(getId(), std::unique_ptr<esl::object::Object>(context.release()));
 		}
 
 		/* *****************

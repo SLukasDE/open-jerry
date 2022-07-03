@@ -21,13 +21,11 @@
 #include <jerry/config/main/Context.h>
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Logger.h>
-#include <jerry/Module.h>
 
-#include <esl/Module.h>
-#include <esl/stacktrace/Stacktrace.h>
+#include <esl/plugin/Registry.h>
+#include <esl/esl.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
-#include <esl/system/signal/Interface.h>
 #include <esl/utility/String.h>
 #include <esl/utility/Signal.h>
 
@@ -75,12 +73,13 @@ private:
 using ReturnCodeObject = esl::object::Value<int>;
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Context::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Context(settings));
+std::unique_ptr<esl::processing::Procedure> Context::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Context(settings));
 }
 
 Context::Context(const std::vector<std::pair<std::string, std::string>>& settings)
-: ObjectContext(static_cast<ProcessRegistry*>(this))
+: ObjectContext(static_cast<ProcessRegistry*>(this)),
+  signal(esl::plugin::Registry::get().create<esl::system::Signal>("", {}))
 {
 	//bool hasVerbose = false;
 	bool hasCatchException = false;
@@ -190,12 +189,12 @@ const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Context
 	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
-void Context::addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure> procedure) {
+void Context::addProcedure(std::unique_ptr<esl::processing::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
 
 void Context::addProcedure(const std::string& refId) {
-	esl::processing::procedure::Interface::Procedure* procedure = findObject<esl::processing::procedure::Interface::Procedure>(refId);
+	esl::processing::Procedure* procedure = findObject<esl::processing::Procedure>(refId);
 
 	if(procedure == nullptr) {
 	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");
@@ -271,13 +270,13 @@ void Context::procedureRun(esl::object::Context& objectContext) {
 		signalThread.detach();
 	}
 
-	std::vector<esl::system::signal::Interface::Signal::Handler> signalHandles;
+	std::vector<esl::system::Signal::Handler> signalHandles;
 	try {
 		ProcessLockGuard processLockGuard(*this);
 
 		for(auto signalType : stopSignals) {
 			//signalHandles.push_back(esl::system::signal::Signal::install(*this, signalType));
-			signalHandles.push_back(signal.createHandler(signalType, [this, signalType]() {
+			signalHandles.push_back(signal->createHandler(signalType, [this, signalType]() {
 				if(stopSignals.count(signalType)) {
 					// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
 					/* wake up signal thread to call "procedureCancel()" */
@@ -326,7 +325,7 @@ void Context::procedureRun(esl::object::Context& objectContext) {
 				*returnCodeObject = exceptionReturnCode;
 			}
 			else {
-			    objectContext.addObject("return-code", std::unique_ptr<esl::object::Interface::Object>(new ReturnCodeObject(exceptionReturnCode)));
+			    objectContext.addObject("return-code", std::unique_ptr<esl::object::Object>(new ReturnCodeObject(exceptionReturnCode)));
 			}
 		}
 
@@ -371,7 +370,7 @@ void Context::procedureCancel() {
 		--terminateCounter;
 	}
 
-	std::set<esl::processing::procedure::Interface::Procedure*> proceduresRunningCopy;
+	std::set<esl::processing::Procedure*> proceduresRunningCopy;
 	{
 		std::lock_guard<std::mutex> proceduresRunningLock(proceduresRunningMutex);
 		proceduresRunningCopy = proceduresRunning;
@@ -425,12 +424,12 @@ void Context::setProcessRegistry(ProcessRegistry* processRegistry) {
 	}
 }
 
-void Context::processRegister(esl::processing::procedure::Interface::Procedure& procedureRunning) {
+void Context::processRegister(esl::processing::Procedure& procedureRunning) {
 	std::lock_guard<std::mutex> proceduresRunningLock(proceduresRunningMutex);
 	proceduresRunning.insert(&procedureRunning);
 }
 
-void Context::processUnregister(esl::processing::procedure::Interface::Procedure& procedureRunning) {
+void Context::processUnregister(esl::processing::Procedure& procedureRunning) {
 	{
 		std::lock_guard<std::mutex> proceduresRunningLock(proceduresRunningMutex);
 		if(proceduresRunning.size() == 0) {
@@ -452,12 +451,12 @@ void Context::processUnregister(esl::processing::procedure::Interface::Procedure
 	}
 }
 
-void Context::addRawObject(const std::string& id, std::unique_ptr<esl::object::Interface::Object> object) {
+void Context::addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) {
 	if(id.empty()) {
 		//esl::processing::procedure::Interface::Procedure* procedure = dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get());
 		//if(procedure) {
-		if(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.get())) {
-			addProcedure(std::unique_ptr<esl::processing::procedure::Interface::Procedure>(dynamic_cast<esl::processing::procedure::Interface::Procedure*>(object.release())));
+		if(dynamic_cast<esl::processing::Procedure*>(object.get())) {
+			addProcedure(std::unique_ptr<esl::processing::Procedure>(dynamic_cast<esl::processing::Procedure*>(object.release())));
 			return;
 		}
 /*

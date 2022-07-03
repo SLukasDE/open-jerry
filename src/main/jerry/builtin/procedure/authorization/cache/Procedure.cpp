@@ -33,8 +33,8 @@ namespace {
 Logger logger("jerry::builtin::procedure::authorization::cache::Procedure");
 } /* anonymous namespace */
 
-std::unique_ptr<esl::processing::procedure::Interface::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
-	return std::unique_ptr<esl::processing::procedure::Interface::Procedure>(new Procedure(settings));
+std::unique_ptr<esl::processing::Procedure> Procedure::create(const std::vector<std::pair<std::string, std::string>>& settings) {
+	return std::unique_ptr<esl::processing::Procedure>(new Procedure(settings));
 }
 
 Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& settings) {
@@ -105,7 +105,7 @@ Procedure::Procedure(const std::vector<std::pair<std::string, std::string>>& set
 
 void Procedure::procedureRun(esl::object::Context& objectContext) {
 	/* we are done just for the case a previous procedure created already an authorization object */
-	if(objectContext.findObject<esl::object::Interface::Object>(authorizedObjectId)) {
+	if(objectContext.findObject<esl::object::Object>(authorizedObjectId)) {
 		return;
 	}
 
@@ -126,7 +126,7 @@ void Procedure::procedureRun(esl::object::Context& objectContext) {
 	auto object = sessionPool->get(user, objectContext);
 
 	/* we are done if a new authorized object has been created because it would have been created in our object context and a copy was created to store in our session pool */
-	if(objectContext.findObject<esl::object::Interface::Object>(authorizedObjectId)) {
+	if(objectContext.findObject<esl::object::Object>(authorizedObjectId)) {
 		return;
 	}
 
@@ -150,7 +150,7 @@ void Procedure::procedureCancel() {
 }
 
 void Procedure::initializeContext(esl::object::Context& objectContext) {
-	authorizingProcedure = objectContext.findObject<esl::processing::procedure::Interface::Procedure>(authorizingProcedureId);
+	authorizingProcedure = objectContext.findObject<esl::processing::Procedure>(authorizingProcedureId);
 	if(authorizingProcedure == nullptr) {
 		throw std::runtime_error("Cannot find procedure with id \"" + authorizingProcedureId + "\"");
 	}
@@ -165,7 +165,7 @@ std::unique_ptr<esl::object::Cloneable> Procedure::createAuthorizationObject(con
 	authorizingProcedure->procedureRun(const_cast<esl::object::Context&>(objectContext));
 
 	/* lookup for object with id 'authorizedObjectId' */
-	const esl::object::Interface::Object* authorizationObjectPtr = objectContext.findObject<esl::object::Interface::Object>(authorizedObjectId);
+	const esl::object::Object* authorizationObjectPtr = objectContext.findObject<esl::object::Object>(authorizedObjectId);
 
 	/* check if authorization object was created */
 	if(authorizationObjectPtr == nullptr) {
