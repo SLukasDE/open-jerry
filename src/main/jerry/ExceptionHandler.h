@@ -19,17 +19,17 @@
 #ifndef JERRY_EXCEPTIONHANDLER_H_
 #define JERRY_EXCEPTIONHANDLER_H_
 
-#include <jerry/ExceptionMessage.h>
+//#include <jerry/ExceptionMessage.h>
 
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/database/exception/SqlError.h>
 #include <esl/logging/StreamReal.h>
 #include <esl/logging/StreamEmpty.h>
 #include <esl/logging/Location.h>
+#include <esl/plugin/exception/PluginNotFound.h>
 
-#include <string>
 #include <exception>
-#include <stdexcept>
+#include <string>
 
 namespace jerry {
 
@@ -44,21 +44,25 @@ public:
 
 protected:
 	void initialize() const;
+	virtual void doInitialize(std::exception_ptr exceptionPointer) const;
 
 	virtual void initializeMessage() const;
 	virtual void initializeMessage(const esl::com::http::server::exception::StatusCode& e) const;
 	virtual void initializeMessage(const esl::database::exception::SqlError& e) const;
-	virtual void initializeMessage(const std::runtime_error& e) const;
-	virtual void initializeMessage(const std::exception& e) const;
+	virtual void initializeMessage(const esl::plugin::exception::PluginNotFound& e) const;
+	//virtual void initializeMessage(const std::runtime_error& e) const;
+	void initializeMessage(const std::exception& e, const std::string& plainException) const;
 
-	const std::string& getStacktrace() const;
-	const std::string& getDetails() const;
+	const std::string& getStacktrace() const noexcept;
+	const std::string& getPlainWhat() const noexcept;
+	const std::string& getDetails() const noexcept;
 
 private:
 	std::exception_ptr exceptionPointer;
 	mutable bool isInitialized = false;
 
 	mutable std::string stacktrace;
+	mutable std::string fileMessage;
 
 	mutable std::string plainException;
 	mutable std::string plainWhat;

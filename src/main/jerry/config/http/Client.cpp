@@ -17,10 +17,11 @@
  */
 
 #include <jerry/config/http/Client.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/http/client/ConnectionFactory.h>
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 #include <stdexcept>
@@ -37,7 +38,7 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -45,22 +46,22 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
 			if(id == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'id' is invalid.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'implementation' is invalid.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(id == "") {
-		throw XMLException(*this, "Missing attribute 'id'");
+		throw FilePosition::add(*this, "Missing attribute 'id'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -103,17 +104,23 @@ std::unique_ptr<esl::object::Object> Client::install() const {
 	logger.trace << "Adding http-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	std::unique_ptr<esl::com::http::client::ConnectionFactory> connectionFactory;
 	try {
-		connectionFactory = esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation, eslSettings);
+		connectionFactory = esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation.empty() ? "eslx/com/http/client/ConnectionFactory" : implementation, eslSettings);
+	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
 	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!connectionFactory) {
-		throw std::runtime_error("Cannot create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
+		throw std::runtime_error("Cannot create a http connection-factory with id '" + id + "' for implementation '" + implementation + "' because plugin method create(<setting>) returned nullptr.");
 	}
 
 	return std::unique_ptr<esl::object::Object>(connectionFactory.release());
@@ -121,7 +128,7 @@ std::unique_ptr<esl::object::Object> Client::install() const {
 
 void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -130,7 +137,7 @@ void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 

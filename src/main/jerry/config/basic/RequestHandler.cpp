@@ -17,8 +17,9 @@
  */
 
 #include <jerry/config/basic/RequestHandler.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 #include <stdexcept>
@@ -32,7 +33,7 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -42,16 +43,16 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 			}
 			implementation = attribute->Value();
 			if(implementation.empty()) {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(implementation.empty()) {
-		throw XMLException(*this, "Attribute 'implementation' is missing");
+		throw FilePosition::add(*this, "Attribute 'implementation' is missing");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -89,18 +90,24 @@ void RequestHandler::install(engine::basic::Context& context) const {
 	try {
 		context.addRequestHandler(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 #endif
 }
 
 void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -109,7 +116,7 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 
@@ -123,15 +130,21 @@ std::unique_ptr<esl::com::basic::server::RequestHandler> RequestHandler::create(
 	try {
 		requestHandler = esl::plugin::Registry::get().create<esl::com::basic::server::RequestHandler>(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!requestHandler) {
-		throw XMLException(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because interface method createRequestHandler() returns nullptr.");
+		throw FilePosition::add(*this, "Could not create basic-request-handler for implementation '" + implementation + "' because interface method createRequestHandler() returns nullptr.");
 	}
 
 	return requestHandler;

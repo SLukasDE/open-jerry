@@ -19,7 +19,7 @@
 #include <jerry/config/main/HttpContext.h>
 #include <jerry/engine/http/Context.h>
 #include <jerry/config/http/EntryImpl.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 #include <esl/utility/String.h>
 
@@ -31,7 +31,7 @@ HttpContext::HttpContext(const std::string& fileName, const tinyxml2::XMLElement
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	bool hasInherit = false;
@@ -39,17 +39,17 @@ HttpContext::HttpContext(const std::string& fileName, const tinyxml2::XMLElement
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			if(!id.empty()) {
-				throw XMLException(*this, "Multiple definition of attribute 'id'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'id'");
 			}
 			id = attribute->Value();
 			if(id.empty()) {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'id'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
-				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'inherit'");
 			}
 			hasInherit = true;
 			if(inheritStr == "true") {
@@ -59,16 +59,16 @@ HttpContext::HttpContext(const std::string& fileName, const tinyxml2::XMLElement
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(id.empty()) {
-		throw XMLException(*this, "Attribute 'id' is missing");
+		throw FilePosition::add(*this, "Attribute 'id' is missing");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {

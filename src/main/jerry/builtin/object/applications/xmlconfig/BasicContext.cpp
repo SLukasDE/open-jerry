@@ -20,7 +20,6 @@
 #include <jerry/config/basic/RequestHandler.h>
 #include <jerry/config/basic/EntryImpl.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/XMLException.h>
 #include <jerry/engine/basic/Context.h>
 
 #include <esl/utility/String.h>

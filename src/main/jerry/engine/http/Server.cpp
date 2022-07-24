@@ -21,10 +21,9 @@
 #include <jerry/engine/ProcessRegistry.h>
 #include <jerry/Logger.h>
 
-//#include <esl/stacktrace/Stacktrace.h>
+#include <esl/system/Stacktrace.h>
 #include <esl/plugin/Registry.h>
 
-//#include <memory>
 #include <stdexcept>
 
 namespace jerry {
@@ -37,7 +36,7 @@ Logger logger("jerry::engine::http::Server");
 }
 
 Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
-: socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation, aSettings)),
+: socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation.empty() ? "eslx/com/http/server/Socket" : aImplementation, aSettings)),
   processRegistry(aProcessRegistry),
   context(nullptr),
   requestHandler(context),
@@ -45,6 +44,9 @@ Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector
   implementation(aImplementation),
   settings(aSettings)
 {
+	if(socket.get() == nullptr) {
+		throw esl::system::Stacktrace::add(std::runtime_error("Could not create an http socket with implementation \"" + implementation + "\""));
+	}
 	context.setProcessRegistry(&processRegistry);
 }
 

@@ -1,6 +1,4 @@
 <jerry>
-	<include file="logger.xml"/>
-	
 	<procedure id="x" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="1000"/>
 	</procedure>

@@ -21,7 +21,7 @@
 #include <jerry/config/http/RequestHandler.h>
 #include <jerry/config/http/EntryImpl.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/engine/http/Endpoint.h>
 
 #include <esl/utility/String.h>
@@ -34,7 +34,7 @@ Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& elem
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	bool hasInherit = false;
@@ -43,13 +43,13 @@ Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& elem
 		if(std::string(attribute->Name()) == "path") {
 			path = attribute->Value();
 			if(path == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'path'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'path'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
-				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'inherit'");
 			}
 			hasInherit = true;
 			if(inheritStr == "true") {
@@ -59,16 +59,16 @@ Endpoint::Endpoint(const std::string& fileName, const tinyxml2::XMLElement& elem
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(path == "") {
-		throw XMLException(*this, "Missing attribute 'path'");
+		throw FilePosition::add(*this, "Missing attribute 'path'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -130,7 +130,7 @@ void Endpoint::install(engine::http::Context& engineHttpContext) const {
 
 void Endpoint::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());

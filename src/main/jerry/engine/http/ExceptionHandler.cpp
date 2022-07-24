@@ -27,7 +27,6 @@
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
 #include <esl/utility/MIME.h>
-//#include <esl/stacktrace/Stacktrace.h>
 
 #include <sstream>
 
@@ -109,12 +108,45 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 	    content = getTextContent(showException, showStacktrace);
 	}
 	else {
-		content = httpMessage;
+		content = getPlainWhat();
 	}
 
 	esl::com::http::server::Response response(httpStatusCode, httpContentType);
 	addHeaders(response, headersContext);
 	connection.send(response, std::unique_ptr<esl::io::Producer>(new esl::io::output::String(std::move(content))));
+}
+
+void ExceptionHandler::doInitialize(std::exception_ptr exceptionPointer) const {
+	try {
+		std::rethrow_exception(exceptionPointer);
+    }
+	catch(const esl::com::http::server::exception::StatusCode& e) {
+		initializeMessage(e);
+	}
+	catch(const esl::database::exception::SqlError& e) {
+		initializeMessage(e);
+	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		initializeMessage(e);
+	}
+    catch(const std::runtime_error& e) {
+    	initializeMessage(e, "std::runtime_error", "Runtime error");
+    }
+    catch(std::out_of_range& e) {
+    	initializeMessage(e, "std::out_of_range", "Out of range error");
+    }
+    catch(std::invalid_argument& e) {
+    	initializeMessage(e, "std::invalid_argument", "Invalid argument");
+    }
+    catch(std::logic_error& e) {
+    	initializeMessage(e, "std::logic_error", "Logic error");
+    }
+    catch(const std::exception& e) {
+    	initializeMessage(e, "std::exception", "Exception");
+    }
+    catch (...) {
+    	initializeMessage();
+    }
 }
 
 void ExceptionHandler::initializeMessage() const {
@@ -123,7 +155,7 @@ void ExceptionHandler::initializeMessage() const {
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "Unknown Exception Error";
-	httpMessage = "unknown exception";
+	//httpMessage = "unknown exception";
 }
 
 void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
@@ -132,12 +164,14 @@ void ExceptionHandler::initializeMessage(const esl::com::http::server::exception
 	httpStatusCode = e.getStatusCode();
 	httpContentType = e.getMimeType();
 	httpTitle = std::to_string(e.getStatusCode()) + " " + jerry::http::StatusCode::getMessage(e.getStatusCode());
+	/*
 	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
 		httpMessage = e.what();
 	}
 	else {
 		httpMessage = jerry::http::StatusCode::getMessage(e.getStatusCode());
 	}
+	*/
 }
 
 void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
@@ -146,9 +180,18 @@ void ExceptionHandler::initializeMessage(const esl::database::exception::SqlErro
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
 	httpTitle = "SQL Error";
-	httpMessage = e.what();
+	//httpMessage = e.what();
 }
 
+void ExceptionHandler::initializeMessage(const esl::plugin::exception::PluginNotFound& e) const {
+	jerry::ExceptionHandler::initializeMessage(e);
+
+	httpStatusCode = 500;
+	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
+	httpTitle = "Plugin not found error";
+	//httpMessage = e.what();
+}
+/*
 void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
 	jerry::ExceptionHandler::initializeMessage(e);
 
@@ -157,14 +200,14 @@ void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
 	httpTitle = "Runtime error";
 	httpMessage = e.what();
 }
-
-void ExceptionHandler::initializeMessage(const std::exception& e) const {
-	jerry::ExceptionHandler::initializeMessage(e);
+*/
+void ExceptionHandler::initializeMessage(const std::exception& e, const std::string& plainException, const std::string& aHttpTitle) const {
+	jerry::ExceptionHandler::initializeMessage(e, plainException);
 
 	httpStatusCode = 500;
 	httpContentType = esl::utility::MIME(esl::utility::MIME::Type::textHtml);
-	httpTitle = "Exception";
-	httpMessage = e.what();
+	httpTitle = aHttpTitle;
+	//httpMessage = e.what();
 }
 
 std::string ExceptionHandler::getHTMLContent(bool showException, bool showStacktrace) const {
@@ -180,7 +223,8 @@ std::string ExceptionHandler::getHTMLContent(bool showException, bool showStackt
 	/* print excpetion message, if enabled */
 	if(showException) {
 		outputContent += "<center><h1>\n";
-		outputContent += html::toHTML(httpMessage) + "\n";
+		outputContent += html::toHTML(getPlainWhat()) + "\n";
+		//outputContent += html::toHTML(httpMessage) + "\n";
 		outputContent += "</h1></center>\n";
 
 		if(!getDetails().empty()) {
@@ -216,7 +260,7 @@ std::string ExceptionHandler::getTextContent(bool showException, bool showStackt
 	/* print excpetion message, if enabled */
 	if(showException) {
 		content += "\n\n";
-		content += "Exception: " + httpMessage;
+		content += "Exception: " + getPlainWhat();
 
 		if(!getDetails().empty()) {
 			content += "\n\nDetails:\n";

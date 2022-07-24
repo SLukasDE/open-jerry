@@ -1,7 +1,7 @@
 #include <jerry/builtin/object/applications/xmlconfig/Context.h>
 #include <jerry/builtin/object/applications/xmlconfig/EntryImpl.h>
 #include <jerry/config/Config.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/Logger.h>
 
 //#include <esl/Module.h>
@@ -28,12 +28,12 @@ Context::Context(const boost::filesystem::path& aPath)
 {
 	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(getFileName().c_str());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
-		throw jerry::config::XMLException(*this, xmlError);
+		throw jerry::config::FilePosition::add(*this, xmlError);
 	}
 
 	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
 	if(element == nullptr) {
-		throw jerry::config::XMLException(*this, "No root element");
+		throw jerry::config::FilePosition::add(*this, "No root element");
 	}
 
 	setXMLFile(getFileName(), *element);
@@ -60,17 +60,17 @@ void Context::install(Application& application) {
 
 void Context::loadXML(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw jerry::config::XMLException(*this, "Name of XML root element is empty");
+		throw jerry::config::FilePosition::add(*this, "Name of XML root element is empty");
 	}
 	if(std::string(element.Name()) != "jerry-app") {
-		throw jerry::config::XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-app\"");
+		throw jerry::config::FilePosition::add(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry-app\"");
 	}
 	if(element.GetUserData() != nullptr) {
-		throw jerry::config::XMLException(*this, "Node has user data but it should be empty");
+		throw jerry::config::FilePosition::add(*this, "Node has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		throw jerry::config::XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+		throw jerry::config::FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -88,7 +88,7 @@ void Context::loadXML(const tinyxml2::XMLElement& element) {
 
 void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw jerry::config::XMLException(*this, "Element name is empty");
+		throw jerry::config::FilePosition::add(*this, "Element name is empty");
 	}
 
 	const std::string elementName(element.Name());
@@ -104,23 +104,23 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 	std::string fileName;
 
 	if(element.GetUserData() != nullptr) {
-		throw jerry::config::XMLException(*this, "Element has user data but it should be empty");
+		throw jerry::config::FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "file") {
 			fileName = attribute->Value();
 			if(fileName == "") {
-				throw jerry::config::XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+				throw jerry::config::FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
 		}
 		else {
-			throw jerry::config::XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw jerry::config::FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(fileName == "") {
-		throw jerry::config::XMLException(*this, "Missing attribute 'file'");
+		throw jerry::config::FilePosition::add(*this, "Missing attribute 'file'");
 	}
 
 	boost::filesystem::path libraryFileInside = path / fileName;
@@ -133,7 +133,7 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 		libraries.push_back(std::make_pair(libraryFileOutside.generic_string(), nullptr));
 	}
 	else {
-		throw jerry::config::XMLException(*this, "Cannot find library-file '" + fileName + "'");
+		throw jerry::config::FilePosition::add(*this, "Cannot find library-file '" + fileName + "'");
 	}
 }
 

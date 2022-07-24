@@ -17,14 +17,15 @@
  */
 
 #include <jerry/config/main/Context.h>
-#include <jerry/config/logging/Logger.h>
 #include <jerry/engine/main/Context.h>
 #include <jerry/ObjectContext.h>
 #include <jerry/ExceptionHandler.h>
 #include <jerry/Plugin.h>
 
+#include <esl/logging/Logging.h>
 #include <esl/object/Value.h>
 #include <esl/plugin/Registry.h>
+#include <esl/system/Stacktrace.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -65,7 +66,8 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 }
 
 int main(int argc, const char *argv[]) {
-	jerry::Plugin::install(esl::plugin::Registry::get(), "");
+	jerry::Plugin::install(esl::plugin::Registry::get(), nullptr);
+	esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
 
 	std::cout << "jerry version " << jerryVersionStr << std::endl;
 
@@ -115,6 +117,7 @@ int main(int argc, const char *argv[]) {
 	}
 
 	int returnCode = 0;
+
 	try {
 		std::vector<std::pair<std::string, std::string>> settings;
 		settings.push_back(std::make_pair("stop-signal", "interrupt"));
@@ -133,33 +136,11 @@ int main(int argc, const char *argv[]) {
 		mainConfig.loadLibraries();
 
 		if(isVerbose) {
-#if 1
-			esl::plugin::Registry::get().dump();
-#else
-			/* show loaded modules and interfaces */
-			std::cout << "Interfaces:\n";
-			std::cout << "-----------\n";
-			for(const auto& interface : esl::getModule().getMetaInterfaces()) {
-				std::cout << "  module:         \"" << interface.module << "\"\n";
-				std::cout << "  type:           \"" << interface.type << "\"\n";
-				std::cout << "  implementation: \"" << interface.implementation << "\"\n";
-				std::cout << "  apiVersion:     \"" << interface.apiVersion << "\"\n";
-				std::cout << "\n";
-			}
-			std::cout << "\n\n";
-#endif
+			esl::plugin::Registry::get().dump(std::cout);
 		}
 
 		if(!loggerConfigFile.empty()) {
-			boost::filesystem::path loggerConfigPath(loggerConfigFile);
-			jerry::config::logging::Logger loggerConfig(loggerConfigPath);
-
-			if(isVerbose) {
-				/* show logger configuration */
-				loggerConfig.save(std::cout);
-				std::cout << "\n\n";
-			}
-			loggerConfig.install();
+			esl::logging::Logging::initWithFile(loggerConfigFile);
 		}
 
 		mainConfig.install(mainContext);

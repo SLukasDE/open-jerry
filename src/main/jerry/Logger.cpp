@@ -1,3 +1,4 @@
+#if 0
 /*
  * This file is part of Jerry application server.
  * Copyright (C) 2020-2022 Sven Lukas
@@ -70,4 +71,4 @@ void Logger::addAppender(const std::string& name, const std::string& layoutRefId
 
 } /* namespace jerry */
 
-
+#endif

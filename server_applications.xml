@@ -1,15 +1,13 @@
 <jerry>
-	<include file="logger.xml"/>
-	
 	<certificate domain="*" key="server.key" cert="server.pub"/>
 	
 	<applications id="apps" path="apps"/>
 	
-	<http-client id="http-client-1" implementation="curl4esl">
+	<http-client id="http-client-1">
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<http-server implementation="mhd4esl" https="false">
+	<http-server https="false">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 		<context>

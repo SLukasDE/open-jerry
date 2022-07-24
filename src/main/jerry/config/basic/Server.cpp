@@ -18,10 +18,11 @@
 
 #include <jerry/config/basic/Server.h>
 #include <jerry/config/basic/EntryImpl.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/engine/basic/Server.h>
 #include <jerry/Logger.h>
 
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/utility/String.h>
 
 #include <stdexcept>
@@ -38,7 +39,7 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	bool hasInherit = false;
@@ -47,12 +48,12 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			if(hasInherit) {
-				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'inherit'");
 			}
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			hasInherit = true;
@@ -63,11 +64,11 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
@@ -137,17 +138,23 @@ void Server::install(engine::main::Context& engineMainContext) const {
 		}
 		//listener->install(engineMainContext, serverRef);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create basic-socket for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create basic-socket for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 }
 
 void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());

@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/Config.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/Logger.h>
 
 #include <cstdlib>
@@ -57,7 +57,7 @@ std::string Config::evaluate(const std::string& expression, const std::string& l
 			if(expression.at(i) == '}') {
 				char* val = getenv(var.c_str());
 				if(val == nullptr) {
-					throw XMLException(*this, "No value available for variable \"" + var + "\" in expression: \"" + expression + "\"");
+					throw FilePosition::add(*this, "No value available for variable \"" + var + "\" in expression: \"" + expression + "\"");
 				}
 				value += val;
 				state = end;
@@ -72,7 +72,7 @@ std::string Config::evaluate(const std::string& expression, const std::string& l
 				state = begin;
 			}
 			else {
-				throw XMLException(*this, "Syntax error in expression: \"" + expression + "\"");
+				throw FilePosition::add(*this, "Syntax error in expression: \"" + expression + "\"");
 			}
 		}
 		else {

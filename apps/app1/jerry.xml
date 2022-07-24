@@ -7,7 +7,7 @@
 		</requesthandler>
 	</http-context>
 	
-	<http-client id="http-client-1" implementation="curl4esl">
+	<http-client id="http-client-1">
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	

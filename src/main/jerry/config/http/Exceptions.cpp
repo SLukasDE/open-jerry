@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/http/Exceptions.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 //#include <esl/stacktrace/Stacktrace.h>
 
@@ -35,7 +35,7 @@ Exceptions::Exceptions(const std::string& fileName, const tinyxml2::XMLElement& 
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -44,25 +44,25 @@ Exceptions::Exceptions(const std::string& fileName, const tinyxml2::XMLElement& 
 
 		if(attributeName == "inheritDocuments") {
 			if(stringToBool(inheritDocuments, attributeValue) == false) {
-				throw XMLException(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
+				throw FilePosition::add(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
 			}
 		}
 		else if(attributeName == "showExceptions") {
 			bool b;
 			if(stringToBool(b, attributeValue) == false) {
-				throw XMLException(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
+				throw FilePosition::add(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
 			}
 			showExceptions = b ? OptionalBool::obTrue : OptionalBool::obFalse;
 		}
 		else if(attributeName == "showStacktrace") {
 			bool b;
 			if(stringToBool(b, attributeValue) == false) {
-				throw XMLException(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
+				throw FilePosition::add(*this, "Unknown value \"" + attributeValue + "\" for attribute '" + attributeName + "'");
 			}
 			showStacktrace = b ? OptionalBool::obTrue : OptionalBool::obFalse;
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + attributeName + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + attributeName + "'");
 		}
 	}
 
@@ -81,7 +81,7 @@ Exceptions::Exceptions(const std::string& fileName, const tinyxml2::XMLElement& 
 
 void Exceptions::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -90,7 +90,7 @@ void Exceptions::parseInnerElement(const tinyxml2::XMLElement& element) {
 		documents.push_back(ExceptionDocument(getFileName(), element));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 

@@ -1,3 +1,4 @@
+#if 0
 /*
  * This file is part of Jerry application server.
  * Copyright (C) 2020-2022 Sven Lukas
@@ -36,3 +37,4 @@ struct ExceptionMessage final {
 } /* namespace jerry */
 
 #endif /* JERRY_EXCEPTIONMESSAGE_H_ */
+#endif

@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/http/ExceptionDocument.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 #include <esl/utility/URL.h>
 #include <esl/utility/Protocol.h>
@@ -36,7 +36,7 @@ ExceptionDocument::ExceptionDocument(const std::string& fileName, const tinyxml2
 	bool hasPath = false;
 
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -52,25 +52,25 @@ ExceptionDocument::ExceptionDocument(const std::string& fileName, const tinyxml2
 		}
 		else if(attributeName == "parser") {
 			if(stringToBool(parser, attribute->Value()) == false) {
-				throw XMLException(*this, "Unknown value \"" + std::string(attribute->Value()) + "\" for attribute '" + attributeName + "'");
+				throw FilePosition::add(*this, "Unknown value \"" + std::string(attribute->Value()) + "\" for attribute '" + attributeName + "'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + attributeName + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + attributeName + "'");
 		}
 	}
 
 	if(hasStatusCode == false) {
-		throw XMLException(*this, "Missing attribute 'statusCode'");
+		throw FilePosition::add(*this, "Missing attribute 'statusCode'");
 	}
 	if(hasPath == false) {
-		throw XMLException(*this, "Missing attribute 'path'");
+		throw FilePosition::add(*this, "Missing attribute 'path'");
 	}
 
 	if(parser) {
 		esl::utility::URL url(path);
 		if(url.getScheme() && url.getScheme() != esl::utility::Protocol::Type::file) {
-			throw XMLException(*this, "Attribute parse=\"true\" is only allowed with file protocol specified for attribute 'path'.");
+			throw FilePosition::add(*this, "Attribute parse=\"true\" is only allowed with file protocol specified for attribute 'path'.");
 		}
 	}
 }

@@ -20,16 +20,22 @@
 #include <jerry/http/StatusCode.h>
 #include <jerry/Logger.h>
 
+#include <esl/io/FilePosition.h>
 #include <esl/system/Stacktrace.h>
+#include <esl/plugin/Registry.h>
 
+#include <stdexcept>
 #include <memory>
-#include <ostream>
 #include <sstream>
 
 namespace jerry {
 
 namespace {
 Logger logger("jerry::engine::ExceptionHandler");
+
+std::string createFileMessage(const esl::io::FilePosition* filePosition) {
+	return filePosition ? "file \"" + filePosition->getFileName() + "\", line " + std::to_string(filePosition->getLineNo()) : "";
+}
 
 std::string createStackstrace(const esl::system::Stacktrace* stacktrace) {
 	std::stringstream sstream;
@@ -49,8 +55,19 @@ void ExceptionHandler::dump(std::ostream& stream) const {
 
 	stream << "Exception : " << plainException << "\n";
 	stream << "What      : " << plainWhat << "\n";
-	if(plainDetails.empty() == false) {
-		stream << "Details   : " << plainDetails << "\n";
+
+	if(!plainDetails.empty()) {
+		stream << "Details   : " << plainDetails;
+		if(plainDetails.at(plainDetails.size()-1) != '\n') {
+			stream << "\n";
+		}
+	}
+
+	if(!fileMessage.empty()) {
+		stream << "File      : " << fileMessage;
+		if(fileMessage.at(fileMessage.size()-1) != '\n') {
+			stream << "\n";
+		}
 	}
 
 	if(stacktrace.empty()) {
@@ -66,8 +83,19 @@ void ExceptionHandler::dump(esl::logging::StreamReal& stream, esl::logging::Loca
 
 	stream(location.object, location.function, location.file, location.line) << "Exception : " << plainException << "\n";
 	stream(location.object, location.function, location.file, location.line) << "What      : " << plainWhat << "\n";
-	if(plainDetails.empty() == false) {
-		stream(location.object, location.function, location.file, location.line) << "Details   : " << plainDetails << "\n";
+
+	if(!plainDetails.empty()) {
+		stream(location.object, location.function, location.file, location.line) << "Details   : " << plainDetails;
+		if(plainDetails.at(plainDetails.size()-1) != '\n') {
+			stream(location.object, location.function, location.file, location.line) << "\n";
+		}
+	}
+
+	if(!fileMessage.empty()) {
+		stream(location.object, location.function, location.file, location.line) << "File     : " << fileMessage;
+		if(fileMessage.at(fileMessage.size()-1) != '\n') {
+			stream(location.object, location.function, location.file, location.line) << "\n";
+		}
 	}
 
 	if(stacktrace.empty()) {
@@ -83,7 +111,10 @@ void ExceptionHandler::initialize() const {
 		return;
 	}
 	isInitialized = true;
+	doInitialize(exceptionPointer);
+}
 
+void ExceptionHandler::doInitialize(std::exception_ptr exceptionPointer) const {
 	try {
 		std::rethrow_exception(exceptionPointer);
     }
@@ -93,11 +124,23 @@ void ExceptionHandler::initialize() const {
 	catch(const esl::database::exception::SqlError& e) {
 		initializeMessage(e);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		initializeMessage(e);
+	}
     catch(const std::runtime_error& e) {
-    	initializeMessage(e);
+    	initializeMessage(e, "std::runtime_error");
+    }
+    catch(std::out_of_range& e) {
+    	initializeMessage(e, "std::out_of_range");
+    }
+    catch(std::invalid_argument& e) {
+    	initializeMessage(e, "std::invalid_argument");
+    }
+    catch(std::logic_error& e) {
+    	initializeMessage(e, "std::logic_error");
     }
     catch(const std::exception& e) {
-    	initializeMessage(e);
+    	initializeMessage(e, "std::exception");
     }
     catch (...) {
     	initializeMessage();
@@ -110,6 +153,7 @@ void ExceptionHandler::initializeMessage() const {
 
 void ExceptionHandler::initializeMessage(const esl::com::http::server::exception::StatusCode& e) const {
 	stacktrace = createStackstrace(esl::system::Stacktrace::get(e));
+	fileMessage = createFileMessage(esl::io::FilePosition::get(e));
 
 	plainException = "esl::com::http::server::exception::StatusCode " + std::to_string(e.getStatusCode());
 	if(e.what() && std::string(e.what()) != esl::com::http::server::exception::StatusCode::getMessage(e.getStatusCode())) {
@@ -122,6 +166,7 @@ void ExceptionHandler::initializeMessage(const esl::com::http::server::exception
 
 void ExceptionHandler::initializeMessage(const esl::database::exception::SqlError& e) const {
 	stacktrace = createStackstrace(esl::system::Stacktrace::get(e));
+	fileMessage = createFileMessage(esl::io::FilePosition::get(e));
 
 	plainException = "esl::database::exception::SqlError";
 	plainWhat = e.what();
@@ -133,25 +178,50 @@ void ExceptionHandler::initializeMessage(const esl::database::exception::SqlErro
 	plainDetails += s.str();
 }
 
+void ExceptionHandler::initializeMessage(const esl::plugin::exception::PluginNotFound& e) const {
+	stacktrace = createStackstrace(esl::system::Stacktrace::get(e));
+	fileMessage = createFileMessage(esl::io::FilePosition::get(e));
+
+	plainException = "esl::plugin::exception::PluginNotFound";
+	plainWhat = e.what();
+
+	const esl::plugin::Registry::BasePlugins& basePlugins = esl::plugin::Registry::get().getPlugins(e.getTypeIndex());
+	if(basePlugins.empty()) {
+		plainDetails = "No implementations available.\n";
+	}
+	else {
+		plainDetails = "Implementations available:\n";
+		for(const auto& basePlugin : basePlugins) {
+			plainDetails += "- " + basePlugin.first + "\n";
+		}
+	}
+}
+/*
 void ExceptionHandler::initializeMessage(const std::runtime_error& e) const {
 	stacktrace = createStackstrace(esl::system::Stacktrace::get(e));
 
 	plainException = "std::runtime_error";
 	plainWhat = e.what();
 }
-
-void ExceptionHandler::initializeMessage(const std::exception& e) const {
+*/
+void ExceptionHandler::initializeMessage(const std::exception& e, const std::string& aPlainException) const {
 	stacktrace = createStackstrace(esl::system::Stacktrace::get(e));
+	fileMessage = createFileMessage(esl::io::FilePosition::get(e));
 
-	plainException = "std::exception";
+	plainException = aPlainException;
+	//plainException = "std::exception";
 	plainWhat = e.what();
 }
 
-const std::string& ExceptionHandler::getStacktrace() const {
+const std::string& ExceptionHandler::getStacktrace() const noexcept {
 	return stacktrace;
 }
 
-const std::string& ExceptionHandler::getDetails() const {
+const std::string& ExceptionHandler::getPlainWhat() const noexcept {
+	return plainWhat;
+}
+
+const std::string& ExceptionHandler::getDetails() const noexcept {
 	return plainDetails;
 }
 

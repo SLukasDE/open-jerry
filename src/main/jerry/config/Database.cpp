@@ -17,9 +17,10 @@
  */
 
 #include <jerry/config/Database.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 #include <esl/database/ConnectionFactory.h>
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 #include <utility>
@@ -31,32 +32,32 @@ Database::Database(const std::string& fileName, const tinyxml2::XMLElement& elem
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
 			if(id == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'id' is invalid");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'id' is invalid");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'implementation' is invalid");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(id == "") {
-		throw XMLException(*this, "Missing attribute 'id'");
+		throw FilePosition::add(*this, "Missing attribute 'id'");
 	}
 	if(implementation == "") {
-		throw XMLException(*this, "Missing attribute 'implementation'");
+		throw FilePosition::add(*this, "Missing attribute 'implementation'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -96,15 +97,21 @@ std::unique_ptr<esl::object::Object> Database::create() const {
 	try {
 		connectionFactory = esl::plugin::Registry::get().create<esl::database::ConnectionFactory>(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create a database connection factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create a database connection factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!connectionFactory) {
-		throw XMLException(*this, "Could not create a database connection factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
+		throw FilePosition::add(*this, "Could not create a database connection factory with id '" + id + "' for implementation '" + implementation + "' because interface method createConnectionFactory() returns nullptr.");
 	}
 
 	return std::unique_ptr<esl::object::Object>(connectionFactory.release());
@@ -112,7 +119,7 @@ std::unique_ptr<esl::object::Object> Database::create() const {
 
 void Database::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -121,7 +128,7 @@ void Database::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 

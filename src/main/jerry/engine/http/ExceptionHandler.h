@@ -29,6 +29,7 @@
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/com/http/server/Response.h>
 #include <esl/database/exception/SqlError.h>
+#include <esl/plugin/exception/PluginNotFound.h>
 
 #include <exception>
 #include <stdexcept>
@@ -45,18 +46,20 @@ public:
 	void dumpHttp(esl::com::http::server::Connection& connection, const Context* errorHandlingContext, const Context* headersContext) const;
 
 protected:
+	void doInitialize(std::exception_ptr exceptionPointer) const override;
+
 	void initializeMessage() const override;
 	void initializeMessage(const esl::com::http::server::exception::StatusCode& e) const override;
 	void initializeMessage(const esl::database::exception::SqlError& e) const override;
-	void initializeMessage(const std::runtime_error& e) const override;
-	void initializeMessage(const std::exception& e) const override;
+	void initializeMessage(const esl::plugin::exception::PluginNotFound& e) const override;
+	//void initializeMessage(const std::runtime_error& e) const override;
+	void initializeMessage(const std::exception& e, const std::string& plainException, const std::string& httpTitle) const;
 
 private:
-
 	mutable unsigned short httpStatusCode = 500;
 	mutable esl::utility::MIME httpContentType = esl::utility::MIME::Type::textHtml;
 	mutable std::string httpTitle;
-	mutable std::string httpMessage;
+	//mutable std::string httpMessage;
 
 	//std::function<const http::Document*(unsigned short statusCode)> findDocument;
 	std::string getHTMLContent(bool showException, bool showStacktrace) const;

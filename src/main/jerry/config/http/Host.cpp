@@ -22,7 +22,7 @@
 #include <jerry/config/http/RequestHandler.h>
 #include <jerry/config/http/Entry.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/engine/http/Host.h>
 
 #include <esl/utility/String.h>
@@ -35,14 +35,14 @@ Host::Host(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "server-name") {
 			serverName = attribute->Value();
 			if(serverName == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'server-name'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'server-name'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
@@ -54,16 +54,16 @@ Host::Host(const std::string& fileName, const tinyxml2::XMLElement& element)
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(serverName == "") {
-		throw XMLException(*this, "Missing attribute 'server-name'");
+		throw FilePosition::add(*this, "Missing attribute 'server-name'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -125,7 +125,7 @@ void Host::install(engine::http::Context& engineHttpContext) const {
 
 void Host::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());

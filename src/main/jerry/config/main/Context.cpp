@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/main/Context.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/config/main/EntryImpl.h>
 #include <jerry/engine/main/Context.h>
 #include <jerry/utility/MIME.h>
@@ -39,38 +39,36 @@ namespace {
 Logger logger("jerry::config::main::Context");
 } /* anonymous namespace */
 
-Context::Context(const std::string& configuration, bool aIsJBoot)
-: Config("{mem}"),
-  isJBoot(aIsJBoot)
+Context::Context(const std::string& configuration)
+: Config("{mem}")
 {
 	tinyxml2::XMLError xmlError = xmlDocument.Parse(configuration.c_str(), configuration.size());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
-		throw XMLException(*this, xmlError);
+		throw FilePosition::add(*this, xmlError);
 	}
 
 	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
 	if(element == nullptr) {
-		throw XMLException(*this, "No root element");
+		throw FilePosition::add(*this, "No root element");
 	}
 
 	setXMLFile(getFileName(), *element);
 	loadXML(*element);
 }
 
-Context::Context(const boost::filesystem::path& filename, bool aIsJBoot)
-: Config(filename.generic_string()),
-  isJBoot(aIsJBoot)
+Context::Context(const boost::filesystem::path& filename)
+: Config(filename.generic_string())
 {
 	filesLoaded.insert(filename.generic_string());
 
 	tinyxml2::XMLError xmlError = xmlDocument.LoadFile(filename.generic_string().c_str());
 	if(xmlError != tinyxml2::XML_SUCCESS) {
-		throw XMLException(*this, xmlError);
+		throw FilePosition::add(*this, xmlError);
 	}
 
 	const tinyxml2::XMLElement* element = xmlDocument.RootElement();
 	if(element == nullptr) {
-		throw XMLException(*this, "No root element");
+		throw FilePosition::add(*this, "No root element");
 	}
 
 	setXMLFile(filename.generic_string(), *element);
@@ -116,9 +114,11 @@ void Context::loadLibraries() {
 }
 
 void Context::install(engine::main::Context& context) {
+/*
 	for(const auto& eslLogger : eslLoggers) {
 		eslLogger.install();
 	}
+*/
 
 	for(const auto& configCertificate : certificates) {
 		context.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
@@ -131,34 +131,27 @@ void Context::install(engine::main::Context& context) {
 
 void Context::loadXML(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Name of XML root element is empty");
+		throw FilePosition::add(*this, "Name of XML root element is empty");
 	}
 
 	const std::string elementName(element.Name());
 
-	if(isJBoot) {
-		if(elementName != "jboot") {
-			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jboot\"");
-		}
+	if(elementName == "jerry-batch") {
+		std::cerr << "Tag <jerry-batch> is deprecated. Use tag <jerry> instead.";
 	}
-	else {
-		if(elementName == "jerry-batch") {
-			std::cerr << "Tag <jerry-batch> is deprecated. Use tag <jerry> instead.";
-		}
-		else if(elementName == "jerry-server") {
-			std::cerr << "Tag <jerry-server> is deprecated. Use tag <jerry> instead.";
-		}
-		else if(elementName != "jerry") {
-			throw XMLException(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
-		}
+	else if(elementName == "jerry-server") {
+		std::cerr << "Tag <jerry-server> is deprecated. Use tag <jerry> instead.";
+	}
+	else if(elementName != "jerry") {
+		throw FilePosition::add(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\"");
 	}
 
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Node has user data but it should be empty");
+		throw FilePosition::add(*this, "Node has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
-		throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+		throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -176,7 +169,7 @@ void Context::loadXML(const tinyxml2::XMLElement& element) {
 
 void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	const std::string elementName(element.Name());
@@ -184,27 +177,27 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(elementName == "include") {
 		parseInclude(element);
 	}
-	else if(elementName == "mime-types" && isJBoot == false) {
+	else if(elementName == "mime-types") {
 		std::string file;
 
 		if(element.GetUserData() != nullptr) {
-			throw XMLException(*this, "Element has user data but it should be empty");
+			throw FilePosition::add(*this, "Element has user data but it should be empty");
 		}
 
 		for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 			if(std::string(attribute->Name()) == "file") {
 				file = attribute->Value();
 				if(file == "") {
-					throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+					throw FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 				}
 			}
 			else {
-				throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+				throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 			}
 		}
 
 		if(file == "") {
-			throw XMLException(*this, "Missing attribute 'file'");
+			throw FilePosition::add(*this, "Missing attribute 'file'");
 		}
 
 		utility::MIME::loadDefinition(file);
@@ -212,17 +205,11 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 	else if(elementName == "library") {
 		parseLibrary(element);
 	}
-	else if(elementName == "certificate" && isJBoot == false) {
+	else if(elementName == "certificate") {
 		certificates.push_back(Certificate(getFileName(), element));
 	}
-	else if(elementName == "logger" && isJBoot == false) {
-		std::cerr << "Tag <logger> is deprecated. Use tag <esl-logger> instead or use a separate esl-logger configuration file outside of the jerry configuration file. Skipping tag <logger> !\n";
-	}
-	else if(elementName == "esl-logger") {
-		eslLoggers.push_back(logging::Logger(getFileName(), element));
-	}
 	else {
-		entries.emplace_back(new EntryImpl(getFileName(), element, isJBoot));
+		entries.emplace_back(new EntryImpl(getFileName(), element));
 	}
 }
 
@@ -230,23 +217,23 @@ void Context::parseInclude(const tinyxml2::XMLElement& element) {
 	std::string fileName;
 
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "file") {
 			fileName = attribute->Value();
 			if(fileName == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(fileName == "") {
-		throw XMLException(*this, "Missing attribute 'file'");
+		throw FilePosition::add(*this, "Missing attribute 'file'");
 	}
 
 	if(filesLoaded.count(fileName) == 0) {
@@ -256,12 +243,12 @@ void Context::parseInclude(const tinyxml2::XMLElement& element) {
 		tinyxml2::XMLDocument doc;
 		tinyxml2::XMLError xmlError = doc.LoadFile(fileName.c_str());
 		if(xmlError != tinyxml2::XML_SUCCESS) {
-			throw XMLException(*this, xmlError);
+			throw FilePosition::add(*this, xmlError);
 		}
 
 		const tinyxml2::XMLElement* element = doc.RootElement();
 		if(element == nullptr) {
-			throw XMLException(*this, "No root element");
+			throw FilePosition::add(*this, "No root element");
 		}
 
 		setXMLFile(fileName, *element);
@@ -274,23 +261,23 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 	std::string fileName;
 
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "file") {
 			fileName = attribute->Value();
 			if(fileName == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'file' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(fileName == "") {
-		throw XMLException(*this, "Missing attribute 'file'");
+		throw FilePosition::add(*this, "Missing attribute 'file'");
 	}
 
 	libraries.push_back(std::make_pair(fileName, nullptr));

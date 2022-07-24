@@ -19,7 +19,7 @@
 #include <jerry/config/ProcedureContext.h>
 #include <jerry/config/procedure/EntryImpl.h>
 #include <jerry/config/Object.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 //#include <esl/stacktrace/Stacktrace.h>
 #include <esl/utility/String.h>
@@ -33,7 +33,7 @@ ProcedureContext::ProcedureContext(const std::string& fileName, const tinyxml2::
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	bool hasInherit = false;
@@ -41,34 +41,34 @@ ProcedureContext::ProcedureContext(const std::string& fileName, const tinyxml2::
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			if(id != "") {
-				throw XMLException(*this, "Multiple definition of attribute 'id'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'id'");
 			}
 			id = attribute->Value();
 			if(id == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'id'");
 			}
 			if(refId != "") {
-				throw XMLException(*this, "Attribute 'id' is not allowed together with attribute 'ref-id'.");
+				throw FilePosition::add(*this, "Attribute 'id' is not allowed together with attribute 'ref-id'.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
 			if(refId != "") {
-				throw XMLException(*this, "Multiple definition of attribute 'ref-id'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'ref-id'");
 			}
 			refId = attribute->Value();
 			if(refId == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'ref-id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'ref-id'");
 			}
 			if(id != "") {
-				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'id'.");
+				throw FilePosition::add(*this, "Attribute 'ref-id' is not allowed together with attribute 'id'.");
 			}
 			if(hasInherit) {
-				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'inherit'.");
+				throw FilePosition::add(*this, "Attribute 'ref-id' is not allowed together with attribute 'inherit'.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			if(hasInherit) {
-				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'inherit'");
 			}
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			hasInherit = true;
@@ -79,14 +79,14 @@ ProcedureContext::ProcedureContext(const std::string& fileName, const tinyxml2::
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 			if(refId != "") {
-				throw XMLException(*this, "Attribute 'inherit' is not allowed together with attribute 'ref-id'.");
+				throw FilePosition::add(*this, "Attribute 'inherit' is not allowed together with attribute 'ref-id'.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 

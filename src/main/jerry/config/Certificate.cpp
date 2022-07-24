@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/Certificate.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 namespace jerry {
 namespace config {
@@ -26,7 +26,7 @@ Certificate::Certificate(const std::string& fileName, const tinyxml2::XMLElement
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -36,25 +36,25 @@ Certificate::Certificate(const std::string& fileName, const tinyxml2::XMLElement
 		else if(std::string(attribute->Name()) == "key") {
 			keyFile = attribute->Value();
 			if(keyFile == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'key' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'key' is invalid.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "cert") {
 			certFile = attribute->Value();
 			if(certFile == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'cert' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'cert' is invalid.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(keyFile == "") {
-		throw XMLException(*this, "Missing attribute 'key'");
+		throw FilePosition::add(*this, "Missing attribute 'key'");
 	}
 	if(certFile == "") {
-		throw XMLException(*this, "Missing attribute 'cert'");
+		throw FilePosition::add(*this, "Missing attribute 'cert'");
 	}
 }
 

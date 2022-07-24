@@ -16,13 +16,14 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <jerry/config/FilePosition.h>
 #include <jerry/config/http/Server.h>
 #include <jerry/config/http/Exceptions.h>
 #include <jerry/config/http/EntryImpl.h>
-#include <jerry/config/XMLException.h>
 #include <jerry/engine/http/Server.h>
 #include <jerry/Logger.h>
 
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/utility/String.h>
 
 namespace jerry {
@@ -37,7 +38,7 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	bool hasInherit = false;
@@ -47,7 +48,7 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 		if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid.");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'implementation' is invalid.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "https") {
@@ -59,13 +60,13 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 				isHttps = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
-				throw XMLException(*this, "Multiple definition of attribute 'inherit'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'inherit'");
 			}
 			hasInherit = true;
 			if(inheritStr == "true") {
@@ -75,11 +76,12 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 				inherit = false;
 			}
 			else {
-				throw XMLException(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
+				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'inherit'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			//throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
@@ -172,18 +174,24 @@ void Server::install(engine::main::Context& engineMainContext) const {
 
 		exceptions.install(serverRef.getContext());
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create http-socket for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create http-socket for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 }
 
 void Server::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());

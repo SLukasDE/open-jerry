@@ -25,7 +25,7 @@
 #include <jerry/config/OptionalBool.h>
 #include <jerry/config/main/Entry.h>
 #include <jerry/engine/main/Context.h>
-#include <jerry/config/logging/Logger.h>
+//#include <jerry/config/logging/Logger.h>
 
 #include <esl/plugin/Library.h>
 
@@ -45,8 +45,8 @@ namespace main {
 
 class Context : public Config {
 public:
-	explicit Context(const std::string& configuration, bool isJBoot = false);
-	explicit Context(const boost::filesystem::path& filename, bool isJBoot = false);
+	explicit Context(const std::string& configuration);
+	explicit Context(const boost::filesystem::path& filename);
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();
@@ -55,7 +55,6 @@ public:
 
 private:
 	tinyxml2::XMLDocument xmlDocument;
-	bool isJBoot;
 
 	std::vector<std::pair<std::string, esl::plugin::Library*>> libraries;
 	std::vector<Certificate> certificates;
@@ -63,7 +62,7 @@ private:
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	std::set<std::string> filesLoaded;
-	std::vector<logging::Logger> eslLoggers;
+	//std::vector<logging::Logger> eslLoggers;
 
 	void loadXML(const tinyxml2::XMLElement& element);
 

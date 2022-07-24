@@ -17,18 +17,18 @@
  */
 
 #include <jerry/config/main/EntryImpl.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/engine/main/Context.h>
 
 namespace jerry {
 namespace config {
 namespace main {
 
-EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element, bool isJBoot)
+EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Entry(fileName, element)
 {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -46,32 +46,32 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "procedure") {
 		procedure = std::unique_ptr<Procedure>(new Procedure(getFileName(), element));
 	}
-	else if(elementName == "procedure-context" && isJBoot == false) {
+	else if(elementName == "procedure-context") {
 		procedureContext = std::unique_ptr<ProcedureContext>(new ProcedureContext(getFileName(), element));
 	}
 
 	else if(elementName == "basic-client") {
 		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
 	}
-	else if(elementName == "basic-context" && isJBoot == false) {
+	else if(elementName == "basic-context") {
 		basicContext = std::unique_ptr<BasicContext>(new BasicContext(getFileName(), element));
 	}
-	else if(elementName == "basic-server" && isJBoot == false) {
+	else if(elementName == "basic-server") {
 		basicServer = std::unique_ptr<basic::Server>(new basic::Server(getFileName(), element));
 	}
 
 	else if(elementName == "http-client") {
 		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
-	else if(elementName == "http-context" && isJBoot == false) {
+	else if(elementName == "http-context") {
 		httpContext = std::unique_ptr<HttpContext>(new HttpContext(getFileName(), element));
 	}
-	else if(elementName == "http-server" && isJBoot == false) {
+	else if(elementName == "http-server") {
 		httpServer = std::unique_ptr<http::Server>(new http::Server(getFileName(), element));
 	}
 
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\".");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\".");
 	}
 }
 

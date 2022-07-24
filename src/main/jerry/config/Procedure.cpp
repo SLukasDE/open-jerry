@@ -17,8 +17,9 @@
  */
 
 #include <jerry/config/Procedure.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 namespace jerry {
@@ -28,53 +29,53 @@ Procedure::Procedure(const std::string& fileName, const tinyxml2::XMLElement& el
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			if(id != "") {
-				throw XMLException(*this, "Multiple definition of attribute 'id'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'id'");
 			}
 			id = attribute->Value();
 			if(id == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'id'");
 			}
 			if(refId != "") {
-				throw XMLException(*this, "Attribute 'id' is not allowed together with attribute 'ref-id'.");
+				throw FilePosition::add(*this, "Attribute 'id' is not allowed together with attribute 'ref-id'.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Value \"\" of attribute 'implementation' is invalid");
+				throw FilePosition::add(*this, "Value \"\" of attribute 'implementation' is invalid");
 			}
 			if(refId != "") {
-				throw XMLException(*this, "Attribute 'implementation' is not allowed together with attribute 'ref-id'.");
+				throw FilePosition::add(*this, "Attribute 'implementation' is not allowed together with attribute 'ref-id'.");
 			}
 		}
 		else if(std::string(attribute->Name()) == "ref-id") {
 			if(refId != "") {
-				throw XMLException(*this, "Multiple definition of attribute 'ref-id'");
+				throw FilePosition::add(*this, "Multiple definition of attribute 'ref-id'");
 			}
 			refId = attribute->Value();
 			if(refId == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'ref-id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'ref-id'");
 			}
 			if(id != "") {
-				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'id'.");
+				throw FilePosition::add(*this, "Attribute 'ref-id' is not allowed together with attribute 'id'.");
 			}
 			if(implementation != "") {
-				throw XMLException(*this, "Attribute 'ref-id' is not allowed together with attribute 'implementation'.");
+				throw FilePosition::add(*this, "Attribute 'ref-id' is not allowed together with attribute 'implementation'.");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(refId == "" && implementation == "") {
-		throw XMLException(*this, "Attribute 'implementation' is missing.");
+		throw FilePosition::add(*this, "Attribute 'implementation' is missing.");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -131,15 +132,21 @@ std::unique_ptr<esl::processing::Procedure> Procedure::create() const {
 	try {
 		procedure = esl::plugin::Registry::get().create<esl::processing::Procedure>(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!procedure) {
-		throw XMLException(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
+		throw FilePosition::add(*this, "Could not create procedure with id '" + id + "' for implementation '" + implementation + "' because interface method createProcedure() returns nullptr.");
 	}
 
 	return procedure;
@@ -147,7 +154,7 @@ std::unique_ptr<esl::processing::Procedure> Procedure::create() const {
 
 void Procedure::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -156,7 +163,7 @@ void Procedure::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 

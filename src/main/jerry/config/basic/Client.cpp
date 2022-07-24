@@ -17,10 +17,11 @@
  */
 
 #include <jerry/config/basic/Client.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 #include <jerry/Logger.h>
 
 #include <esl/com/basic/client/ConnectionFactory.h>
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 #include <stdexcept>
@@ -37,29 +38,29 @@ Client::Client(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "id") {
 			id = attribute->Value();
 			if(id == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'id'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'id'");
 			}
 		}
 		else if(std::string(attribute->Name()) == "implementation") {
 			implementation = attribute->Value();
 			if(implementation == "") {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(id == "") {
-		throw XMLException(*this, "Attribute 'id' is missing");
+		throw FilePosition::add(*this, "Attribute 'id' is missing");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -104,11 +105,17 @@ std::unique_ptr<esl::object::Object> Client::install() const {
 	try {
 		connectionFactory = esl::plugin::Registry::get().create<esl::com::basic::client::ConnectionFactory>(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create an connection-factory with id '" + id + "' for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!connectionFactory) {
@@ -120,7 +127,7 @@ std::unique_ptr<esl::object::Object> Client::install() const {
 
 void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());
@@ -129,7 +136,7 @@ void Client::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name '" + std::string(element.Name()) + "'");
+		throw FilePosition::add(*this, "Unknown element name '" + std::string(element.Name()) + "'");
 	}
 }
 

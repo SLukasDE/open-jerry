@@ -1,14 +1,14 @@
 <jerry>
-	<include file="logger.xml"/>
+	<!--include file="logger.xml"/-->
 	
 	<!--certificate domain="*" key="server.key" cert="server.pub"/-->
 	
-	<object id="kafka-broker-1" implementation="rdkafka4esl">
+	<object id="kafka-broker-1" implementation="eslx/com/basic/broker/KafkaClient">
 		<parameter key="kafka.group.id" value="test"/>
 		<parameter key="kafka.bootstrap.servers" value="192.168.2.105:9092"/>
 	</object>
 	
-	<basic-client id="kafka-client-1" implementation="rdkafka4esl">
+	<basic-client id="kafka-client-1" implementation="eslx/com/basic/client/KafkaConnectionFactory">
 		<parameter key="broker-id" value="kafka-broker-1"/>
 		<parameter key="topic" value="quickstart-results"/>
 	</basic-client>
@@ -31,7 +31,7 @@
 		</requesthandler-->
 	</basic-context>
 	
-	<basic-server implementation="rdkafka4esl">
+	<basic-server implementation="eslx/com/basic/server/KafkaSocket">
 		<parameter key="threads" value="4"/>
 		<parameter key="poll-timeout-ms" value="500"/>
 		<parameter key="kafka.group.id" value="test"/>

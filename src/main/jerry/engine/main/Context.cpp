@@ -24,6 +24,7 @@
 
 #include <esl/plugin/Registry.h>
 #include <esl/esl.h>
+#include <esl/logging/Logging.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
 #include <esl/utility/String.h>
@@ -79,7 +80,7 @@ std::unique_ptr<esl::processing::Procedure> Context::create(const std::vector<st
 
 Context::Context(const std::vector<std::pair<std::string, std::string>>& settings)
 : ObjectContext(static_cast<ProcessRegistry*>(this)),
-  signal(esl::plugin::Registry::get().create<esl::system::Signal>("", {}))
+  signal(esl::plugin::Registry::get().create<esl::system::Signal>("eslx/system/Signal", {}))
 {
 	//bool hasVerbose = false;
 	bool hasCatchException = false;
@@ -148,6 +149,11 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 		else {
 			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
 		}
+	}
+
+	if(!signal && !stopSignals.empty()) {
+		logger.warn << "There are stop signals specified by no signal handler available. Ignoring stop signal...\n";
+		stopSignals.clear();
 	}
 }
 
@@ -333,7 +339,12 @@ void Context::procedureRun(esl::object::Context& objectContext) {
 			ExceptionHandler exceptionHandler(std::current_exception());
 	    	exceptionHandler.dump(std::cerr);
 
-	    	Logger::flush();
+	    	if(esl::logging::Logging::get()) {
+	    		std::stringstream strStream;
+	    		esl::logging::Logging::get()->flush(&strStream);
+	    		std::cerr << strStream.str();
+	    	}
+	    	//Logger::flush();
 		}
 
 		if(!catchException) {

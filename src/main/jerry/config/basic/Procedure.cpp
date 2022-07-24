@@ -17,7 +17,6 @@
  */
 
 #include <jerry/config/basic/Procedure.h>
-#include <jerry/config/XMLException.h>
 
 #include <esl/processing/Procedure.h>
 #include <esl/utility/String.h>

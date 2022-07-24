@@ -16,48 +16,38 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JERRY_CONFIG_LOGGING_APPENDER_H_
-#define JERRY_CONFIG_LOGGING_APPENDER_H_
+#ifndef JERRY_CONFIG_FILEPOSITION_H_
+#define JERRY_CONFIG_FILEPOSITION_H_
 
 #include <jerry/config/Config.h>
-#include <jerry/config/Setting.h>
-
-#include <esl/logging/Appender.h>
 
 #include <tinyxml2/tinyxml2.h>
 
-#include <memory>
-#include <ostream>
+#include <esl/io/FilePosition.h>
+
 #include <string>
-#include <vector>
 
 namespace jerry {
 namespace config {
-namespace logging {
 
-class Appender : public Config {
+class FilePosition final {
 public:
-	Appender(const std::string& fileName, const tinyxml2::XMLElement& element);
+	FilePosition() = delete;
 
-	const std::string& getName() const;
-	const std::string& getLayoutId() const;
+	template <class E>
+	static esl::io::FilePosition::Injector<E> add(const Config& config, const E& e);
 
-	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	std::unique_ptr<esl::logging::Appender> create() const;
-
-private:
-	std::string name;
-	esl::logging::Appender::RecordLevel recordLevel = esl::logging::Appender::RecordLevel::SELECTED;
-	std::string layoutId;
-	std::string implementation;
-	std::vector<Setting> parameters;
-
-	void parseInnerElement(const tinyxml2::XMLElement& element);
+	static esl::io::FilePosition::Injector<std::runtime_error> add(const Config& config, const std::string& what);
+	static esl::io::FilePosition::Injector<std::runtime_error> add(const Config& config, const char* what);
+	static esl::io::FilePosition::Injector<std::runtime_error> add(const Config& config, tinyxml2::XMLError xmlError);
 };
 
-} /* namespace logging */
+template <class E>
+esl::io::FilePosition::Injector<E> FilePosition::add(const Config& config, const E& e) {
+	return esl::io::FilePosition::add<E>(config.getFileName(), config.getLineNo(), e);
+}
+
 } /* namespace config */
 } /* namespace jerry */
 
-#endif /* JERRY_CONFIG_LOGGING_APPENDER_H_ */
+#endif /* JERRY_CONFIG_FILEPOSITION_H_ */

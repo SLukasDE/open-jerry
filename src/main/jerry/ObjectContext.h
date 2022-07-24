@@ -19,6 +19,7 @@
 #ifndef JERRY_OBJECTCONTEXT_H_
 #define JERRY_OBJECTCONTEXT_H_
 
+#if 0
 #include <esl/object/Object.h>
 #include <esl/object/Context.h>
 
@@ -34,14 +35,25 @@ public:
 	std::set<std::string> getObjectIds() const override;
 
 protected:
+	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override;
 	esl::object::Object* findRawObject(const std::string& id) override;
 	const esl::object::Object* findRawObject(const std::string& id) const override;
-	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override;
 
 private:
 	std::map<std::string, std::unique_ptr<esl::object::Object>> objects;
 };
 
 } /* namespace jerry */
+#else
+
+#include <common4esl/object/Context.h>
+
+namespace jerry {
+
+using ObjectContext = common4esl::object::Context;
+
+} /* namespace jerry */
+
+#endif
 
 #endif /* JERRY_OBJECTCONTEXT_H_ */

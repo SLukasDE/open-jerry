@@ -19,8 +19,8 @@
 #ifndef JERRY_LOGGER_H_
 #define JERRY_LOGGER_H_
 
-#include <esl/logging/Appender.h>
-#include <esl/logging/Layout.h>
+//#include <esl/logging/Appender.h>
+//#include <esl/logging/Layout.h>
 #include <esl/logging/Level.h>
 #include <esl/logging/Logger.h>
 
@@ -28,6 +28,15 @@
 #include <string>
 
 namespace jerry {
+
+#ifdef JERRY_LOGGING_LEVEL_DEBUG
+using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
+#else
+using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
+//using Logger = esl::logging::Logger<esl::logging::Level::ERROR>;
+#endif
+
+#if 0
 class Logger : public esl::logging::Logger<esl::logging::Level::TRACE> {
 public:
 	using esl::logging::Logger<esl::logging::Level::TRACE>::Logger;
@@ -37,6 +46,8 @@ public:
 	static void addLayout(const std::string& id, std::unique_ptr<esl::logging::Layout> layout);
 	static void addAppender(const std::string& name, const std::string& layoutRefId, std::unique_ptr<esl::logging::Appender> appender);
 };
+#endif
+
 } /* namespace jerry */
 
 #endif /* JERRY_LOGGER_H_ */

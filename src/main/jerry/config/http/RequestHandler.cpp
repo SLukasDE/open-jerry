@@ -17,8 +17,9 @@
  */
 
 #include <jerry/config/http/RequestHandler.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
+#include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
 #include <string>
@@ -33,7 +34,7 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 : Config(fileName, element)
 {
 	if(element.GetUserData() != nullptr) {
-		throw XMLException(*this, "Element has user data but it should be empty");
+		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
@@ -43,16 +44,16 @@ RequestHandler::RequestHandler(const std::string& fileName, const tinyxml2::XMLE
 			}
 			implementation = attribute->Value();
 			if(implementation.empty()) {
-				throw XMLException(*this, "Invalid value \"\" for attribute 'implementation'");
+				throw FilePosition::add(*this, "Invalid value \"\" for attribute 'implementation'");
 			}
 		}
 		else {
-			throw XMLException(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
+			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
 	if(implementation.empty()) {
-		throw XMLException(*this, "Missing attribute 'implementation");
+		throw FilePosition::add(*this, "Missing attribute 'implementation");
 	}
 
 	for(const tinyxml2::XMLNode* node = element.FirstChild(); node != nullptr; node = node->NextSibling()) {
@@ -93,11 +94,17 @@ void RequestHandler::install(engine::http::Context& context) const {
 		 * ***************** */
 		context.addRequestHandler(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create http-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create http-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 #endif
 }
@@ -112,15 +119,21 @@ std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::create()
 	try {
 		requestHandler = esl::plugin::Registry::get().create<esl::com::http::server::RequestHandler>(implementation, eslSettings);
 	}
+	catch(const esl::plugin::exception::PluginNotFound& e) {
+		throw FilePosition::add(*this, e);
+	}
+	catch(const std::runtime_error& e) {
+		throw FilePosition::add(*this, e);
+	}
 	catch(const std::exception& e) {
-		throw XMLException(*this, e.what());
+		throw FilePosition::add(*this, e);
 	}
 	catch(...) {
-		throw XMLException(*this, "Could not create http-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
+		throw FilePosition::add(*this, "Could not create http-request-handler for implementation '" + implementation + "' because an unknown exception occurred.");
 	}
 
 	if(!requestHandler) {
-		throw XMLException(*this, "Could not create http-request-handler for implementation '" + implementation + "' because interface method createRequestHandler() returns nullptr.");
+		throw FilePosition::add(*this, "Could not create http-request-handler for implementation '" + implementation + "' because interface method createRequestHandler() returns nullptr.");
 	}
 
 	return requestHandler;
@@ -128,7 +141,7 @@ std::unique_ptr<esl::com::http::server::RequestHandler> RequestHandler::create()
 
 void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string innerElementName(element.Name());
@@ -137,7 +150,7 @@ void RequestHandler::parseInnerElement(const tinyxml2::XMLElement& element) {
 		settings.push_back(Setting(getFileName(), element, true));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + std::string(element.Name()) + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + std::string(element.Name()) + "\"");
 	}
 }
 

@@ -17,7 +17,7 @@
  */
 
 #include <jerry/config/http/EntryImpl.h>
-#include <jerry/config/XMLException.h>
+#include <jerry/config/FilePosition.h>
 
 namespace jerry {
 namespace config {
@@ -27,7 +27,7 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 : Entry(fileName, element)
 {
 	if(element.Name() == nullptr) {
-		throw XMLException(*this, "Element name is empty");
+		throw FilePosition::add(*this, "Element name is empty");
 	}
 
 	std::string elementName(element.Name());
@@ -63,7 +63,7 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 		httpClient = std::unique_ptr<Client>(new Client(getFileName(), element));
 	}
 	else {
-		throw XMLException(*this, "Unknown element name \"" + elementName + "\"");
+		throw FilePosition::add(*this, "Unknown element name \"" + elementName + "\"");
 	}
 }
 

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
-
+#if 0
 #include <jerry/ObjectContext.h>
 
 namespace jerry {
@@ -45,3 +45,4 @@ void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::obj
 }
 
 } /* namespace jerry */
+#endif
