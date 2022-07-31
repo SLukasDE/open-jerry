@@ -1,9 +1,7 @@
 <jerry>
-	<include file="logger.xml"/>
-	
 	<certificate domain="*" key="server.key" cert="server.pub"/>
 	
-	<http-server implementation="mhd4esl" https="false">
+	<http-server https="false">
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 	</http-server>
