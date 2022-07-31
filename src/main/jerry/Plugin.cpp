@@ -60,75 +60,18 @@
 /* *************** *
  * builtin objects *
  * *************** */
-#include <jerry/builtin/object/standard/Int.h>
-#include <jerry/builtin/object/standard/MapStringString.h>
-#include <jerry/builtin/object/standard/SetInt.h>
-#include <jerry/builtin/object/standard/SetString.h>
-#include <jerry/builtin/object/standard/String.h>
-#include <jerry/builtin/object/standard/VectorInt.h>
-#include <jerry/builtin/object/standard/VectorPairStringString.h>
-#include <jerry/builtin/object/standard/VectorString.h>
 #include <jerry/builtin/object/applications/Object.h>
 
 #include <eslx/Plugin.h>
 
-#if 1
+#include <std4esl/Plugin.h>
+
 #include <esl/com/basic/server/RequestHandler.h>
 #include <esl/com/http/server/RequestHandler.h>
 #include <esl/logging/Appender.h>
 #include <esl/logging/Layout.h>
 #include <esl/object/Object.h>
 #include <esl/processing/Procedure.h>
-
-
-
-
-
-#else
-
-
-#include <esl/com/basic/client/ConnectionFactory.h> /* ! */
-#include <esl/com/basic/server/RequestHandler.h>
-#include <esl/com/basic/server/Socket.h>
-#include <esl/com/http/client/ConnectionFactory.h> /* ! */
-#include <esl/com/http/server/RequestHandler.h>
-#include <esl/com/http/server/Socket.h>
-#include <esl/database/ConnectionFactory.h>
-#include <esl/logging/Appender.h>
-#include <esl/logging/Layout.h>
-#include <esl/logging/Logging.h> /* ! */
-#include <esl/object/Object.h>
-#include <esl/processing/Context.h> /* ! */
-#include <esl/processing/Procedure.h>
-#include <esl/processing/TaskFactory.h> /* ! */
-#include <esl/system/Process.h> /* ! */
-#include <esl/system/Signal.h> /* ! */
-#include <esl/system/Stacktrace.h> /* ! */
-
-#include <common4esl/logging/MemBufferAppender.h>
-#include <common4esl/logging/OStreamAppender.h>
-#include <common4esl/logging/DefaultLayout.h>
-#include <common4esl/processing/TaskFactory.h>
-#include <common4esl/processing/Context.h>
-
-#include <curl4esl/com/http/client/ConnectionFactory.h>
-
-#include <logbook4esl/logging/Logging.h>
-
-#include <mhd4esl/com/http/server/Socket.h>
-
-#include <rdkafka4esl/com/basic/broker/Client.h>
-#include <rdkafka4esl/com/basic/client/ConnectionFactory.h>
-#include <rdkafka4esl/com/basic/server/Socket.h>
-
-#include <sqlite4esl/database/ConnectionFactory.h>
-
-#include <unixODBC4esl/database/ConnectionFactory.h>
-
-#include <zsystem4esl/system/process/Process.h>
-#include <zsystem4esl/system/signal/Signal.h>
-#include <zsystem4esl/system/stacktrace/Stacktrace.h>
-#endif
 
 #include <memory>
 
@@ -138,11 +81,11 @@ void Plugin::install(esl::plugin::Registry& registry, const char* data) {
 	esl::plugin::Registry::set(registry);
 
 	eslx::Plugin::install(registry, data);
+	std4esl::Plugin::install(registry, data);
 
 	/* ***************************** *
 	 * builtin basic request handlers *
 	 * ***************************** */
-
 	registry.addPlugin<esl::com::basic::server::RequestHandler>(
 			"jerry/dump",
 			builtin::basic::dump::RequestHandler::createRequestHandler);
@@ -245,156 +188,8 @@ void Plugin::install(esl::plugin::Registry& registry, const char* data) {
 	 * builtin objects *
 	 * *************** */
 	registry.addPlugin<esl::object::Object>(
-			"std/int",
-			&builtin::object::standard::Int::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/map<string,string>",
-			&builtin::object::standard::MapStringString::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/set<int>",
-			&builtin::object::standard::SetInt::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/set<string>",
-			&builtin::object::standard::SetString::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/string",
-			&builtin::object::standard::String::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/vector<int>",
-			&builtin::object::standard::VectorInt::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/vector<pair<string,string>>",
-			&builtin::object::standard::VectorPairStringString::create);
-
-	registry.addPlugin<esl::object::Object>(
-			"std/vector<string>",
-			&builtin::object::standard::VectorString::create);
-
-	registry.addPlugin<esl::object::Object>(
 			"jerry/applications",
 			&builtin::object::applications::Object::create);
-
-
-
-	/* **** *
-	 * eslx *
-	 * **** */
-#if 0
-#if 1
-	// logbook4esl
-	registry.addPlugin<esl::logging::Logging>(
-			"eslx/logging/Logging",
-			&logbook4esl::logging::Logging::create);
-
-
-	//boostst4esl::Plugin::install(registry, data);
-
-
-
-	// rdkafka4esl
-	registry.addPlugin<esl::object::Object>(
-			"eslx/com/basic/broker/KafkaClient",
-			&rdkafka4esl::com::basic::broker::Client::create);
-
-	registry.addPlugin<esl::com::basic::client::ConnectionFactory>(
-			"eslx/com/basic/client/KafkaConnectionFactory",
-			&rdkafka4esl::com::basic::client::ConnectionFactory::create);
-
-	registry.addPlugin<esl::com::basic::server::Socket>(
-			"eslx/com/basic/server/KafkaSocket",
-			&rdkafka4esl::com::basic::server::Socket::create);
-
-
-
-	// mhd4esl
-	registry.addPlugin<esl::com::http::server::Socket>(
-			"eslx/com/http/server/Socket",
-			&mhd4esl::com::http::server::Socket::create);
-
-
-
-	// curl4esl
-	registry.addPlugin<esl::com::http::client::ConnectionFactory>(
-			"eslx/com/http/client/ConnectionFactory",
-			curl4esl::com::http::client::ConnectionFactory::create);
-
-
-
-	// unixODBC4esl
-	registry.addPlugin<esl::database::ConnectionFactory>(
-			"eslx/database/ODBCConnectionFactory",
-			&unixODBC4esl::database::ConnectionFactory::create);
-
-
-
-	// sqlite4esl
-	registry.addPlugin<esl::object::Object>(
-			"eslx/database/SQLiteConnectionFactory",
-			&sqlite4esl::database::ConnectionFactory::createObject);
-
-	registry.addPlugin<esl::database::ConnectionFactory>(
-			"eslx/database/SQLiteConnectionFactory",
-			&sqlite4esl::database::ConnectionFactory::createConnectionFactory);
-
-
-
-	// common4esl
-	registry.addPlugin<esl::logging::Appender>(
-			"eslx/logging/MemBufferAppender",
-			&common4esl::logging::MemBufferAppender::create);
-
-	registry.addPlugin<esl::logging::Appender>(
-			"eslx/logging/OStreamAppender",
-			&common4esl::logging::OStreamAppender::create);
-
-	registry.addPlugin<esl::logging::Layout>(
-			"eslx/logging/DefaultLayout",
-			&common4esl::logging::DefaultLayout::create);
-
-	registry.addPlugin<esl::processing::Context>(
-			"eslx/processing/Context",
-			&common4esl::processing::Context::create);
-
-	registry.addPlugin<esl::processing::TaskFactory>(
-			"eslx/processing/TaskFactory",
-			&common4esl::processing::TaskFactory::create);
-
-
-	// zsystem4esl
-	registry.addPlugin<esl::system::Process>(
-			"eslx/system/Process",
-			&zsystem4esl::system::process::Process::create);
-
-	registry.addPlugin<esl::system::Signal>(
-			"eslx/system/Signal",
-			&zsystem4esl::system::signal::Signal::create);
-
-	registry.addPlugin<esl::system::Stacktrace>(
-			"eslx/system/Stacktrace",
-			&zsystem4esl::system::stacktrace::Stacktrace::create);
-#else
-	/* ************ *
-	 * esl::logging *
-	 * ************ */
-	/* *********************** *
-	 * builtin logging layouts *
-	 * *********************** */
-	registry.copyPlugin<esl::logging::Layout>("eslx/logging/DefaultLayout", "jerry/default");
-
-	/* ************************* *
-	 * builtin logging appenders *
-	 * ************************* */
-	registry.copyPlugin<esl::logging::Appender>("eslx/logging/MemBufferAppender", "jerry/membuffer");
-	registry.copyPlugin<esl::logging::Appender>("eslx/logging/OStreamAppender", "jerry/ostream");
-#endif
-#endif
-
 }
 
 } /* namespace jerry */
