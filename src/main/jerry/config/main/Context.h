@@ -56,7 +56,7 @@ public:
 private:
 	tinyxml2::XMLDocument xmlDocument;
 
-	std::vector<std::pair<std::string, esl::plugin::Library*>> libraries;
+	std::vector<std::pair<std::string, std::string>> libraries;
 	std::vector<Certificate> certificates;
 
 	std::vector<std::unique_ptr<Entry>> entries;

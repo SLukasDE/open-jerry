@@ -23,8 +23,6 @@
 #include <jerry/utility/MIME.h>
 #include <jerry/Logger.h>
 
-//#include <esl/logging/Appender.h>
-//#include <esl/logging/Layout.h>
 #include <esl/logging/Logger.h>
 #include <esl/plugin/Registry.h>
 
@@ -79,13 +77,13 @@ void Context::save(std::ostream& oStream) const {
 	oStream << "\n<jerry>\n";
 
 	for(const auto& entry : libraries) {
-		oStream << "  <library file=\"" << entry.first << "\"/>\n";
+		if(entry.second.empty()) {
+			oStream << "  <library file=\"" << entry.first << "\"/>\n";
+		}
+		else {
+			oStream << "  <library file=\"" << entry.first << "\" arguments=\"" << entry.second << "\"/>\n";
+		}
 	}
-	/*
-	for(const auto& entry : filesLoaded) {
-		oStream << "  <include file=\"" << entry << "\"/>\n";
-	}
-	*/
 	for(const auto& entry : certificates) {
 		entry.save(oStream, 2);
 	}
@@ -103,23 +101,11 @@ void Context::loadLibraries() {
 	 * load and add libraries *
 	 * ********************** */
 	for(auto& library : libraries) {
-		/*
-		if(library.second) {
-			throw esl::stacktrace::Stacktrace::add(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
-		}
-		*/
-		library.second = &esl::plugin::Library::load(library.first);
-		library.second->install(esl::plugin::Registry::get(), "");
+		esl::plugin::Registry::get().loadPlugin(library.first, library.second.c_str());
 	}
 }
 
 void Context::install(engine::main::Context& context) {
-/*
-	for(const auto& eslLogger : eslLoggers) {
-		eslLogger.install();
-	}
-*/
-
 	for(const auto& configCertificate : certificates) {
 		context.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
 	}
@@ -259,6 +245,8 @@ void Context::parseInclude(const tinyxml2::XMLElement& element) {
 
 void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 	std::string fileName;
+	std::string arguments;
+	bool hasArguments = false;
 
 	if(element.GetUserData() != nullptr) {
 		throw FilePosition::add(*this, "Element has user data but it should be empty");
@@ -266,21 +254,31 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "file") {
+			if(!fileName.empty()) {
+				throw FilePosition::add(*this, "Multiple definition of attribute \"file\".");
+			}
 			fileName = attribute->Value();
-			if(fileName == "") {
+			if(fileName.empty()) {
 				throw FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
+		}
+		else if(std::string(attribute->Name()) == "arguments") {
+			if(hasArguments) {
+				throw FilePosition::add(*this, "Multiple definition of attribute \"arguments\".");
+			}
+			arguments = attribute->Value();
+			hasArguments = true;
 		}
 		else {
 			throw FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(fileName == "") {
+	if(fileName.empty()) {
 		throw FilePosition::add(*this, "Missing attribute 'file'");
 	}
 
-	libraries.push_back(std::make_pair(fileName, nullptr));
+	libraries.push_back(std::make_pair(fileName, arguments));
 }
 
 } /* namespace main */

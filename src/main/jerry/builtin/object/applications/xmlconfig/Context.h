@@ -53,7 +53,7 @@ private:
 	tinyxml2::XMLDocument xmlDocument;
 	std::string appName;
 	const boost::filesystem::path path;
-	std::vector<std::pair<std::string, esl::plugin::Library*>> libraries;
+	std::vector<std::pair<std::string, std::string>> libraries;
 
 	std::vector<std::unique_ptr<Entry>> entries;
 

@@ -102,6 +102,8 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 
 void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 	std::string fileName;
+	std::string arguments;
+	bool hasArguments = false;
 
 	if(element.GetUserData() != nullptr) {
 		throw jerry::config::FilePosition::add(*this, "Element has user data but it should be empty");
@@ -109,17 +111,27 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 
 	for(const tinyxml2::XMLAttribute* attribute = element.FirstAttribute(); attribute != nullptr; attribute = attribute->Next()) {
 		if(std::string(attribute->Name()) == "file") {
+			if(!fileName.empty()) {
+				throw jerry::config::FilePosition::add(*this, "Multiple definition of attribute \"file\".");
+			}
 			fileName = attribute->Value();
-			if(fileName == "") {
+			if(fileName.empty()) {
 				throw jerry::config::FilePosition::add(*this, "Value \"\" of attribute 'file' is invalid.");
 			}
+		}
+		else if(std::string(attribute->Name()) == "arguments") {
+			if(hasArguments) {
+				throw jerry::config::FilePosition::add(*this, "Multiple definition of attribute \"arguments\".");
+			}
+			arguments = attribute->Value();
+			hasArguments = true;
 		}
 		else {
 			throw jerry::config::FilePosition::add(*this, "Unknown attribute '" + std::string(attribute->Name()) + "'");
 		}
 	}
 
-	if(fileName == "") {
+	if(fileName.empty()) {
 		throw jerry::config::FilePosition::add(*this, "Missing attribute 'file'");
 	}
 
@@ -127,10 +139,10 @@ void Context::parseLibrary(const tinyxml2::XMLElement& element) {
 	boost::filesystem::path libraryFileOutside = fileName;
 
 	if(boost::filesystem::is_regular_file(libraryFileInside)) {
-		libraries.push_back(std::make_pair(libraryFileInside.generic_string(), nullptr));
+		libraries.push_back(std::make_pair(libraryFileInside.generic_string(), arguments));
 	}
 	else if(boost::filesystem::is_regular_file(libraryFileOutside)) {
-		libraries.push_back(std::make_pair(libraryFileOutside.generic_string(), nullptr));
+		libraries.push_back(std::make_pair(libraryFileOutside.generic_string(), arguments));
 	}
 	else {
 		throw jerry::config::FilePosition::add(*this, "Cannot find library-file '" + fileName + "'");
@@ -142,13 +154,7 @@ void Context::loadLibraries() {
 	 * load and add libraries *
 	 * ********************** */
 	for(auto& library : libraries) {
-		/*
-		if(library.second) {
-			throw esl::stacktrace::Stacktrace::add(std::runtime_error(std::string("Library \"") + library.first + "\" loaded already."));
-		}
-		*/
-		library.second = &esl::plugin::Library::load(library.first);
-		library.second->install(esl::plugin::Registry::get(), "");
+		esl::plugin::Registry::get().loadPlugin(library.first, library.second.c_str());
 	}
 }
 
