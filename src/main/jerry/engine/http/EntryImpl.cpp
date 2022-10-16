@@ -195,42 +195,90 @@ esl::io::Input EntryImpl::accept(RequestContext& requestContext) {
 		/* *************** *
 		 * handle context *
 		 * *************** */
-		return context->accept(requestContext);
+		esl::io::Input input = context->accept(requestContext);
+		if(input) {
+			return input;
+		}
 	}
 
 	if(refContext) {
 		/* ************************* *
 		 * handle referenced context *
 		 * ************************* */
-		return refContext->accept(requestContext);
+		esl::io::Input input = refContext->accept(requestContext);
+		if(input) {
+			return input;
+		}
 	}
 
 	if(host && host->isMatch(requestContext.getRequest().getHostName())) {
 		/* *********** *
 		 * handle host *
 		 * *********** */
-		return host->accept(requestContext);
+		esl::io::Input input = host->accept(requestContext);
+		if(input) {
+			return input;
+		}
 	}
 
+#if 1
+	if(endpoint) {
+		logger.trace << "Check if endpoint '" << endpoint->getPath() << "' matches request path '" << requestContext.getPath() << "'\n";
+		const char* subPath = endpoint->getMatch(requestContext.getPath());
+		if(subPath) {
+			logger.trace << "Match!\n";
+			/* *************** *
+			 * handle endpoint *
+			 * *************** */
+			std::string path = requestContext.getPath();
+
+			requestContext.setPath(subPath);
+			//requestContext.setPath(path.substr(endpoint->getPath().size()));
+			logger.trace << "-> new request path is '" << requestContext.getPath() << "'\n";
+
+			esl::io::Input input = endpoint->accept(requestContext);
+			if(input) {
+				logger.trace << "Request accepted by endpoint '" << endpoint->getPath() << "'\n";
+				return input;
+			}
+
+			requestContext.setPath(path);
+			logger.trace << "Request not accepted by endpoint '" << endpoint->getPath() << "' -> reset path to '" << requestContext.getPath() << "'\n";
+		}
+		else if(logger.trace) {
+			logger.trace << "No match!\n";
+		}
+	}
+#else
 	if(endpoint && endpoint->isMatch(requestContext.getPath())) {
+		logger.trace << "Request path '" << requestContext.getPath() << "' is matching endpoint with path '" << endpoint->getPath() << "'\n";
 		/* *************** *
 		 * handle endpoint *
 		 * *************** */
 		std::string path = requestContext.getPath();
-		requestContext.setPath(path.substr(endpoint->getPath().size()));
+
+		requestContext.setPath(endpoint->getMatchingSubPath(path));
+		//requestContext.setPath(path.substr(endpoint->getPath().size()));
+		logger.trace << "-> new request path is '" << requestContext.getPath() << "'\n";
 
 		esl::io::Input input = endpoint->accept(requestContext);
-		if(!input) {
-			requestContext.setPath(path);
+		if(input) {
+			logger.trace << "Request accepted by endpoint '" << endpoint->getPath() << "'\n";
+			return input;
 		}
-		return input;
-	}
 
+		requestContext.setPath(path);
+		logger.trace << "Request not accepted by endpoint '" << endpoint->getPath() << "' -> reset path to '" << requestContext.getPath() << "'\n";
+	}
+#endif
 	if(requestHandler) {
 		/* ********************** *
 		 * handle request handler *
 		 * ********************** */
-		return requestHandler->accept(requestContext);
+		esl::io::Input input = requestHandler->accept(requestContext);
+		if(input) {
+			return input;
+		}
 	}
 
 	return esl::io::Input();

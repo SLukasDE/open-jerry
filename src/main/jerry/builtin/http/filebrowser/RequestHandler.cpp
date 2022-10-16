@@ -126,10 +126,19 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 
 #if 0
 	boost::filesystem::path path = path + "/" + requestContext.getPath();
+#else
+	boost::filesystem::path fullPath = path;
+	fullPath /= requestContext.getPath();
 #endif
+/*
 	logger.trace << "Setting path is \"" << path << "\"\n";
-	boost::filesystem::path fullPath = path + requestContext.getPath();
+	boost::filesystem::path fullPath = path;
 
+	if(requestContext.getPath().empty() || requestContext.getPath().at(0) != '/') {
+		fullPath += "/";
+	}
+	fullPath += requestContext.getPath();
+*/
 	if(!boost::filesystem::exists(fullPath)) {
 		logger.trace << "Original path " << fullPath << " not exists.\n";
 		if(ignoreError) {
@@ -143,7 +152,7 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	if(boost::filesystem::is_directory(fullPath)) {
 		logger.trace << "Original path " << path << " is a directory\n";
 		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
-    	if(requestContext.getPath().size() == 0 || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
+    	if(requestContext.getPath().empty() || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
     		esl::com::http::server::Response response(301, esl::utility::MIME::Type::textHtml);
     		response.addHeader("Location", requestContext.getRequest().getPath() + "/");
     		esl::io::Output output = esl::io::output::Memory::create(PAGE_301.data(), PAGE_301.size());

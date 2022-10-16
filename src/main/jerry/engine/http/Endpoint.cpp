@@ -32,7 +32,8 @@ Logger logger("jerry::engine::http::Endpoint");
 
 Endpoint::Endpoint(ProcessRegistry* processRegistry, const std::string& aPath)
 : Context(processRegistry),
-  path("/" + esl::utility::String::trim(std::move(aPath), '/'))
+  path(esl::utility::String::trim(std::move(aPath), '/'))
+//  path("/" + esl::utility::String::trim(std::move(aPath), '/'))
 { }
 
 void Endpoint::dumpTree(std::size_t depth) const {
@@ -47,10 +48,67 @@ const std::string& Endpoint::getPath() const noexcept {
 	return path;
 }
 
+const char* Endpoint::getMatch(const std::string& currentPath) const {
+	if(currentPath.empty()) {
+		return nullptr;
+	}
+
+	const char* currentPathCStr = currentPath.c_str();
+	std::size_t currentPathSize = currentPath.size();
+#if 1
+	while(/*currentPathSize > 0 && */currentPathCStr[0] == '/') {
+		++currentPathCStr;
+		--currentPathSize;
+
+	}
+	if(currentPath.find(getPath()) != currentPath.size() - currentPathSize) {
+		return nullptr;
+	}
+#else
+	if(currentPathCStr[0] == '/') {
+		++currentPathCStr;
+		--currentPathSize;
+
+		if(currentPath.find(getPath()) != 1) {
+			return nullptr;
+		}
+	}
+	else {
+		if(currentPath.find(getPath()) != 0) {
+			return nullptr;
+		}
+	}
+#endif
+	if(currentPathSize == getPath().size()) {
+		return "";
+	}
+	if(/*currentPath.size() > getPath().size() && */currentPathCStr[getPath().size()] != '/') {
+		return nullptr;
+	}
+
+	if(currentPathSize == getPath().size() + 1) {
+		return &currentPathCStr[getPath().size()];
+	}
+	return &currentPathCStr[getPath().size() + 1];
+}
+
+#if 0
 bool Endpoint::isMatch(const std::string& currentPath) const {
+	/*
+	 * currentPath.rfind(getPath())            == 0
+	 * <=>
+	 * currentPath.substr(0, getPath().size()) == getPath()
+	 */
 	return currentPath.rfind(getPath()) == 0 && (currentPath.size() == getPath().size() || currentPath.at(getPath().size()) == '/');
 }
 
+std::string Endpoint::getMatchingSubPath(const std::string& currentPath) const {
+	if(currentPath.at(getPath().size()) == '/') {
+		return currentPath.substr(getPath().size()+1);
+	}
+	return currentPath.substr(getPath().size());
+}
+#endif
 
 } /* namespace http */
 } /* namespace engine */

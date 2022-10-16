@@ -35,7 +35,11 @@ public:
 	void dumpTree(std::size_t depth) const override;
 
 	const std::string& getPath() const noexcept;
+	const char* getMatch(const std::string& currentPath) const;
+#if 0
 	bool isMatch(const std::string& currentPath) const;
+	std::string getMatchingSubPath(const std::string& currentPath) const;
+#endif
 
 private:
 	std::string path;
