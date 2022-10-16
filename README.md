@@ -1,4 +1,5 @@
-# jerry
+# jerry ![](https://img.shields.io/github/license/SLukasDE/jerry.svg)
+
 Jerry is a free reference HTTP application server for C++ like Apache Tomcat for JAVA. Is is based on the ESL framework. It also needs TinyXML2 to load the server configuration file (e.g. server.xml).
 
 There is just the ESL framework needed to build this code without any other ESL bindings. ESL bindings will be configured in the server configuration file with \"<library file=\"...\" module=\"esl\">\" and loaded as dynamic library. So, you can change your binding, for example the HTTP server implementation just by modifing the file server.xml. Bindings are needed for "esl-http-server" and "esl-system". So you can use mhd4esl and zsystem4esl.
