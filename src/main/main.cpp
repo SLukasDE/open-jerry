@@ -16,10 +16,10 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jerry/config/main/Context.h>
-#include <jerry/engine/main/Context.h>
-#include <jerry/ObjectContext.h>
-#include <jerry/ExceptionHandler.h>
+#include <openjerry/config/main/Context.h>
+#include <openjerry/engine/main/Context.h>
+#include <openjerry/ObjectContext.h>
+#include <openjerry/ExceptionHandler.h>
 
 #include <esl/logging/Logging.h>
 #include <esl/object/Value.h>
@@ -35,17 +35,17 @@
 #include <utility>
 #include <iostream>
 
-extern const std::string jerryVersionStr;
+extern const std::string openjerryVersionStr;
 
 using ReturnCodeObject = esl::object::Value<int>;
 
 #define _STRINGIFY(x) #x
 #define STRINGIFY(x) _STRINGIFY(x)
-const std::string jerryVersionStr = STRINGIFY(TRANSFORMER_ARTEFACT_VERSION);
+const std::string openjerryVersionStr = STRINGIFY(TRANSFORMER_ARTEFACT_VERSION);
 
 void printUsage() {
 	std::cout << "\n";
-	std::cout << "Usage: jerry [-v] [-dry] [-l <esl logger configuration file>] <server configuration file>\n";
+	std::cout << "Usage: openjerry [-v] [-dry] [-l <esl logger configuration file>] <server configuration file>\n";
 	std::cout << "  -v\n";
 	std::cout << "    Specifying this flags results to some extra output on startup phase.\n";
 	std::cout << "  -dry\n";
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[]) {
 
 	esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
 
-	std::cout << "jerry version " << jerryVersionStr << std::endl;
+	std::cout << "openjerry version " << openjerryVersionStr << std::endl;
 
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
@@ -125,10 +125,10 @@ int main(int argc, const char *argv[]) {
 		settings.push_back(std::make_pair("stop-signal", "interrupt"));
 		settings.push_back(std::make_pair("stop-signal", "terminate"));
 		settings.push_back(std::make_pair("stop-signal", "pipe"));
-		jerry::engine::main::Context mainContext(settings);
+		openjerry::engine::main::Context mainContext(settings);
 
 		boost::filesystem::path serverConfigPath(serverConfigFile);
-		jerry::config::main::Context mainConfig(serverConfigPath);
+		openjerry::config::main::Context mainConfig(serverConfigPath);
 		if(isVerbose) {
 			/* show configuration */
 			mainConfig.save(std::cout);
@@ -147,7 +147,7 @@ int main(int argc, const char *argv[]) {
 
 		mainConfig.install(mainContext);
 
-		jerry::ObjectContext objectContext;
+		openjerry::ObjectContext objectContext;
 
 		if(!isDryRun) {
 			mainContext.procedureRun(objectContext);
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[]) {
 		}
 	}
 	catch(...) {
-		jerry::ExceptionHandler exceptionHandler(std::current_exception());
+		openjerry::ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.dump(std::cerr);
     	returnCode = -1;
 	}
