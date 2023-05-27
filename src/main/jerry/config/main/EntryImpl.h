@@ -23,14 +23,11 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Database.h>
-#include <jerry/config/basic/Client.h>
-#include <jerry/config/basic/Server.h>
 #include <jerry/config/http/Client.h>
 #include <jerry/config/http/Server.h>
 #include <jerry/config/main/Entry.h>
 #include <jerry/config/main/Procedure.h>
 #include <jerry/config/main/ProcedureContext.h>
-#include <jerry/config/main/BasicContext.h>
 #include <jerry/config/main/HttpContext.h>
 
 #include <memory>
@@ -56,10 +53,6 @@ private:
 
 	std::unique_ptr<Procedure> procedure;
 	std::unique_ptr<ProcedureContext> procedureContext;
-
-	std::unique_ptr<basic::Client> basicClient;
-	std::unique_ptr<BasicContext> basicContext;
-	std::unique_ptr<basic::Server> basicServer;
 
 	std::unique_ptr<http::Client> httpClient;
 	std::unique_ptr<HttpContext> httpContext;

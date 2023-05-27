@@ -20,7 +20,6 @@
 #define JERRY_ENGINE_MAIN_CONTEXT_H_
 
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/basic/Server.h>
 #include <jerry/engine/http/Server.h>
 #include <jerry/engine/main/Entry.h>
 #include <jerry/engine/procedure/Context.h>
@@ -68,7 +67,6 @@ public:
 	void addProcedure(std::unique_ptr<esl::processing::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
-	void addBasicServer(std::unique_ptr<basic::Server> server);
 	void addHttpServer(std::unique_ptr<http::Server> server);
 
 	void addProcedureContext(std::unique_ptr<procedure::Context> procedureContext);

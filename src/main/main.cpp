@@ -20,12 +20,13 @@
 #include <jerry/engine/main/Context.h>
 #include <jerry/ObjectContext.h>
 #include <jerry/ExceptionHandler.h>
-#include <jerry/Plugin.h>
 
 #include <esl/logging/Logging.h>
 #include <esl/object/Value.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
+
+#include <eslx/Plugin.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -66,7 +67,8 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 }
 
 int main(int argc, const char *argv[]) {
-	jerry::Plugin::install(esl::plugin::Registry::get(), nullptr);
+	eslx::Plugin::install(esl::plugin::Registry::get(), nullptr);
+
 	esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
 
 	std::cout << "jerry version " << jerryVersionStr << std::endl;

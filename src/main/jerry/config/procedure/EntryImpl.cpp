@@ -47,9 +47,6 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "context" || elementName == "procedure-context") {
 		context = std::unique_ptr<Context>(new Context(getFileName(), element));
 	}
-	else if(elementName == "basic-client") {
-		basicClient = std::unique_ptr<basic::Client>(new basic::Client(getFileName(), element));
-	}
 	else if(elementName == "http-client" || elementName == "client") {
 		httpClient = std::unique_ptr<http::Client>(new http::Client(getFileName(), element));
 	}
@@ -74,9 +71,6 @@ void EntryImpl::save(std::ostream& oStream, std::size_t spaces) const {
 	if(context) {
 		context->save(oStream, spaces);
 	}
-	if(basicClient) {
-		basicClient->save(oStream, spaces);
-	}
 	if(httpClient) {
 		httpClient->save(oStream, spaces);
 	}
@@ -97,9 +91,6 @@ void EntryImpl::install(engine::procedure::Context& engineContext) const {
 	}
 	if(context) {
 		context->install(engineContext);
-	}
-	if(basicClient) {
-		basicClient->install(engineContext);
 	}
 	if(httpClient) {
 		httpClient->install(engineContext);

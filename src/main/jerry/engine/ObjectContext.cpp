@@ -17,7 +17,6 @@
  */
 
 #include <jerry/engine/ObjectContext.h>
-#include <jerry/engine/basic/Context.h>
 #include <jerry/engine/http/Context.h>
 #include <jerry/engine/http/Endpoint.h>
 #include <jerry/engine/http/Host.h>
@@ -95,7 +94,6 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 		bool isReference = objects.count(entry.first) == 0;
 		std::string isReferenceStr = isReference ? " (reference)" : "";
 
-		const basic::Context* basicContextPtr = dynamic_cast<const basic::Context*>(objectPtr);
 		const http::Context* httpContextPtr = dynamic_cast<const http::Context*>(objectPtr);
 		const http::Endpoint* httpEndpointPtr = dynamic_cast<const http::Endpoint*>(objectPtr);
 		const http::Host* httpHostPtr = dynamic_cast<const http::Host*>(objectPtr);
@@ -110,13 +108,7 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 			logger.info << "|   ";
 		}
 
-		if(basicContextPtr) {
-			logger.info << "+-> Basic context: \"" << entry.first << "\" -> " << objectPtr << isReferenceStr << "\n";
-			if(!isReference) {
-				basicContextPtr->dumpTree(depth+1);
-			}
-		}
-		else if(httpEndpointPtr) {
+		if(httpEndpointPtr) {
 			logger.info << "+-> Endpoint \"" << entry.first << "\" -> " << httpEndpointPtr << isReferenceStr << "\n";
 			if(!isReference) {
 				httpEndpointPtr->dumpTree(depth+1);

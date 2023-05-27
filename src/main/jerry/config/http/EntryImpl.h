@@ -23,7 +23,6 @@
 #include <jerry/config/Object.h>
 #include <jerry/config/Reference.h>
 #include <jerry/config/Database.h>
-#include <jerry/config/basic/Client.h>
 #include <jerry/config/http/Entry.h>
 #include <jerry/config/http/Procedure.h>
 #include <jerry/config/http/Client.h>
@@ -60,7 +59,6 @@ private:
 	std::unique_ptr<Endpoint> endpoint;
 	std::unique_ptr<Host> host;
 	std::unique_ptr<RequestHandler> requestHandler;
-	std::unique_ptr<basic::Client> basicClient;
 	std::unique_ptr<Client> httpClient;
 };
 

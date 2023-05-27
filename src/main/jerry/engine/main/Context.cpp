@@ -23,7 +23,6 @@
 #include <jerry/Logger.h>
 
 #include <esl/plugin/Registry.h>
-#include <esl/esl.h>
 #include <esl/logging/Logging.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
@@ -207,10 +206,6 @@ void Context::addProcedure(const std::string& refId) {
 	}
 
 	entries.emplace_back(new EntryImpl(*procedure));
-}
-
-void Context::addBasicServer(std::unique_ptr<basic::Server> server) {
-	entries.emplace_back(new EntryImpl(std::move(server)));
 }
 
 void Context::addHttpServer(std::unique_ptr<http::Server> server) {
@@ -397,13 +392,9 @@ void Context::procedureCancel() {
 		}
 		else {
 			if(logger.debug) {
-				basic::Server* basicServer = dynamic_cast<basic::Server*>(procedure);
 				http::Server* httpServer = dynamic_cast<http::Server*>(procedure);
 
-				if(basicServer) {
-					logger.debug << "[" << ++proceduresCurrent << "/" << proceduresTotal << "] Stopping basic server initiated\n";
-				}
-				else if(httpServer) {
+				if(httpServer) {
 					logger.debug << "[" << ++proceduresCurrent << "/" << proceduresTotal << "] Stopping HTTP/HTTPS server initiated\n";
 				}
 				else {

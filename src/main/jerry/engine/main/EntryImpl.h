@@ -21,7 +21,6 @@
 
 #include <jerry/engine/main/Entry.h>
 #include <jerry/engine/main/Context.h>
-#include <jerry/engine/basic/Server.h>
 #include <jerry/engine/http/Server.h>
 #include <jerry/engine/procedure/Context.h>
 #include <jerry/engine/ProcessRegistry.h>
@@ -43,7 +42,6 @@ public:
 	EntryImpl(std::unique_ptr<procedure::Context> procedureContext);
 	EntryImpl(procedure::Context& refProcedureContext);
 
-	EntryImpl(std::unique_ptr<basic::Server> basicServer);
 	EntryImpl(std::unique_ptr<http::Server> httpServer);
 
 	void initializeContext(Context& ownerContext) override;
@@ -58,7 +56,6 @@ private:
 	std::unique_ptr<procedure::Context> procedureContext;
 	procedure::Context* refProcedureContext = nullptr;
 
-	std::unique_ptr<basic::Server> basicServer;
 	std::unique_ptr<http::Server> httpServer;
 };
 

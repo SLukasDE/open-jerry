@@ -18,7 +18,6 @@
 
 #include <jerry/engine/main/EntryImpl.h>
 #include <jerry/engine/main/Context.h>
-#include <jerry/engine/basic/Context.h>
 #include <jerry/Logger.h>
 
 #include <esl/object/InitializeContext.h>
@@ -49,10 +48,6 @@ EntryImpl::EntryImpl(procedure::Context& aRefProcedureContext)
 : refProcedureContext(&aRefProcedureContext)
 { }
 
-EntryImpl::EntryImpl(std::unique_ptr<basic::Server> aBasicServer)
-: basicServer(std::move(aBasicServer))
-{ }
-
 EntryImpl::EntryImpl(std::unique_ptr<http::Server> aHttpServer)
 : httpServer(std::move(aHttpServer))
 { }
@@ -73,10 +68,6 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 		 * initialize context *
 		 * ****************** */
 		procedureContext->initializeContext();
-	}
-
-	if(basicServer) {
-		basicServer->initializeContext();
 	}
 
 	if(httpServer) {
@@ -133,21 +124,6 @@ void EntryImpl::procedureRun(esl::object::Context& objectContext) {
 		logger.debug << "... referenced procedure context started.\n";
 	}
 
-	if(basicServer) {
-		/* ****************** *
-		 * start basic server *
-		 * ****************** */
-		logger.debug << "Start basic server ...\n";
-		if(logger.debug) {
-			std::set<std::string> notifiers = basicServer->getContext().getNotifiers();
-			for(const auto& notifier : notifiers) {
-				logger.debug << "   - \"" << notifier << "\"\n";
-			}
-		}
-		basicServer->procedureRun(objectContext);
-		logger.debug << "... basic server started.\n";
-	}
-
 	if(httpServer) {
 		/* ****************** *
 		 * start basic server *
@@ -198,17 +174,6 @@ void EntryImpl::dumpTree(std::size_t depth) const {
 			logger.info << "|   ";
 		}
 		logger.info << "+-> Procedure-Context: -> " << refProcedureContext << " (reference)\n";
-	}
-
-	if(basicServer) {
-		/* ***************** *
-		 * dump basic server *
-		 * ***************** */
-		for(std::size_t i=0; i<depth; ++i) {
-			logger.info << "|   ";
-		}
-		logger.info << "+-> Basic server: -> " << basicServer.get() << "\n";
-		basicServer->dumpTree(depth + 1);
 	}
 
 	if(httpServer) {
