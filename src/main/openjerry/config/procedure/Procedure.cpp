@@ -18,7 +18,7 @@
 
 #include <openjerry/config/procedure/Procedure.h>
 
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 namespace openjerry {
 namespace config {
@@ -26,7 +26,7 @@ namespace procedure {
 
 void Procedure::install(engine::procedure::Context& engineProcedureContext) const {
 	if(getRefId().empty()) {
-		std::unique_ptr<esl::processing::Procedure> procedure = create();
+		std::unique_ptr<esl::object::Procedure> procedure = create();
 
 		if(getId().empty()) {
 			engineProcedureContext.addProcedure(std::move(procedure));

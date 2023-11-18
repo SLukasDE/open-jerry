@@ -26,7 +26,7 @@
 #include <openjerry/engine/ProcessRegistry.h>
 
 #include <esl/object/Context.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <memory>
 
@@ -36,8 +36,8 @@ namespace main {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(std::unique_ptr<esl::processing::Procedure> procedure);
-	EntryImpl(esl::processing::Procedure& refProcedure);
+	EntryImpl(std::unique_ptr<esl::object::Procedure> procedure);
+	EntryImpl(esl::object::Procedure& refProcedure);
 
 	EntryImpl(std::unique_ptr<procedure::Context> procedureContext);
 	EntryImpl(procedure::Context& refProcedureContext);
@@ -50,8 +50,8 @@ public:
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
 private:
-	std::unique_ptr<esl::processing::Procedure> procedure;
-	esl::processing::Procedure* refProcedure = nullptr;
+	std::unique_ptr<esl::object::Procedure> procedure;
+	esl::object::Procedure* refProcedure = nullptr;
 
 	std::unique_ptr<procedure::Context> procedureContext;
 	procedure::Context* refProcedureContext = nullptr;

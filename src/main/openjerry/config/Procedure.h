@@ -22,7 +22,7 @@
 #include <openjerry/config/Config.h>
 #include <openjerry/config/Setting.h>
 
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -44,7 +44,7 @@ public:
 	const std::string& getRefId() const noexcept;
 
 protected:
-	std::unique_ptr<esl::processing::Procedure> create() const;
+	std::unique_ptr<esl::object::Procedure> create() const;
 
 private:
 	std::string id;

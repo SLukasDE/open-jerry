@@ -19,10 +19,8 @@
 #ifndef OPENJERRY_LOGGER_H_
 #define OPENJERRY_LOGGER_H_
 
-//#include <esl/logging/Appender.h>
-//#include <esl/logging/Layout.h>
-#include <esl/logging/Level.h>
-#include <esl/logging/Logger.h>
+#include <esl/monitoring/Streams.h>
+#include <esl/monitoring/Logger.h>
 
 #include <memory>
 #include <string>
@@ -30,16 +28,16 @@
 namespace openjerry {
 
 #ifdef OPENJERRY_LOGGING_LEVEL_DEBUG
-using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
+using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE>;
 #else
-using Logger = esl::logging::Logger<esl::logging::Level::TRACE>;
-//using Logger = esl::logging::Logger<esl::logging::Level::ERROR>;
+using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE>;
+//using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::ERROR>;
 #endif
 
 #if 0
-class Logger : public esl::logging::Logger<esl::logging::Level::TRACE> {
+class Logger : public esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE> {
 public:
-	using esl::logging::Logger<esl::logging::Level::TRACE>::Logger;
+	using esl::monitoring::Logger<esl::logging::Level::TRACE>::Logger;
 	//Logger(const char* aTypeName = "")
 
 	static void flush();

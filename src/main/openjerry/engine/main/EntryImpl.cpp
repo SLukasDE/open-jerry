@@ -32,11 +32,11 @@ namespace {
 Logger logger("openjerry::engine::main::EntryImpl");
 } /* anonymous namespace */
 
-EntryImpl::EntryImpl(std::unique_ptr<esl::processing::Procedure> aProcedure)
+EntryImpl::EntryImpl(std::unique_ptr<esl::object::Procedure> aProcedure)
 : procedure(std::move(aProcedure))
 { }
 
-EntryImpl::EntryImpl(esl::processing::Procedure& aRefProcedure)
+EntryImpl::EntryImpl(esl::object::Procedure& aRefProcedure)
 : refProcedure(&aRefProcedure)
 { }
 

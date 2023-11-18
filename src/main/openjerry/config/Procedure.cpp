@@ -122,15 +122,15 @@ const std::string& Procedure::getRefId() const noexcept {
 	return refId;
 }
 
-std::unique_ptr<esl::processing::Procedure> Procedure::create() const {
+std::unique_ptr<esl::object::Procedure> Procedure::create() const {
 	std::vector<std::pair<std::string, std::string>> eslSettings;
 	for(const auto& setting : settings) {
 		eslSettings.push_back(std::make_pair(setting.key, evaluate(setting.value, setting.language)));
 	}
 
-	std::unique_ptr<esl::processing::Procedure> procedure;
+	std::unique_ptr<esl::object::Procedure> procedure;
 	try {
-		procedure = esl::plugin::Registry::get().create<esl::processing::Procedure>(implementation, eslSettings);
+		procedure = esl::plugin::Registry::get().create<esl::object::Procedure>(implementation, eslSettings);
 	}
 	catch(const esl::plugin::exception::PluginNotFound& e) {
 		throw FilePosition::add(*this, e);

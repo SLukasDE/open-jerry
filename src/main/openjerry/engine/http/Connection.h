@@ -23,6 +23,7 @@
 
 #include <esl/com/http/server/Connection.h>
 #include <esl/com/http/server/Response.h>
+#include <esl/io/Output.h>
 
 #include <boost/filesystem.hpp>
 

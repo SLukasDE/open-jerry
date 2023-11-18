@@ -23,7 +23,7 @@
 #include <openjerry/utility/MIME.h>
 #include <openjerry/Logger.h>
 
-#include <esl/logging/Logger.h>
+#include <esl/monitoring/Logger.h>
 #include <esl/plugin/Registry.h>
 
 #include <iostream>

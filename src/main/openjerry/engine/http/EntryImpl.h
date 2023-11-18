@@ -27,7 +27,7 @@
 
 #include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <string>
 #include <memory>
@@ -39,8 +39,8 @@ namespace http {
 
 class EntryImpl : public Entry {
 public:
-	EntryImpl(std::unique_ptr<esl::processing::Procedure> procedure);
-	EntryImpl(esl::processing::Procedure& refProcedure);
+	EntryImpl(std::unique_ptr<esl::object::Procedure> procedure);
+	EntryImpl(esl::object::Procedure& refProcedure);
 	EntryImpl(std::unique_ptr<Context> context);
 	EntryImpl(Context& refContext);
 	EntryImpl(std::unique_ptr<Endpoint> endpoint);
@@ -52,8 +52,8 @@ public:
 	esl::io::Input accept(RequestContext& requestContext) override;
 
 private:
-	std::unique_ptr<esl::processing::Procedure> procedure;
-	esl::processing::Procedure* refProcedure = nullptr;
+	std::unique_ptr<esl::object::Procedure> procedure;
+	esl::object::Procedure* refProcedure = nullptr;
 
 	std::unique_ptr<Context> context;
 	Context* refContext = nullptr;

@@ -19,7 +19,7 @@
 #include <openjerry/config/http/Procedure.h>
 
 #include <esl/object/Object.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 #include <esl/utility/String.h>
 
 namespace openjerry {
@@ -28,7 +28,7 @@ namespace http {
 
 void Procedure::install(engine::http::Context& engineHttpContext) const {
 	if(getRefId().empty()) {
-		std::unique_ptr<esl::processing::Procedure> procedure = create();
+		std::unique_ptr<esl::object::Procedure> procedure = create();
 
 		if(getId().empty()) {
 			engineHttpContext.addProcedure(std::move(procedure));

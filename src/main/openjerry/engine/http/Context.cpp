@@ -53,12 +53,12 @@ const Context* Context::getParent() const {
 	return parent;
 }
 
-void Context::addProcedure(std::unique_ptr<esl::processing::Procedure> procedure) {
+void Context::addProcedure(std::unique_ptr<esl::object::Procedure> procedure) {
 	entries.emplace_back(new EntryImpl(std::move(procedure)));
 }
 
 void Context::addProcedure(const std::string& refId) {
-	esl::processing::Procedure* procedure = findObject<esl::processing::Procedure>(refId);
+	esl::object::Procedure* procedure = findObject<esl::object::Procedure>(refId);
 
 	if(procedure == nullptr) {
 	    throw std::runtime_error("No procedure found with ref-id=\"" + refId + "\".");

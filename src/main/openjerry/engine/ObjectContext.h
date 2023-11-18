@@ -43,7 +43,9 @@ public:
 
 	void setParent(esl::object::Context* objectContext);
 
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override; // final;
 	std::set<std::string> getObjectIds() const override;
+
 	void addReference(const std::string& id, esl::object::Object& object);
 
 	virtual void initializeContext();
@@ -57,7 +59,6 @@ public:
 protected:
 	esl::object::Object* findRawObject(const std::string& id) override;
 	const esl::object::Object* findRawObject(const std::string& id) const override;
-	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override; // final;
 
 private:
 	ProcessRegistry* processRegistry;

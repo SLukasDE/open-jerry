@@ -1,4 +1,4 @@
-<jerry>
+<openjerry>
 	<!--include file="logger.xml"/-->
 	
 	<!--certificate domain="*" key="server.key" cert="server.pub"/-->
@@ -10,7 +10,7 @@
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<database id="my-db" implementation="eslx/database/SQLiteConnectionFactory">
+	<database id="my-db" implementation="esl/database/SQLiteConnectionFactory">
 		<parameter key="URI" value="file:my.db?mode=rw"/>
 	</database>
 	
@@ -50,4 +50,4 @@
 			</host>
 		</context-->
 	</http-server>
-</jerry>
+</openjerry>

@@ -25,7 +25,7 @@
 
 #include <esl/com/http/server/Socket.h>
 #include <esl/object/Context.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <cstdint>
 #include <memory>
@@ -37,7 +37,7 @@ namespace openjerry {
 namespace engine {
 namespace http {
 
-class Server final : public esl::processing::Procedure {
+class Server final : public esl::object::Procedure {
 public:
 	Server(ProcessRegistry& processRegistry, bool https, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 

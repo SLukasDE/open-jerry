@@ -27,10 +27,10 @@
 
 #include <esl/object/Object.h>
 #include <esl/object/Event.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 #include <esl/system/Signal.h>
 #include <esl/utility/Signal.h>
-#include <esl/logging/Appender.h>
+#include <esl/monitoring/Appender.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -49,9 +49,9 @@ namespace openjerry {
 namespace engine {
 namespace main {
 
-class Context final : public ObjectContext, public ProcessRegistry, public esl::processing::Procedure { //, public esl::object::Event {
+class Context final : public ObjectContext, public ProcessRegistry, public esl::object::Procedure { //, public esl::object::Event {
 public:
-	static std::unique_ptr<esl::processing::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
+	static std::unique_ptr<esl::object::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Context(const std::vector<std::pair<std::string, std::string>>& settings);
 
@@ -64,7 +64,7 @@ public:
 	/* context specific methods */
 	//void addReference(const std::string& id, esl::object::Interface::Object& object);
 
-	void addProcedure(std::unique_ptr<esl::processing::Procedure> procedure);
+	void addProcedure(std::unique_ptr<esl::object::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
 	void addHttpServer(std::unique_ptr<http::Server> server);
@@ -84,11 +84,10 @@ public:
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
 	/* specializations of ProcessRegistry */
-	void processRegister(esl::processing::Procedure& procedureRunning) override;
-	void processUnregister(esl::processing::Procedure& procedureRunning) override;
+	void processRegister(esl::object::Procedure& procedureRunning) override;
+	void processUnregister(esl::object::Procedure& procedureRunning) override;
 
-protected:
-	void addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override;
+	void addObject(const std::string& id, std::unique_ptr<esl::object::Object> object) override;
 
 private:
 	std::atomic<int> terminateCounter{-1};
@@ -106,7 +105,7 @@ private:
 	std::vector<std::unique_ptr<Entry>> entries;
 
 	std::mutex proceduresRunningMutex;
-	std::set<esl::processing::Procedure*> proceduresRunning;
+	std::set<esl::object::Procedure*> proceduresRunning;
 	bool proceduresRunningCancel = false;
 	std::condition_variable proceduresRunningCondVar;
 

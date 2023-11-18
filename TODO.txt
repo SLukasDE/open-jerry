@@ -1,0 +1,3 @@
+src/main/ObjectContext.h:
+- greift auf Namespace "common4eslx" zu. Dieser Namespace sollte jedoch gar nicht existieren.
+  Vielleicht muss diese Klasse aus common4eslx noch nach eslx-common public verfügbar gemacht werden.

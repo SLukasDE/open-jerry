@@ -26,7 +26,7 @@
 
 #include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <string>
 #include <map>
@@ -54,7 +54,7 @@ public:
 	void setParent(Context* context);
 	const Context* getParent() const;
 
-	void addProcedure(std::unique_ptr<esl::processing::Procedure> procedure);
+	void addProcedure(std::unique_ptr<esl::object::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
 	void addContext(const std::string& refId);

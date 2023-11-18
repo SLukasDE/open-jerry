@@ -19,7 +19,7 @@
 #ifndef OPENJERRY_ENGINE_PROCESSREGISTRY_H_
 #define OPENJERRY_ENGINE_PROCESSREGISTRY_H_
 
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 namespace openjerry {
 namespace engine {
@@ -28,8 +28,8 @@ class ProcessRegistry {
 public:
 	virtual ~ProcessRegistry() = default;
 
-	virtual void processRegister(esl::processing::Procedure& procedureRunning) = 0;
-	virtual void processUnregister(esl::processing::Procedure& procedureRunning) = 0;
+	virtual void processRegister(esl::object::Procedure& procedureRunning) = 0;
+	virtual void processUnregister(esl::object::Procedure& procedureRunning) = 0;
 };
 
 } /* namespace engine */

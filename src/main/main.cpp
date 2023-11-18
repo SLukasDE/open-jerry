@@ -21,12 +21,14 @@
 #include <openjerry/ObjectContext.h>
 #include <openjerry/ExceptionHandler.h>
 
-#include <esl/logging/Logging.h>
+#include <esl/monitoring/Logging.h>
+#include <esl/monitoring/LogbookLogging.h>
 #include <esl/object/Value.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
+#include <esl/system/DefaultStacktraceFactory.h>
 
-#include <eslx/Plugin.h>
+#include <esl/Plugin.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -67,11 +69,16 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 }
 
 int main(int argc, const char *argv[]) {
-	eslx::Plugin::install(esl::plugin::Registry::get(), nullptr);
-
-	esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
-
 	std::cout << "openjerry version " << openjerryVersionStr << std::endl;
+
+	esl::Plugin::install(esl::plugin::Registry::get(), nullptr);
+
+	//esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
+#if 0
+    esl::plugin::Registry::get().setObject(esl::plugin::Registry::get().create<esl::system::StacktraceFactory>("esl/system/DefaultStacktraceFactory", {}));
+#else
+    esl::plugin::Registry::get().setObject(esl::system::DefaultStacktraceFactory::create({}));
+#endif
 
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
@@ -142,7 +149,14 @@ int main(int argc, const char *argv[]) {
 		}
 
 		if(!loggerConfigFile.empty()) {
-			esl::logging::Logging::initWithFile(loggerConfigFile);
+			//esl::logging::Logging::initWithFile(loggerConfigFile);
+#if 0
+		    auto logging = esl::plugin::Registry::get().create<esl::monitoring::Logging>("esl/monitoring/LogbookLogging", {});
+#else
+		    auto logging = esl::monitoring::LogbookLogging::create({});
+#endif
+			logging->addFile(loggerConfigFile);
+		    esl::plugin::Registry::get().setObject(std::move(logging));
 		}
 
 		mainConfig.install(mainContext);

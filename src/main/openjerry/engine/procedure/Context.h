@@ -23,7 +23,7 @@
 #include <openjerry/engine/procedure/Entry.h>
 
 #include <esl/object/Context.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 
 #include <map>
 #include <memory>
@@ -39,7 +39,7 @@ class Context : public ObjectContext {
 public:
 	using ObjectContext::ObjectContext;
 
-	void addProcedure(std::unique_ptr<esl::processing::Procedure> procedure);
+	void addProcedure(std::unique_ptr<esl::object::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
 	void addContext(std::unique_ptr<Context> context);

@@ -43,6 +43,7 @@ public:
 	void setPath(std::string path);
 	const std::string& getPath() const override;
 	esl::object::Context& getObjectContext() override;
+	const esl::object::Context& getObjectContext() const override;
 
 	void setHeadersContext(const Context* headersContext);
 	const Context* getHeadersContext() const;

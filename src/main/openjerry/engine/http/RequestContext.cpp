@@ -19,6 +19,8 @@
 #include <openjerry/engine/http/RequestContext.h>
 #include <openjerry/Logger.h>
 
+#include <esl/io/Output.h>
+
 namespace openjerry {
 namespace engine {
 namespace http {
@@ -51,6 +53,10 @@ const std::string& RequestContext::getPath() const {
 }
 
 esl::object::Context& RequestContext::getObjectContext() {
+	return baseRequestContext.getObjectContext();
+}
+
+const esl::object::Context& RequestContext::getObjectContext() const {
 	return baseRequestContext.getObjectContext();
 }
 

@@ -21,6 +21,7 @@
 #include <openjerry/Logger.h>
 
 #include <esl/com/http/client/ConnectionFactory.h>
+#include <esl/com/http/client/CURLConnectionFactory.h>
 #include <esl/plugin/exception/PluginNotFound.h>
 #include <esl/plugin/Registry.h>
 
@@ -104,7 +105,11 @@ std::unique_ptr<esl::object::Object> Client::install() const {
 	logger.trace << "Adding http-client (implementation=\"" << implementation << "\") with id=\"" << id << "\"\n";
 	std::unique_ptr<esl::com::http::client::ConnectionFactory> connectionFactory;
 	try {
-		connectionFactory = esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation.empty() ? "eslx/com/http/client/ConnectionFactory" : implementation, eslSettings);
+#if 0
+		connectionFactory = esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation.empty() ? "esl/com/http/client/CURLConnectionFactory" : implementation, eslSettings);
+#else
+		connectionFactory = implementation.empty() ? esl::com::http::client::CURLConnectionFactory::create(eslSettings) : esl::plugin::Registry::get().create<esl::com::http::client::ConnectionFactory>(implementation, eslSettings);
+#endif
 	}
 	catch(const esl::plugin::exception::PluginNotFound& e) {
 		throw FilePosition::add(*this, e);

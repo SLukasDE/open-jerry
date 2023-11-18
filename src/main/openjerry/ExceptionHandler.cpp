@@ -21,8 +21,9 @@
 #include <openjerry/Logger.h>
 
 #include <esl/io/FilePosition.h>
-#include <esl/system/Stacktrace.h>
+#include <esl/database/Diagnostics.h>
 #include <esl/plugin/Registry.h>
+#include <esl/system/Stacktrace.h>
 
 #include <stdexcept>
 #include <memory>
@@ -78,7 +79,7 @@ void ExceptionHandler::dump(std::ostream& stream) const {
 	}
 }
 
-void ExceptionHandler::dump(esl::logging::StreamReal& stream, esl::logging::Location location) const {
+void ExceptionHandler::dump(esl::monitoring::Streams::Real& stream, esl::monitoring::Streams::Location location) const {
 	initialize();
 
 	stream(location.object, location.function, location.file, location.line) << "Exception : " << plainException << "\n";

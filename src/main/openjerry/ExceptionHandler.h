@@ -23,9 +23,7 @@
 
 #include <esl/com/http/server/exception/StatusCode.h>
 #include <esl/database/exception/SqlError.h>
-#include <esl/logging/StreamReal.h>
-#include <esl/logging/StreamEmpty.h>
-#include <esl/logging/Location.h>
+#include <esl/monitoring/Streams.h>
 #include <esl/plugin/exception/PluginNotFound.h>
 
 #include <exception>
@@ -39,8 +37,8 @@ public:
 	virtual ~ExceptionHandler() = default;
 
 	void dump(std::ostream& stream) const;
-	void dump(esl::logging::StreamReal& stream, esl::logging::Location location = esl::logging::Location{}) const;
-	inline void dump(esl::logging::StreamEmpty& stream, esl::logging::Location location = esl::logging::Location{}) const { };
+	void dump(esl::monitoring::Streams::Real& stream, esl::monitoring::Streams::Location location = esl::monitoring::Streams::Location{}) const;
+	inline void dump(esl::monitoring::Streams::Empty& stream, esl::monitoring::Streams::Location location = esl::monitoring::Streams::Location{}) const { };
 
 protected:
 	void initialize() const;

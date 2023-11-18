@@ -19,7 +19,7 @@
 
 #include <openjerry/Logger.h>
 
-#include <esl/logging/Config.h>
+#include <esl/monitoring/Config.h>
 
 #include <iostream>
 #include <map>

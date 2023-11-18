@@ -24,7 +24,7 @@
 
 #include <esl/com/basic/client/ConnectionFactory.h>
 #include <esl/com/http/client/ConnectionFactory.h>
-#include <esl/processing/Procedure.h>
+#include <esl/object/Procedure.h>
 #include <esl/object/InitializeContext.h>
 
 #include <stdexcept>
@@ -42,6 +42,20 @@ ObjectContext::ObjectContext(ProcessRegistry* aProcessRegistry)
 
 void ObjectContext::setParent(esl::object::Context* objectContext) {
 	parent = objectContext;
+}
+
+void ObjectContext::addObject(const std::string& id, std::unique_ptr<esl::object::Object> object) {
+	logger.trace << "Adding object with id=\"" << id << "\"\n";
+
+	if(id.empty()) {
+		throw std::runtime_error("Add an object with empty id is not allowed.");
+	}
+	if(!object) {
+		throw std::runtime_error("Cannot add an empty object with id '" + id + "'.");
+	}
+
+	addReference(id, *object);
+	objects[id] = std::move(object);
 }
 
 std::set<std::string> ObjectContext::getObjectIds() const {
@@ -98,7 +112,7 @@ void ObjectContext::dumpTree(std::size_t depth) const {
 		const http::Endpoint* httpEndpointPtr = dynamic_cast<const http::Endpoint*>(objectPtr);
 		const http::Host* httpHostPtr = dynamic_cast<const http::Host*>(objectPtr);
 
-		const esl::processing::Procedure* procedurePtr = dynamic_cast<const esl::processing::Procedure*>(objectPtr);
+		const esl::object::Procedure* procedurePtr = dynamic_cast<const esl::object::Procedure*>(objectPtr);
 		const esl::com::basic::client::ConnectionFactory* basicConnectionFactory = dynamic_cast<const esl::com::basic::client::ConnectionFactory*>(objectPtr);
 		const esl::com::http::client::ConnectionFactory* httpConnectionFactory = dynamic_cast<const esl::com::http::client::ConnectionFactory*>(objectPtr);
 
@@ -180,20 +194,6 @@ const esl::object::Object* ObjectContext::findRawObject(const std::string& id) c
 
 	// if id NOT exist in objectsById, then find object in parent ObjectContext
 	return parent ? parent->findObject<esl::object::Object>(id) : nullptr;
-}
-
-void ObjectContext::addRawObject(const std::string& id, std::unique_ptr<esl::object::Object> object) {
-	logger.trace << "Adding object with id=\"" << id << "\"\n";
-
-	if(id.empty()) {
-		throw std::runtime_error("Add an object with empty id is not allowed.");
-	}
-	if(!object) {
-		throw std::runtime_error("Cannot add an empty object with id '" + id + "'.");
-	}
-
-	addReference(id, *object);
-	objects[id] = std::move(object);
 }
 
 } /* namespace engine */

@@ -21,6 +21,7 @@
 #include <openjerry/engine/ProcessRegistry.h>
 #include <openjerry/Logger.h>
 
+#include <esl/com/http/server/MHDSocket.h>
 #include <esl/system/Stacktrace.h>
 #include <esl/plugin/Registry.h>
 
@@ -36,7 +37,11 @@ Logger logger("openjerry::engine::http::Server");
 }
 
 Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
-: socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation.empty() ? "eslx/com/http/server/Socket" : aImplementation, aSettings)),
+#if 0
+: socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation.empty() ? "esl/com/http/server/MHDSocket" : aImplementation, aSettings)),
+#else
+: socket(aImplementation.empty() ? esl::com::http::server::MHDSocket::create(aSettings) : esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation, aSettings)),
+#endif
   processRegistry(aProcessRegistry),
   context(nullptr),
   requestHandler(context),
