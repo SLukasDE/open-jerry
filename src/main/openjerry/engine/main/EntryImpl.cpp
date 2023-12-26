@@ -71,18 +71,9 @@ void EntryImpl::initializeContext(Context& ownerContext) {
 	}
 
 	if(httpServer) {
-		/* *********************************************************** *
-		 * add certificates to socket if http-server is used for https *
-		 * *********************************************************** */
-		if(httpServer->isHttps()) {
-			if(ownerContext.getCertificates().empty()) {
-				throw std::runtime_error("No certificates are available.");
-			}
-			for(const auto& certificate : ownerContext.getCertificates()) {
-				httpServer->addTLSHost(certificate.first, certificate.second.first, certificate.second.second);
-			}
-		}
-
+		/* ****************** *
+		 * initialize context *
+		 * ****************** */
 		httpServer->initializeContext();
 	}
 }

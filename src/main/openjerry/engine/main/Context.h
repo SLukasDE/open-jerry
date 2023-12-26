@@ -26,7 +26,6 @@
 #include <openjerry/engine/ProcessRegistry.h>
 
 #include <esl/object/Object.h>
-#include <esl/object/Event.h>
 #include <esl/object/Procedure.h>
 #include <esl/system/Signal.h>
 #include <esl/utility/Signal.h>
@@ -49,21 +48,17 @@ namespace openjerry {
 namespace engine {
 namespace main {
 
-class Context final : public ObjectContext, public ProcessRegistry, public esl::object::Procedure { //, public esl::object::Event {
+class Context final : public ObjectContext, public ProcessRegistry, public esl::object::Procedure {
 public:
 	static std::unique_ptr<esl::object::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Context(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	/* deprecated certificate stuff */
-	void addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate);
-	void addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile);
-	const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
-	const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
+	//const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
+	//const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
 	/* context specific methods */
-	//void addReference(const std::string& id, esl::object::Interface::Object& object);
-
 	void addProcedure(std::unique_ptr<esl::object::Procedure> procedure);
 	void addProcedure(const std::string& refId);
 
@@ -78,8 +73,6 @@ public:
 
 	void procedureRun(esl::object::Context& objectContext) override;
 	void procedureCancel() override;
-
-	//void onSignal(const esl::utility::Signal& signal);
 
 	void setProcessRegistry(ProcessRegistry* processRegistry) override;
 
@@ -100,7 +93,6 @@ private:
 	int exceptionReturnCode = -1;
 
 	std::unique_ptr<esl::system::Signal> signal;
-	std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>> certsByHostname;
 
 	std::vector<std::unique_ptr<Entry>> entries;
 

@@ -51,18 +51,6 @@ Server::Server(const std::string& fileName, const tinyxml2::XMLElement& element)
 				throw FilePosition::add(*this, "Value \"\" of attribute 'implementation' is invalid.");
 			}
 		}
-		else if(std::string(attribute->Name()) == "https") {
-			std::string httpsStr = esl::utility::String::toLower(attribute->Value());
-			if(httpsStr == "true") {
-				isHttps = true;
-			}
-			else if(httpsStr == "false") {
-				isHttps = false;
-			}
-			else {
-				throw FilePosition::add(*this, "Invalid value \"" + std::string(attribute->Value()) + "\" for attribute 'https'");
-			}
-		}
 		else if(std::string(attribute->Name()) == "inherit") {
 			std::string inheritStr = esl::utility::String::toLower(attribute->Value());
 			if(hasInherit) {
@@ -104,10 +92,6 @@ void Server::save(std::ostream& oStream, std::size_t spaces) const {
 		oStream <<  " implementation=\"" << implementation << "\"";
 	}
 
-	if(isHttps) {
-		oStream << " https=\"true\"";
-	}
-
 	if(inherit) {
 		oStream << " inherit=\"true\"";
 	}
@@ -142,14 +126,9 @@ void Server::install(engine::main::Context& engineMainContext) const {
 	}
 
 	try {
-		if(isHttps) {
-			logger.trace << "Adding HTTPS server (implementation=\"" << implementation << "\")\n";
-		}
-		else {
-			logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
-		}
+		logger.trace << "Adding HTTP server (implementation=\"" << implementation << "\")\n";
 
-		std::unique_ptr<engine::http::Server> server(new engine::http::Server(engineMainContext, isHttps, eslSettings, implementation));
+		std::unique_ptr<engine::http::Server> server(new engine::http::Server(engineMainContext, eslSettings, implementation));
 		engine::http::Server& serverRef = *server;
 
 		if(inherit) {

@@ -86,7 +86,6 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
   signal(esl::system::DefaultSignal::create({}))
 #endif
 {
-	//bool hasVerbose = false;
 	bool hasCatchException = false;
 	bool hasDumpException = false;
 
@@ -159,44 +158,6 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 		logger.warn << "There are stop signals specified by no signal handler available. Ignoring stop signal...\n";
 		stopSignals.clear();
 	}
-}
-
-void Context::addCertificate(const std::string& hostname, std::vector<unsigned char> key, std::vector<unsigned char> certificate) {
-	std::pair<std::vector<unsigned char>, std::vector<unsigned char>>& certPair = certsByHostname[hostname];
-	certPair.first = std::move(certificate);
-	certPair.second = std::move(key);
-}
-
-void Context::addCertificate(const std::string& hostname, const std::string& keyFile, const std::string& certificateFile) {
-	std::vector<unsigned char> key;
-	std::vector<unsigned char> certificate;
-
-	if(!keyFile.empty()) {
-		std::ifstream ifStream(keyFile, std::ios::binary );
-		if(!ifStream.good()) {
-			throw std::runtime_error("Cannot open key file \"" + keyFile + "\"");
-		}
-	    key = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
-	}
-
-	if(!certificateFile.empty()) {
-		std::ifstream ifStream(certificateFile, std::ios::binary );
-		if(!ifStream.good()) {
-			throw std::runtime_error("Cannot open certificate file \"" + certificateFile + "\"");
-		}
-		certificate = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
-	}
-
-    addCertificate(hostname, std::move(key), std::move(certificate));
-}
-
-const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& Context::getCertificates() const noexcept {
-	return certsByHostname;
-}
-
-const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* Context::getCertsByHostname(const std::string& hostname) const {
-	auto certIter = certsByHostname.find(hostname);
-	return certIter == std::end(certsByHostname) ? nullptr : &certIter->second;
 }
 
 void Context::addProcedure(std::unique_ptr<esl::object::Procedure> procedure) {

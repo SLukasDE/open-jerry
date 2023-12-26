@@ -39,15 +39,12 @@ namespace http {
 
 class Server final : public esl::object::Procedure {
 public:
-	Server(ProcessRegistry& processRegistry, bool https, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
+	Server(ProcessRegistry& processRegistry, const std::vector<std::pair<std::string, std::string>>& settings, const std::string& implementation);
 
 	void initializeContext();
 
 	void procedureRun(esl::object::Context&) override;
 	void procedureCancel() override;
-
-	void addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key);
-	bool isHttps() const noexcept;
 
 	Context& getContext() noexcept;
 	void dumpTree(std::size_t depth) const;
@@ -57,8 +54,6 @@ private:
 	ProcessRegistry& processRegistry;
 	Context context;
 	RequestHandler requestHandler;
-
-	const bool https;
 
 	const std::string implementation;
 	const std::vector<std::pair<std::string, std::string>> settings;

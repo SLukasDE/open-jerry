@@ -84,9 +84,6 @@ void Context::save(std::ostream& oStream) const {
 			oStream << "  <library file=\"" << entry.first << "\" arguments=\"" << entry.second << "\"/>\n";
 		}
 	}
-	for(const auto& entry : certificates) {
-		entry.save(oStream, 2);
-	}
 
 	for(const auto& entry : entries) {
 		entry->save(oStream, 2);
@@ -106,9 +103,11 @@ void Context::loadLibraries() {
 }
 
 void Context::install(engine::main::Context& context) {
+	/*
 	for(const auto& configCertificate : certificates) {
 		context.addCertificate(configCertificate.domain, configCertificate.keyFile, configCertificate.certFile);
 	}
+	*/
 
 	for(const auto& entry : entries) {
 		entry->install(context);
@@ -192,7 +191,7 @@ void Context::parseInnerElement(const tinyxml2::XMLElement& element) {
 		parseLibrary(element);
 	}
 	else if(elementName == "certificate") {
-		certificates.push_back(Certificate(getFileName(), element));
+		Certificate(getFileName(), element);
 	}
 	else {
 		entries.emplace_back(new EntryImpl(getFileName(), element));

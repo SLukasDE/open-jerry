@@ -34,10 +34,6 @@ public:
 	Certificate(const std::string& fileName, const tinyxml2::XMLElement& element);
 
 	void save(std::ostream& oStream, std::size_t spaces) const;
-
-	std::string keyFile;
-	std::string certFile;
-	std::string domain;
 };
 
 } /* namespace config */

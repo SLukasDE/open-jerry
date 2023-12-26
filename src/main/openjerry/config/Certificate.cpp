@@ -19,12 +19,23 @@
 #include <openjerry/config/Certificate.h>
 #include <openjerry/config/FilePosition.h>
 
+#include <esl/crypto/KeyStore.h>
+#include <esl/plugin/Registry.h>
+
+#include <fstream>
+#include <stdexcept>
+#include <vector>
+
 namespace openjerry {
 namespace config {
 
 Certificate::Certificate(const std::string& fileName, const tinyxml2::XMLElement& element)
 : Config(fileName, element)
 {
+	std::string keyFile;
+	std::string certFile;
+	std::string domain;
+
 	if(element.GetUserData() != nullptr) {
 		throw FilePosition::add(*this, "Element has user data but it should be empty");
 	}
@@ -56,10 +67,41 @@ Certificate::Certificate(const std::string& fileName, const tinyxml2::XMLElement
 	if(certFile == "") {
 		throw FilePosition::add(*this, "Missing attribute 'cert'");
 	}
+
+
+
+
+	std::vector<unsigned char> key;
+	std::vector<unsigned char> certificate;
+
+	if(!keyFile.empty()) {
+		std::ifstream ifStream(keyFile, std::ios::binary );
+		if(!ifStream.good()) {
+			throw FilePosition::add(*this, "Cannot open key file \"" + keyFile + "\"");
+		}
+	    key = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
+	}
+
+	if(!certFile.empty()) {
+		std::ifstream ifStream(certFile, std::ios::binary );
+		if(!ifStream.good()) {
+			throw FilePosition::add(*this, "Cannot open certificate file \"" + certFile + "\"");
+		}
+		certificate = std::vector<unsigned char>(std::istreambuf_iterator<char>(ifStream), {});
+	}
+
+
+
+	esl::crypto::KeyStore* keyStore = esl::plugin::Registry::get().findObject<esl::crypto::KeyStore>();
+	if(!keyStore) {
+		throw FilePosition::add(*this, "Cannot add key and certificate, because there is no crypto engine installed.");
+	}
+
+	keyStore->addCertificate(domain, certificate);
+	keyStore->addPrivateKey(domain, key, "");
 }
 
 void Certificate::save(std::ostream& oStream, std::size_t spaces) const {
-	oStream << makeSpaces(spaces) << "<certificate domain=\"" << domain << "\" key=\"" << keyFile << "\" cert=\"" << certFile << "\"/>\n";
 }
 
 } /* namespace config */

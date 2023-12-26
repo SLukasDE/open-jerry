@@ -36,7 +36,7 @@ namespace {
 Logger logger("openjerry::engine::http::Server");
 }
 
-Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
+Server::Server(ProcessRegistry& aProcessRegistry, const std::vector<std::pair<std::string, std::string>>& aSettings, const std::string& aImplementation)
 #if 0
 : socket(esl::plugin::Registry::get().create<esl::com::http::server::Socket>(aImplementation.empty() ? "esl/com/http/server/MHDSocket" : aImplementation, aSettings)),
 #else
@@ -45,7 +45,6 @@ Server::Server(ProcessRegistry& aProcessRegistry, bool aHttps, const std::vector
   processRegistry(aProcessRegistry),
   context(nullptr),
   requestHandler(context),
-  https(aHttps),
   implementation(aImplementation),
   settings(aSettings)
 {
@@ -76,14 +75,6 @@ void Server::procedureCancel()  {
 	socket->release();
 }
 
-void Server::addTLSHost(const std::string& hostname, std::vector<unsigned char> certificate, std::vector<unsigned char> key) {
-	socket->addTLSHost(hostname, std::move(certificate), std::move(key));
-}
-
-bool Server::isHttps() const noexcept {
-	return https;
-}
-
 Context& Server::getContext() noexcept {
 	return context;
 }
@@ -96,12 +87,6 @@ void Server::dumpTree(std::size_t depth) const {
 
     for(std::size_t i=0; i<depth; ++i) {
             logger.info << "|   ";
-    }
-    if(isHttps()) {
-    	logger.info << "HTTPS: YES\n";
-    }
-    else {
-    	logger.info << "HTTPS: NO\n";
     }
 
 	for(std::size_t i=0; i<depth; ++i) {

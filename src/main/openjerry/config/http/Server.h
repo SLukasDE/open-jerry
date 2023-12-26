@@ -46,7 +46,6 @@ public:
 
 private:
 	std::string implementation;
-	bool isHttps = false;
 	std::vector<Setting> settings;
 	bool inherit = true;
 	std::vector<Setting> responseHeaders;
