@@ -127,8 +127,10 @@ void Context::loadXML(const tinyxml2::XMLElement& element) {
 	else if(elementName == "openjerry-server") {
 		std::cerr << "Tag <openjerry-server> is deprecated. Use tag <openjerry> instead.";
 	}
-	else if(elementName != "openjerry") {
-		throw FilePosition::add(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"openjerry\"");
+	else if(elementName == "openjerry") {
+	}
+	else if(elementName != "jerry") {
+		throw FilePosition::add(*this, "Name of XML root element is \"" + std::string(element.Name()) + "\" but should be \"jerry\" or \"openjerry\"");
 	}
 
 	if(element.GetUserData() != nullptr) {

@@ -2,18 +2,18 @@
 	<certificate domain="*" key="server.key" cert="server.pub"/>
 	
 	<http-context id="x">
-		<requesthandler implementation="jerry/filebrowser">
+		<!--requesthandler implementation="jerry/filebrowser">
 			<parameter key="browsable" value="true"/>
 			<parameter key="ignoreError" value="true"/>
 			<parameter key="path" value="/tmp/"/>
-		</requesthandler>
+		</requesthandler-->
 	</http-context>
 	
 	<http-client id="http-client-1">
 		<parameter key="url" value="https://www.heise.de"/>
 	</http-client>
 	
-	<database id="my-db" implementation="eslx/database/SQLiteConnectionFactory">
+	<database id="my-db" implementation="esl/database/SQLiteConnectionFactory">
 		<parameter key="URI" value="file:my.db?mode=rw"/>
 	</database>
 	
@@ -23,7 +23,7 @@
 			<!-- -------------- -->
 			<!-- Authentication -->
 			<!-- -------------- -->
-			
+			<!--
 			<procedure id="authentication-basicauth-stable" implementation="jerry/authentication-basic-stable">
 				<parameter key="credential" value="Hans1:plain:Wurst991"/>
 				<parameter key="credential" value="Hans2:plain:Wurst992"/>
@@ -44,18 +44,20 @@
 				<parameter key="allow" value="bearer"/>
 				<parameter key="authentication-procedure-id" value="authentication-basicauth-stable"/>
 				<parameter key="authentication-procedure-id" value="authentication-basicauth-dblookup"/>
-				<parameter key="authentication-procedure-id" value="authentication-jwt"/>
-				<!--parameter key="behavior" value="reply"/-->
-				<!--parameter key="behavior" value="proceed"/-->
-				<!--parameter key="behavior" value="disconnect"/-->
+				<parameter key="authentication-procedure-id" value="authentication-jwt">
+				<parameter key="behavior" value="reply"/>
+				or: <parameter key="behavior" value="proceed"/>
+				or: <parameter key="behavior" value="disconnect"/>
 			</requesthandler>
+			-->
+
 			<response-header key="WWW-Authenticate" value="Basic realm=&quot;AuthArea&quot;"/>
 			<!--response-header key="WWW-Authenticate" value="Bearer realm=&quot;AuthArea&quot;"/-->
 			
 			<!-- ------------- -->
 			<!-- Authorization -->
 			<!-- ------------- -->
-			
+			<!--
 			<procedure id="get-my-roles" implementation="jerry/authorization-dblookup">
 				<parameter key="authorized-object-id" value="my-roles"/>
 				<parameter key="connection-id" value="my-db"/>
@@ -68,40 +70,38 @@
 				<parameter key="lifetime-renew" value="false"/>
 				<parameter key="lifetime-ms" value="60000"/>
 			</procedure>
+			-->
 		</context>
 		
+		<!--
 		<procedure id="sleep" implementation="jerry/sleep">
 			<parameter key="sleep-ms" value="1000"/>
 		</procedure>
+		-->
 		
 		<!--procedure ref-id="sleep"/-->
-	
+		
 		<endpoint path="test1/log">
 			<endpoint path="mc-lukas">
-				<requesthandler implementation="jerry/filebrowser">
+				<!--requesthandler implementation="jerry/filebrowser">
 					<parameter key="browsable" value="true"/>
 					<parameter key="path" value="/usr/"/>
-				</requesthandler>
+				</requesthandler-->
 			</endpoint>
 			
 			<reference id="y" ref-id="x"/>
 			
 			<context ref-id="y"/>
-			<!--requesthandler implementation="jerry/filebrowser">
-				<parameter key="browsable" value="true"/>
-				<parameter key="ignoreError" value="true"/>
-				<parameter key="path" value="/tmp/"/>
-			</requesthandler-->
-			
 		</endpoint>
 		<endpoint path="heise">
-			<requesthandler implementation="jerry/proxy">
+			<!--requesthandler implementation="jerry/proxy">
 				<parameter key="http-client-id" value="http-client-1"/>
-			</requesthandler>
+			</requesthandler-->
 		</endpoint>
 	</http-context>
 	
-	<http-server https="true">
+	<http-server>
+		<parameter key="https" value="true"/>
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 		<listener> <!-- same as context -->
@@ -111,45 +111,11 @@
 		</listener>
 	</http-server>
 	
-	
-	<object id="kafka-broker-1" implementation="eslx/com/basic/broker/KafkaClient">
+	<!--
+	<object id="kafka-broker-1" implementation="esl/com/basic/broker/KafkaClient">
 		<parameter key="kafka.group.id" value="test"/>
 		<parameter key="kafka.bootstrap.servers" value="localhost:9092"/>
 	</object>
-	
-	<basic-client id="kafka-client-1" implementation="eslx/com/basic/client/KafkaConnectionFactory">
-		<parameter key="broker-id" value="kafka-broker-1"/>
-		<parameter key="topic" value="quickstart-results"/>
-	</basic-client>
-	
-	<basic-context id="ref-context-basic">
-		<requesthandler implementation="jerry/echo">
-			<parameter key="notifier" value="quickstart-events"/>
-			<!--parameter key="delay-ms" value="1000"/-->
-			<parameter key="connection-factory-id" value="kafka-client-1"/>
-		</requesthandler>
-		<requesthandler implementation="jerry/dump">
-			<parameter key="notifier" value="quickstart-results"/>
-			<parameter key="show-context" value="true"/>
-			<parameter key="show-content" value="true"/>
-		</requesthandler>
-		<!--requesthandler implementation="jerry/builtin/basic/dump">
-			<parameter key="notifier" value="quickstart-events"/>
-			<parameter key="show-context" value="true"/>
-			<parameter key="show-content" value="true"/>
-		</requesthandler-->
-	</basic-context>
-	
-	<basic-server implementation="eslx/com/basic/server/KafkaSocket">
-		<parameter key="threads" value="4"/>
-		<parameter key="poll-timeout-ms" value="500"/>
-		<parameter key="kafka.group.id" value="test"/>
-		<parameter key="kafka.bootstrap.servers" value="localhost:9092"/>
-	
-		<listener> <!-- same as context -->
-			<context ref-id="ref-context-basic"/>
-		</listener>
-	</basic-server>
 	
 	<procedure id="sleep-1" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="1000"/>
@@ -167,6 +133,7 @@
 	<procedure implementation="jerry/list">
 		<parameter key="procedure-id" value="list"/>
 	</procedure>
+	-->
 	
 	<!--batch-procedure implementation="jerry/list">
 		<parameter key="procedure-id" value="list"/>

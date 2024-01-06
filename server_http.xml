@@ -1,6 +1,4 @@
-<openjerry>
-	<!--include file="logger.xml"/-->
-	
+<jerry>
 	<!--certificate domain="*" key="server.key" cert="server.pub"/-->
 	
 	<http-context id="x">
@@ -25,8 +23,6 @@
 			<!-- ------------- -->
 		</context>
 		
-		<!--procedure ref-id="sleep"/-->
-	
 		<endpoint path="test1/log">
 			<endpoint path="mc-lukas">
 			</endpoint>
@@ -40,14 +36,10 @@
 		</endpoint>
 	</http-context>
 	
-	<http-server https="false">
+	<http-server>
+		<parameter key="https" value="false"/>
 		<parameter key="threads" value="4"/>
 		<parameter key="port" value="8080"/>
 		<context ref-id="ref-context"/>
-		<!--context>
-			<host server-name="*">
-				<context ref-id="ref-context"/>
-			</host>
-		</context-->
 	</http-server>
-</openjerry>
+</jerry>

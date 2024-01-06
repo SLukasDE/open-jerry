@@ -21,14 +21,16 @@
 #include <openjerry/ObjectContext.h>
 #include <openjerry/ExceptionHandler.h>
 
+#include <esl/crypto/GTXKeyStore.h>
 #include <esl/monitoring/Logging.h>
 #include <esl/monitoring/LogbookLogging.h>
 #include <esl/object/Value.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
+#include <esl/system/DefaultSignalManager.h>
 #include <esl/system/DefaultStacktraceFactory.h>
 
-#include <esl/Plugin.h>
+#include <openesl/Plugin.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -71,14 +73,15 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 int main(int argc, const char *argv[]) {
 	std::cout << "openjerry version " << openjerryVersionStr << std::endl;
 
-	esl::Plugin::install(esl::plugin::Registry::get(), nullptr);
-
-	//esl::system::Stacktrace::init("eslx/system/Stacktrace", {});
-#if 0
-    esl::plugin::Registry::get().setObject(esl::plugin::Registry::get().create<esl::system::StacktraceFactory>("esl/system/DefaultStacktraceFactory", {}));
-#else
-    esl::plugin::Registry::get().setObject(esl::system::DefaultStacktraceFactory::create({}));
-#endif
+	esl::plugin::Registry& registry(esl::plugin::Registry::get());
+	openesl::Plugin::install(registry, nullptr);
+	registry.setObject(esl::crypto::GTXKeyStore::createNative());
+	registry.setObject(esl::system::DefaultStacktraceFactory::createNative());
+	{
+		esl::system::DefaultSignalManager::Settings aSettings;
+		aSettings.isThreaded = true;
+		registry.setObject(esl::system::DefaultSignalManager::createNative(aSettings));
+	}
 
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
@@ -144,19 +147,14 @@ int main(int argc, const char *argv[]) {
 
 		mainConfig.loadLibraries();
 
-		if(isVerbose) {
-			esl::plugin::Registry::get().dump(std::cout);
+		if(!loggerConfigFile.empty()) {
+			auto logging = esl::monitoring::LogbookLogging::createNative();
+			logging->addFile(loggerConfigFile);
+			registry.setObject(std::move(logging));
 		}
 
-		if(!loggerConfigFile.empty()) {
-			//esl::logging::Logging::initWithFile(loggerConfigFile);
-#if 0
-		    auto logging = esl::plugin::Registry::get().create<esl::monitoring::Logging>("esl/monitoring/LogbookLogging", {});
-#else
-		    auto logging = esl::monitoring::LogbookLogging::create({});
-#endif
-			logging->addFile(loggerConfigFile);
-		    esl::plugin::Registry::get().setObject(std::move(logging));
+		if(isVerbose) {
+			esl::plugin::Registry::get().dump(std::cout);
 		}
 
 		mainConfig.install(mainContext);

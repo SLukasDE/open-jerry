@@ -28,7 +28,7 @@
 #include <esl/object/Object.h>
 #include <esl/object/Procedure.h>
 #include <esl/system/Signal.h>
-#include <esl/utility/Signal.h>
+#include <esl/system/SignalManager.h>
 #include <esl/monitoring/Appender.h>
 
 #include <atomic>
@@ -53,10 +53,6 @@ public:
 	static std::unique_ptr<esl::object::Procedure> create(const std::vector<std::pair<std::string, std::string>>& settings);
 
 	Context(const std::vector<std::pair<std::string, std::string>>& settings);
-
-	/* deprecated certificate stuff */
-	//const std::map<std::string, std::pair<std::vector<unsigned char>, std::vector<unsigned char>>>& getCertificates() const noexcept;
-	//const std::pair<std::vector<unsigned char>, std::vector<unsigned char>>* getCertsByHostname(const std::string& hostname) const;
 
 	/* context specific methods */
 	void addProcedure(std::unique_ptr<esl::object::Procedure> procedure);
@@ -84,7 +80,7 @@ public:
 
 private:
 	std::atomic<int> terminateCounter{-1};
-	std::set<esl::utility::Signal> stopSignals;
+	std::set<esl::system::Signal> stopSignals;
 	bool verbose = false;
 
 	bool catchException = true;
@@ -92,7 +88,7 @@ private:
 	bool hasExceptionReturnCode = false;
 	int exceptionReturnCode = -1;
 
-	std::unique_ptr<esl::system::Signal> signal;
+	esl::system::SignalManager* signalManager;
 
 	std::vector<std::unique_ptr<Entry>> entries;
 

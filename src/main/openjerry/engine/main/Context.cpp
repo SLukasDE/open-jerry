@@ -22,21 +22,17 @@
 #include <openjerry/ExceptionHandler.h>
 #include <openjerry/Logger.h>
 
-#include <esl/plugin/Registry.h>
 #include <esl/monitoring/Logging.h>
 #include <esl/object/InitializeContext.h>
 #include <esl/object/Value.h>
+#include <esl/plugin/Registry.h>
 #include <esl/utility/String.h>
-#include <esl/utility/Signal.h>
-#include <esl/system/DefaultSignal.h>
 
-#include <set>
-#include <fstream>
-#include <vector>
 #include <algorithm>
-#include <stdexcept>
+#include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 namespace openjerry {
 namespace engine {
@@ -80,18 +76,14 @@ std::unique_ptr<esl::object::Procedure> Context::create(const std::vector<std::p
 
 Context::Context(const std::vector<std::pair<std::string, std::string>>& settings)
 : ObjectContext(static_cast<ProcessRegistry*>(this)),
-#if 0
-  signal(esl::plugin::Registry::get().create<esl::system::Signal>("esl/system/DefaultSignal", {}))
-#else
-  signal(esl::system::DefaultSignal::create({}))
-#endif
+  signalManager(esl::plugin::Registry::get().findObject<esl::system::SignalManager>())
 {
 	bool hasCatchException = false;
 	bool hasDumpException = false;
 
 	for(const auto& setting : settings) {
 		if(setting.first == "stop-signal") {
-			stopSignals.insert(esl::utility::Signal(setting.second));
+			stopSignals.insert(esl::system::Signal(setting.second));
 		}
 		else if(setting.first == "terminate-counter") {
 			if(terminateCounter >= 0) {
@@ -154,7 +146,7 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 		}
 	}
 
-	if(!signal && !stopSignals.empty()) {
+	if(!signalManager && !stopSignals.empty()) {
 		logger.warn << "There are stop signals specified by no signal handler available. Ignoring stop signal...\n";
 		stopSignals.clear();
 	}
@@ -237,13 +229,12 @@ void Context::procedureRun(esl::object::Context& objectContext) {
 		signalThread.detach();
 	}
 
-	std::vector<esl::system::Signal::Handler> signalHandles;
+	std::vector<esl::system::SignalManager::Handler> signalHandles;
 	try {
 		ProcessLockGuard processLockGuard(*this);
 
 		for(auto signalType : stopSignals) {
-			//signalHandles.push_back(esl::system::signal::Signal::install(*this, signalType));
-			signalHandles.push_back(signal->createHandler(signalType, [this, signalType]() {
+			signalHandles.push_back(signalManager->createHandler(signalType, [this, signalType]() {
 				if(stopSignals.count(signalType)) {
 					// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
 					/* wake up signal thread to call "procedureCancel()" */
