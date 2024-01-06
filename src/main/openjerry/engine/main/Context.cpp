@@ -80,6 +80,9 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 {
 	bool hasCatchException = false;
 	bool hasDumpException = false;
+	std::string configFile;
+	bool isVerbose = false;
+	bool hasVerbose = false;
 
 	for(const auto& setting : settings) {
 		if(setting.first == "stop-signal") {
@@ -131,15 +134,31 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 		}
 		else if(setting.first == "exception-return-code") {
 			if(hasExceptionReturnCode) {
-				throw std::runtime_error("Multiple definition of attribute 'exception-return-code'");
+				throw std::runtime_error("Multiple definition of attribute '" + setting.first + "'.");
 			}
 			hasExceptionReturnCode = true;
 			try {
 				exceptionReturnCode = std::stoi(setting.second);
 			}
 			catch(...) {
-				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute 'exception-return-code'.");
+				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute '" + setting.first + "'.");
 			}
+		}
+		else if(setting.first == "config-file") {
+			if(!configFile.empty()) {
+				throw std::runtime_error("Multiple definition of attribute '" + setting.first + "'");
+			}
+			configFile = setting.second;
+			if(configFile.empty()) {
+				throw std::runtime_error("Invalid value \"" + setting.second + "\" for attribute '" + setting.first + "'.");
+			}
+		}
+		else if(setting.first == "is-verbose") {
+			if(hasVerbose) {
+				throw std::runtime_error("Multiple definition of attribute '" + setting.first + "'");
+			}
+			isVerbose = esl::utility::String::toBool(setting.second);
+			hasVerbose = true;
 		}
 		else {
 			throw std::runtime_error("Unknown parameter key=\"" + setting.first + "\" with value=\"" + setting.second + "\"");
@@ -147,8 +166,26 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 	}
 
 	if(!signalManager && !stopSignals.empty()) {
-		logger.warn << "There are stop signals specified by no signal handler available. Ignoring stop signal...\n";
+		logger.warn << "There are stop signals specified but there is no signal manager available. Ignoring stop signal...\n";
 		stopSignals.clear();
+	}
+
+	if(!configFile.empty()) {
+		boost::filesystem::path serverConfigPath(configFile);
+		config::main::Context mainConfig(serverConfigPath);
+		if(isVerbose) {
+			/* show configuration */
+			mainConfig.save(std::cout);
+			std::cout << "\n\n";
+		}
+
+		mainConfig.loadLibraries();
+
+		if(isVerbose) {
+			esl::plugin::Registry::get().dump(std::cout);
+		}
+
+		mainConfig.install(*this);
 	}
 }
 
@@ -191,13 +228,6 @@ void Context::procedureRun(esl::object::Context& objectContext) {
 	 * Install stop signal handler.                                                                           *
 	 * This should be done before initializing object to be able to terminate initialization (std::terminate) *
 	 * ****************************************************************************************************** */
-#if 0
-	std::function<void()> signalFunction = [this]() {
-		// logger.trace << "SIGNAL FUNCTION: notify signal thread to stop signal thread\n";
-		/* wake up signal thread to call "procedureCancel()" */
-		signalThreadCondVar.notify_one();
-	};
-#endif
 	if(!stopSignals.empty()) {
 		std::thread signalThread([this](std::unique_lock<std::mutex> signalThreadRunningLock) {
 			try {

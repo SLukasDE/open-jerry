@@ -16,14 +16,15 @@
  * License along with Jerry.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <openjerry/config/main/Context.h>
+//#include <openjerry/config/main/Context.h>
 #include <openjerry/engine/main/Context.h>
-#include <openjerry/ObjectContext.h>
+//#include <openjerry/ObjectContext.h>
 #include <openjerry/ExceptionHandler.h>
 
 #include <esl/crypto/GTXKeyStore.h>
 #include <esl/monitoring/Logging.h>
 #include <esl/monitoring/LogbookLogging.h>
+#include <esl/object/SimpleContext.h>
 #include <esl/object/Value.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
@@ -73,16 +74,6 @@ int findFlagIndex(int argc, const char *argv[], const std::string& flag) {
 int main(int argc, const char *argv[]) {
 	std::cout << "openjerry version " << openjerryVersionStr << std::endl;
 
-	esl::plugin::Registry& registry(esl::plugin::Registry::get());
-	openesl::Plugin::install(registry, nullptr);
-	registry.setObject(esl::crypto::GTXKeyStore::createNative());
-	registry.setObject(esl::system::DefaultStacktraceFactory::createNative());
-	{
-		esl::system::DefaultSignalManager::Settings aSettings;
-		aSettings.isThreaded = true;
-		registry.setObject(esl::system::DefaultSignalManager::createNative(aSettings));
-	}
-
 	int flagIndexVerbose = findFlagIndex(argc, argv, "-v");
 	bool isVerbose = (flagIndexVerbose > 0);
 
@@ -128,53 +119,46 @@ int main(int argc, const char *argv[]) {
 		return -1;
 	}
 
-	int returnCode = 0;
-
 	try {
-		std::vector<std::pair<std::string, std::string>> settings;
-		settings.push_back(std::make_pair("stop-signal", "interrupt"));
-		settings.push_back(std::make_pair("stop-signal", "terminate"));
-		settings.push_back(std::make_pair("stop-signal", "pipe"));
-		openjerry::engine::main::Context mainContext(settings);
-
-		boost::filesystem::path serverConfigPath(serverConfigFile);
-		openjerry::config::main::Context mainConfig(serverConfigPath);
-		if(isVerbose) {
-			/* show configuration */
-			mainConfig.save(std::cout);
-			std::cout << "\n\n";
+		esl::plugin::Registry& registry(esl::plugin::Registry::get());
+		openesl::Plugin::install(registry, nullptr);
+		registry.setObject(esl::crypto::GTXKeyStore::createNative());
+		registry.setObject(esl::system::DefaultStacktraceFactory::createNative());
+		{
+			esl::system::DefaultSignalManager::Settings aSettings;
+			aSettings.isThreaded = true;
+			registry.setObject(esl::system::DefaultSignalManager::createNative(aSettings));
 		}
-
-		mainConfig.loadLibraries();
-
 		if(!loggerConfigFile.empty()) {
 			auto logging = esl::monitoring::LogbookLogging::createNative();
 			logging->addFile(loggerConfigFile);
 			registry.setObject(std::move(logging));
 		}
 
-		if(isVerbose) {
-			esl::plugin::Registry::get().dump(std::cout);
+		std::vector<std::pair<std::string, std::string>> settings;
+		settings.push_back(std::make_pair("stop-signal", "interrupt"));
+		settings.push_back(std::make_pair("stop-signal", "terminate"));
+		settings.push_back(std::make_pair("stop-signal", "pipe"));
+		settings.push_back(std::make_pair("config-file", serverConfigFile));
+		settings.push_back(std::make_pair("is-verbose", isVerbose ? "true" : "false"));
+		openjerry::engine::main::Context mainContext(settings);
+
+		if(isDryRun) {
+			return 0;
 		}
 
-		mainConfig.install(mainContext);
-
-		openjerry::ObjectContext objectContext;
-
-		if(!isDryRun) {
-			mainContext.procedureRun(objectContext);
-		}
+		esl::object::SimpleContext objectContext;
+		mainContext.procedureRun(objectContext);
 
 		ReturnCodeObject* returnCodeObject = objectContext.findObject<ReturnCodeObject>("return-code");
 		if(returnCodeObject) {
-			returnCode = returnCodeObject->get();
+			return returnCodeObject->get();
 		}
 	}
 	catch(...) {
 		openjerry::ExceptionHandler exceptionHandler(std::current_exception());
     	exceptionHandler.dump(std::cerr);
-    	returnCode = -1;
 	}
 
-	return returnCode;
+	return -1;
 }
