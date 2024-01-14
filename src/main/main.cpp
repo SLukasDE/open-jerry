@@ -26,12 +26,11 @@
 #include <esl/monitoring/LogbookLogging.h>
 #include <esl/object/SimpleContext.h>
 #include <esl/object/Value.h>
+#include <esl/Plugin.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
 #include <esl/system/DefaultSignalManager.h>
 #include <esl/system/DefaultStacktraceFactory.h>
-
-#include <openesl/Plugin.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -121,7 +120,7 @@ int main(int argc, const char *argv[]) {
 
 	try {
 		esl::plugin::Registry& registry(esl::plugin::Registry::get());
-		openesl::Plugin::install(registry, nullptr);
+		esl::Plugin::install(registry, nullptr);
 		registry.setObject(esl::crypto::GTXKeyStore::createNative());
 		registry.setObject(esl::system::DefaultStacktraceFactory::createNative());
 		{

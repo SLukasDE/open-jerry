@@ -80,7 +80,7 @@ void ExceptionHandler::dumpHttp(esl::com::http::server::Connection& connection, 
 			if(errorDocument->getLanguage().empty()) {
 				esl::com::http::server::Response response(httpStatusCode, utility::MIME::byFilename(url.getPath()));
 				addHeaders(response, headersContext);
-				connection.send(response, url.getPath());
+				connection.sendFile(response, url.getPath());
 
 				return;
 			}

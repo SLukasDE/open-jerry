@@ -39,7 +39,7 @@ public:
 	Connection(RequestContext& requestContext, esl::com::http::server::Connection& baseConnection);
 
 	bool send(const esl::com::http::server::Response& response, esl::io::Output output) override;
-	bool send(const esl::com::http::server::Response& response, boost::filesystem::path path) override;
+	bool sendFile(const esl::com::http::server::Response& response, const std::string& path) override;
 
 private:
 	RequestContext& requestContext;

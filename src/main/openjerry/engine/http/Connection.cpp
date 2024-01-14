@@ -35,10 +35,10 @@ bool Connection::send(const esl::com::http::server::Response& aResponse, esl::io
 	return baseConnection.send(response, std::move(output));
 }
 
-bool Connection::send(const esl::com::http::server::Response& aResponse, boost::filesystem::path path) {
+bool Connection::sendFile(const esl::com::http::server::Response& aResponse, const std::string& path) {
 	esl::com::http::server::Response response(aResponse);
 	addHeaders(response);
-	return baseConnection.send(response, std::move(path));
+	return baseConnection.sendFile(response, path);
 }
 
 void Connection::addHeaders(esl::com::http::server::Response& response) {
