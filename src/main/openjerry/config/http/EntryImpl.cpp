@@ -53,7 +53,7 @@ EntryImpl::EntryImpl(const std::string& fileName, const tinyxml2::XMLElement& el
 	else if(elementName == "host") {
 		host = std::unique_ptr<Host>(new Host(getFileName(), element));
 	}
-	else if(elementName == "requesthandler") {
+	else if(elementName == "requesthandler" || elementName == "http-requesthandler") {
 		requestHandler = std::unique_ptr<RequestHandler>(new RequestHandler(getFileName(), element));
 	}
 	else if(elementName == "http-client" || elementName == "client") {
