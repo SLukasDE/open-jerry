@@ -22,7 +22,7 @@
 #include <openjerry/config/Config.h>
 #include <openjerry/engine/ObjectContext.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <string>
 #include <ostream>

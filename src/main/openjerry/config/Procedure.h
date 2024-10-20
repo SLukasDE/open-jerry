@@ -24,7 +24,7 @@
 
 #include <esl/object/Procedure.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <memory>
 #include <ostream>

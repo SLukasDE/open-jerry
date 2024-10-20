@@ -1,5 +1,5 @@
 <jerry>
-	<certificate domain="*" key="server.key" cert="server.pub"/>
+	<!--certificate domain="*" key="server.key" cert="server.pub"/-->
 	
 	<http-context id="x">
 		<!--requesthandler implementation="jerry/filebrowser">
@@ -103,7 +103,7 @@
 	<http-server>
 		<parameter key="https" value="true"/>
 		<parameter key="threads" value="4"/>
-		<parameter key="port" value="8080"/>
+		<parameter key="port" value="8081"/>
 		<listener> <!-- same as context -->
 			<host server-name="*">
 				<context ref-id="ref-context-http"/>

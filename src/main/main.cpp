@@ -26,13 +26,12 @@
 #include <esl/monitoring/LogbookLogging.h>
 #include <esl/object/SimpleContext.h>
 #include <esl/object/Value.h>
-#include <esl/Plugin.h>
 #include <esl/plugin/Registry.h>
 #include <esl/system/Stacktrace.h>
-#include <esl/system/DefaultSignalManager.h>
-#include <esl/system/DefaultStacktraceFactory.h>
+#include <esl/system/ZSSignalManager.h>
+#include <esl/system/ZSStacktraceFactory.h>
 
-#include <boost/filesystem/path.hpp>
+#include <openesl/Plugin.h>
 
 #include <string>
 #include <vector>
@@ -55,7 +54,7 @@ void printUsage() {
 	std::cout << "  -dry\n";
 	std::cout << "    Make a dry run. Just read server configuration file and load libraries.\n";
 	std::cout << "  -l <esl logger configuration file>\n";
-	std::cout << "    This file is mandatory. It contains the whole server configuration.\n";
+	std::cout << "    This file is optional. It contains the logger configuration.\n";
 	std::cout << "  <server configuration file>\n";
 	std::cout << "    This file is mandatory. It contains the whole server configuration.\n";
 	std::cout << std::flush;
@@ -120,13 +119,13 @@ int main(int argc, const char *argv[]) {
 
 	try {
 		esl::plugin::Registry& registry(esl::plugin::Registry::get());
-		esl::Plugin::install(registry, nullptr);
+		openesl::Plugin::install(registry, nullptr);
 		registry.setObject(esl::crypto::GTXKeyStore::createNative());
-		registry.setObject(esl::system::DefaultStacktraceFactory::createNative());
+		registry.setObject(esl::system::ZSStacktraceFactory::createNative());
 		{
-			esl::system::DefaultSignalManager::Settings aSettings;
+			esl::system::ZSSignalManager::Settings aSettings;
 			aSettings.isThreaded = true;
-			registry.setObject(esl::system::DefaultSignalManager::createNative(aSettings));
+			registry.setObject(esl::system::ZSSignalManager::createNative(aSettings));
 		}
 		if(!loggerConfigFile.empty()) {
 			auto logging = esl::monitoring::LogbookLogging::createNative();

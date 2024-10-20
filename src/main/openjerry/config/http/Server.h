@@ -25,7 +25,7 @@
 #include <openjerry/config/http/Exceptions.h>
 #include <openjerry/engine/main/Context.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <string>
 #include <vector>

@@ -21,10 +21,11 @@
 
 #include <openjerry/config/Config.h>
 
-#include <tinyxml2/tinyxml2.h>
-
 #include <esl/io/FilePosition.h>
 
+#include <tinyxml2.h>
+
+#include <stdexcept>
 #include <string>
 
 namespace openjerry {

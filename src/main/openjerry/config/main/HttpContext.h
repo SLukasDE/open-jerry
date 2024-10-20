@@ -26,7 +26,7 @@
 #include <openjerry/engine/ObjectContext.h>
 #include <openjerry/engine/http/Context.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <vector>
 #include <ostream>

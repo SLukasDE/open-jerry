@@ -19,7 +19,7 @@
 #ifndef OPENJERRY_CONFIG_CONFIG_H_
 #define OPENJERRY_CONFIG_CONFIG_H_
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <string>
 #include <utility>

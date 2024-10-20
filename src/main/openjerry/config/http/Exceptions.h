@@ -24,7 +24,7 @@
 #include <openjerry/config/OptionalBool.h>
 #include <openjerry/engine/http/Context.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <string>
 #include <vector>

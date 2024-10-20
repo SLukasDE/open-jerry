@@ -25,7 +25,7 @@
 
 #include <esl/com/http/server/RequestHandler.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <ostream>
 

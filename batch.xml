@@ -1,5 +1,5 @@
 <jerry>
-	<include file="logger.xml"/>
+	<!--include file="logger.xml"/-->
 	
 	<procedure id="x" implementation="jerry/sleep">
 		<parameter key="sleep-ms" value="3000"/>
@@ -13,9 +13,11 @@
 		<parameter key="sleep-ms" value="3000"/>
 	</procedure>
 	
-	<batch-procedure implementation="jerry/list">
+	<!--batch-procedure implementation="jerry/list"-->
+	<procedure implementation="jerry/list">
 		<!--parameter key="procedure-id" value="x"/-->
 		<parameter key="procedure-id" value="y"/>
 		<!--parameter key="procedure-id" value="z"/-->
-	</batch-procedure>
+	<!--/batch-procedure-->
+	</procedure>
 </jerry>

@@ -24,7 +24,7 @@
 #include <openjerry/config/procedure/Entry.h>
 #include <openjerry/engine/procedure/Context.h>
 
-#include <tinyxml2/tinyxml2.h>
+#include <tinyxml2.h>
 
 #include <vector>
 #include <string>

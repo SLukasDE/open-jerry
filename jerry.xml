@@ -1,44 +1,13 @@
 <jerry>
-	<certificate domain="*" key="/etc/letsencrypt/live/sven-lukas.de/privkey.pem" cert="/etc/letsencrypt/live/sven-lukas.de/fullchain.pem"/>
+	<!--certificate domain="*" key="/etc/letsencrypt/live/sven-lukas.de/privkey.pem" cert="/etc/letsencrypt/live/sven-lukas.de/fullchain.pem"/-->
 	
 	<mime-types file="/opt/jerry/etc/mime.types"/>
-
-        <esl-logger>
-                <layout id="standard" implementation="eslx/default">
-                        <parameter key="showTimestamp" value="true"/>
-                        <parameter key="showLevel" value="true"/>
-                        <parameter key="showTypeName" value="true"/>
-                        <parameter key="showAddress" value="false"/>
-                        <parameter key="showFile" value="false"/>
-                        <parameter key="showFunction" value="false"/>
-                        <parameter key="showLineNo" value="false"/>
-                        <parameter key="showThreadNo" value="false"/>
-                </layout>
-
-                <!--appender implementation="eslx/ostream" layout="standard"-->
-                <appender implementation="eslx/ostream" record="selected" layout="standard">
-                        <parameter key="trace" value="out"/>
-                        <parameter key="debug" value="out"/>
-                        <parameter key="info"  value="out"/>
-                        <parameter key="warn"  value="out"/>
-                        <parameter key="error" value="out"/>
-                </appender>
-
-                <appender name="replay buffer" implementation="eslx/membuffer" record="all" layout="standard">
-                        <parameter key="max-lines" value="100"/>
-                </appender>
-
-                <setting scope="*" level="warn"/>
-                <setting scope="jerry::builtin::http::dump::*" level="info"/>
-                <setting scope="jerry::builtin::http::authentication::*" level="debug"/>
-                <setting scope="jerry::builtin::procedure::*" level="debug"/>
-        </esl-logger>
 	
 	<!--database id="my-db" implementation="sqlite4esl">
 		<parameter key="URI" value="file:my.db?mode=rw"/>
 	</database-->
 	
-	<http-client id="google-jwks" implementation="curl4esl">
+	<http-client id="google-jwks" implementation="esl/com/http/client/CURLConnectionFactory">
 		<parameter key="url" value="https://www.googleapis.com/oauth2/v3/certs"/>
 	</http-client>
 	
@@ -131,14 +100,16 @@
 		<requesthandler implementation="jerry/self"/>
 	</http-context>
 	
-	<!--http-server implementation="mhd4esl" https="false">
+	<!--http-server implementation="mhd4esl">
+		<parameter key="https" value="false"/>
 		<parameter key="port" value="80"/>
 		<parameter key="threads" value="4"/>
 		
 		<context ref-id="http-1"/>
 	</http-server-->
 	
-	<http-server implementation="mhd4esl" https="true">
+	<http-server implementation="mhd4esl">
+		<parameter key="https" value="false"/>
 		<parameter key="port" value="443"/>
 		<parameter key="threads" value="4"/>
 		

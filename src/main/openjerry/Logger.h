@@ -28,16 +28,16 @@
 namespace openjerry {
 
 #ifdef OPENJERRY_LOGGING_LEVEL_DEBUG
-using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE>;
+using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::trace>;
 #else
-using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE>;
-//using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::ERROR>;
+using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::trace>;
+//using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::error>;
 #endif
 
 #if 0
-class Logger : public esl::monitoring::Logger<esl::monitoring::Streams::Level::TRACE> {
+class Logger : public esl::monitoring::Logger<esl::monitoring::Streams::Level::trace> {
 public:
-	using esl::monitoring::Logger<esl::logging::Level::TRACE>::Logger;
+	using esl::monitoring::Logger<esl::logging::Level::trace>::Logger;
 	//Logger(const char* aTypeName = "")
 
 	static void flush();
