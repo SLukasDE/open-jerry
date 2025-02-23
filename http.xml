@@ -1,0 +1,60 @@
+<jerry>
+	<!--certificate domain="*" key="/etc/letsencrypt/live/sven-lukas.de/privkey.pem" cert="/etc/letsencrypt/live/sven-lukas.de/fullchain.pem"/-->
+	
+	<mime-types file="/opt/jerry/etc/mime.types"/>
+	
+	<http-client id="google-jwks" implementation="esl/com/http/client/CURLConnectionFactory">
+		<parameter key="url" value="https://www.googleapis.com/oauth2/v3/certs"/>
+	</http-client>
+	
+	<http-context id="http-1">
+		<requesthandler implementation="jerry/filebrowser">
+			<parameter key="browsable" value="true"/>
+			<!--parameter key="browsable" value="false"/>
+			<parameter key="path" value="/opt/jerry/workspace"/-->
+			<parameter key="path" value="."/>
+			<parameter key="ignore-error" value="true"/>
+		</requesthandler>
+		<requesthandler implementation="jerry/self"/>
+	</http-context>
+	
+	<http-context id="https-1">
+		<requesthandler implementation="jerry/self"/>
+		<endpoint path="google-login">
+			<requesthandler implementation="jerry/dump"/>
+			<requesthandler implementation="jerry/self"/>
+		</endpoint>
+		
+		<endpoint path="test-token">
+			<requesthandler implementation="jerry/dump"/>
+			<requesthandler implementation="jerry/self"/>
+		</endpoint>
+		
+		<requesthandler implementation="jerry/filebrowser">
+			<parameter key="path" value="/opt/jerry/workspace"/>
+			<parameter key="ignore-error" value="true"/>
+			<parameter key="browsable" value="false"/>
+			<parameter key="default" value="index.html"/>
+		</requesthandler>
+		
+		<requesthandler implementation="jerry/self"/>
+	</http-context>
+	
+	<http-server>
+		<parameter key="https" value="false"/>
+		<parameter key="port" value="8080"/>
+		<parameter key="threads" value="4"/>
+		
+		<context ref-id="http-1"/>
+	</http-server>
+	
+	<http-server implementation="esl/com/http/server/MHDSocket">
+		<parameter key="https" value="false"/>
+		<parameter key="port" value="9443"/>
+		<parameter key="threads" value="4"/>
+		
+		<requesthandler implementation="jerry/log"/>
+		<context ref-id="https-1"/>
+	</http-server>
+	
+</jerry>

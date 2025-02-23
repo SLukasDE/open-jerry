@@ -5,6 +5,7 @@ build
 .project
 .cproject
 .settings
+.vscode
 
 # other files
 server2.xml

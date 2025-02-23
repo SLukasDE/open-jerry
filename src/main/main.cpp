@@ -20,6 +20,7 @@
 #include <openjerry/engine/main/Context.h>
 //#include <openjerry/ObjectContext.h>
 #include <openjerry/ExceptionHandler.h>
+#include <openjerry/Plugin.h>
 
 #include <esl/crypto/GTXKeyStore.h>
 #include <esl/monitoring/Logging.h>
@@ -120,6 +121,7 @@ int main(int argc, const char *argv[]) {
 	try {
 		esl::plugin::Registry& registry(esl::plugin::Registry::get());
 		openesl::Plugin::install(registry, nullptr);
+		openjerry::Plugin::install(registry, nullptr);
 		registry.setObject(esl::crypto::GTXKeyStore::createNative());
 		registry.setObject(esl::system::ZSStacktraceFactory::createNative());
 		{
