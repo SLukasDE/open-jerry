@@ -22,9 +22,6 @@
 #include <esl/monitoring/Streams.h>
 #include <esl/monitoring/Logger.h>
 
-#include <memory>
-#include <string>
-
 namespace openjerry {
 
 #ifdef OPENJERRY_LOGGING_LEVEL_DEBUG
@@ -32,18 +29,6 @@ using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::trace>;
 #else
 using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::trace>;
 //using Logger = esl::monitoring::Logger<esl::monitoring::Streams::Level::error>;
-#endif
-
-#if 0
-class Logger : public esl::monitoring::Logger<esl::monitoring::Streams::Level::trace> {
-public:
-	using esl::monitoring::Logger<esl::logging::Level::trace>::Logger;
-	//Logger(const char* aTypeName = "")
-
-	static void flush();
-	static void addLayout(const std::string& id, std::unique_ptr<esl::logging::Layout> layout);
-	static void addAppender(const std::string& name, const std::string& layoutRefId, std::unique_ptr<esl::logging::Appender> appender);
-};
 #endif
 
 } /* namespace openjerry */
