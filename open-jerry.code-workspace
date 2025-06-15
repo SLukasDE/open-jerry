@@ -1,0 +1,125 @@
+{
+	"folders": [
+		{
+			"name": "Main-Open-Jerry",
+			"path": "src/main"
+		},
+		{
+			"name": "Main-OpenESL",
+			"path": "../../workspace_openesl/OpenESL/openesl/src/main"
+		},
+		{
+			"name": "Main-ESL",
+			"path": "../../workspace_openesl/OpenESL/thirdparty/esl/src/main"
+		},
+		{
+			"name": "Main-Common4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/common4esl/src/main"
+		},
+		{
+			"name": "Main-Curl4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/curl4esl/src/main"
+		},
+		{
+			"name": "Main-Logbook4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/logbook4esl/src/main"
+		},
+		{
+			"name": "Main-MHD4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/mhd4esl/src/main"
+		},
+		{
+			"name": "Main-ODBC4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/odbc4esl/src/main"
+		},
+		{
+			"name": "Main-OpenGTX4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/opengtx4esl/src/main"
+		},
+		{
+			"name": "Main-SQLite4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/sqlite4esl/src/main"
+		},
+		{
+			"name": "Main-TinyXML2",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/tinyxml2/src/main"
+		},
+		{
+			"name": "Main-ZSystem4esl",
+            "path": "../../workspace_openesl/OpenESL/thirdparty/zsystem4esl/src/main"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.vscode": false,
+			"**/CMakeLists.txt": true
+		},
+		"files.readonlyInclude": {
+			"**/src/main/esl/**/*": true
+		},
+		"files.associations": {
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"array": "cpp",
+			"atomic": "cpp",
+			"bit": "cpp",
+			"chrono": "cpp",
+			"codecvt": "cpp",
+			"compare": "cpp",
+			"concepts": "cpp",
+			"condition_variable": "cpp",
+			"cstdint": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"functional": "cpp",
+			"iterator": "cpp",
+			"memory": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"random": "cpp",
+			"ratio": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"fstream": "cpp",
+			"initializer_list": "cpp",
+			"iomanip": "cpp",
+			"iosfwd": "cpp",
+			"iostream": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"mutex": "cpp",
+			"new": "cpp",
+			"numbers": "cpp",
+			"ostream": "cpp",
+			"semaphore": "cpp",
+			"sstream": "cpp",
+			"stdexcept": "cpp",
+			"stop_token": "cpp",
+			"streambuf": "cpp",
+			"thread": "cpp",
+			"cinttypes": "cpp",
+			"typeindex": "cpp",
+			"typeinfo": "cpp",
+			"filesystem": "cpp"
+		}
+	}
+}

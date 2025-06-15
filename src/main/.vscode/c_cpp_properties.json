@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder:Main-OpenESL}",
+                "${workspaceFolder:Main-ESL}",
+                "${workspaceFolder:Main-Common4esl}",
+                "${workspaceFolder:Main-Curl4esl}",
+                "${workspaceFolder:Main-Logbook4esl}",
+                "${workspaceFolder:Main-MHD4esl}",
+                "${workspaceFolder:Main-ODBC4esl}",
+                "${workspaceFolder:Main-OpenGTX4esl}",
+                "${workspaceFolder:Main-SQLite4esl}",
+                "${workspaceFolder:Main-ZSystem4esl}",
+                "${workspaceFolder:Main-TinyXML2}"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++-11",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "mergeConfigurations": false,
+            "recursiveIncludes": {},
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
