@@ -115,8 +115,10 @@ RequestHandler::RequestHandler(const std::vector<std::pair<std::string, std::str
 }
 
 esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& requestContext) const {
+	logger.trace << "Incoming request with method \"" << requestContext.getRequest().getMethod().toString() << "\".\n";
 	if(requestContext.getRequest().getMethod() != esl::utility::HttpMethod::Type::httpGet) {
 		if(ignoreError) {
+			logger.trace << "Ignoring request\n";
 			return esl::io::Input();
 		}
 
@@ -124,21 +126,17 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 		throw esl::com::http::server::exception::StatusCode(405);
 	}
 
-#if 0
-	std::filesystem::path path = path + "/" + requestContext.getPath();
-#else
-	std::filesystem::path fullPath = path;
-	fullPath /= requestContext.getPath();
-#endif
-/*
-	logger.trace << "Setting path is \"" << path << "\"\n";
-	std::filesystem::path fullPath = path;
-
-	if(requestContext.getPath().empty() || requestContext.getPath().at(0) != '/') {
-		fullPath += "/";
+	// skip leading slashes to make operator "/=" work correctly
+	const char* urlPath = requestContext.getPath().c_str();
+	while(urlPath && *urlPath == '/') {
+		++urlPath;
 	}
-	fullPath += requestContext.getPath();
-*/
+	std::filesystem::path fullPath = path / urlPath;
+
+	logger.trace << "Request   '" << requestContext.getPath() << "'\n";
+	logger.trace << "Base path '" << path << "'\n";
+	logger.trace << "Full path '" << fullPath << "'\n";
+
 	if(!std::filesystem::exists(fullPath)) {
 		logger.trace << "Original path " << fullPath << " not exists.\n";
 		if(ignoreError) {
@@ -150,9 +148,10 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
 	}
 
 	if(std::filesystem::is_directory(fullPath)) {
-		logger.trace << "Original path " << path << " is a directory\n";
-		// Wenn getUrl auf ein Directory zeigt, aber nicht auf "/" endet, dann sende ein Redirect auf URL mit Endung "/"
+		logger.trace << "Full path is a directory\n";
+		// if requestContext.getPath() pointing to a directury but not ending with character '/', then we will send a redirect to an URL ending with '/'
     	if(requestContext.getPath().empty() || requestContext.getPath().at(requestContext.getPath().size()-1) != '/') {
+			logger.trace << "Sending redirect...\n";
     		esl::com::http::server::Response response(301, esl::utility::MIME::Type::textHtml);
     		response.addHeader("Location", requestContext.getRequest().getPath() + "/");
     		esl::io::Output output = esl::io::output::Memory::create(PAGE_301.data(), PAGE_301.size());
@@ -161,13 +160,18 @@ esl::io::Input RequestHandler::accept(esl::com::http::server::RequestContext& re
     		return esl::io::input::Closed::create();
     	}
 
+		logger.trace << "enrich with default...\n";
 		for(const auto& defaultFile : defaults) {
+			logger.trace << "enrich full path with default file '" << defaultFile << "'\n";
 			std::filesystem::path file = fullPath / defaultFile;
 			if(std::filesystem::exists(file) && std::filesystem::is_regular_file(file)) {
+				logger.trace << "File exists! Update full path...\n";
 				fullPath = file;
 				break;
 			}
+			logger.trace << "Skip file, because it does not exists!\n";
 		}
+		logger.trace << "New full path '" << fullPath << "'\n";
 	}
 
 
