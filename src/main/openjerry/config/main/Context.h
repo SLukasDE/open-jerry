@@ -31,8 +31,7 @@
 
 #include <tinyxml2.h>
 
-#include <boost/filesystem/path.hpp>
-
+#include <filesystem>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -46,7 +45,7 @@ namespace main {
 class Context : public Config {
 public:
 	explicit Context(const std::string& configuration);
-	explicit Context(const boost::filesystem::path& filename);
+	explicit Context(const std::filesystem::path& filename);
 
 	void save(std::ostream& oStream) const;
 	void loadLibraries();

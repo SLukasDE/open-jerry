@@ -54,7 +54,7 @@ Context::Context(const std::string& configuration)
 	loadXML(*element);
 }
 
-Context::Context(const boost::filesystem::path& filename)
+Context::Context(const std::filesystem::path& filename)
 : Config(filename.generic_string())
 {
 	filesLoaded.insert(filename.generic_string());

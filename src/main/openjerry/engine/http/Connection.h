@@ -25,8 +25,6 @@
 #include <esl/com/http/server/Response.h>
 #include <esl/io/Output.h>
 
-#include <boost/filesystem.hpp>
-
 namespace openjerry {
 namespace engine {
 namespace http {

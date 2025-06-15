@@ -23,6 +23,7 @@
 #include <esl/com/http/server/RequestHandler.h>
 #include <esl/io/Input.h>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <set>
@@ -44,7 +45,7 @@ public:
 
 private:
 	bool browsable = false;
-	std::string path = "/";
+	std::filesystem::path path;
 	std::set<std::string> defaults;
 	bool ignoreError = false;
 };

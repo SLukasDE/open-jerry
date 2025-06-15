@@ -29,6 +29,7 @@
 #include <esl/utility/String.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -171,7 +172,7 @@ Context::Context(const std::vector<std::pair<std::string, std::string>>& setting
 	}
 
 	if(!configFile.empty()) {
-		boost::filesystem::path serverConfigPath(configFile);
+		std::filesystem::path serverConfigPath(configFile);
 		config::main::Context mainConfig(serverConfigPath);
 		if(isVerbose) {
 			/* show configuration */
